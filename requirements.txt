@@ -1,0 +1,8 @@
+anndata
+umap-learn
+scikit-learn
+muon
+pandas
+seaborn
+plotly
+streamlit
