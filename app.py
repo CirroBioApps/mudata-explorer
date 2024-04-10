@@ -25,6 +25,9 @@ def main():
 def plot_clusters():
     # Get the data to plot
     df, metadata = get_clusters_data()
+    if df is None or metadata is None:
+        tabs["cluster"].write("No data to plot")
+        return
 
     # Plot a clustermap of the data
     g = sns.clustermap(df, cmap="Blues")
