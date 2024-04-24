@@ -109,6 +109,32 @@ def plot_clusters():
     )
     tabs["cluster"].plotly_chart(fig)
 
+    return
+
+    # Let the user select a metadata column
+    cnames = [
+        cname for cname, cvals in metadata.items()
+        if cvals.nunique() < 10 and cvals.nunique() > 1
+    ]
+    if len(cnames) > 0:
+        selected_col = tabs["cluster"].selectbox(
+            "Select metadata column to summarize",
+            cnames
+        )
+
+        # Plot the proportion of observations in each cluster,
+        # broken down by the selected metadata column
+        df = plot_df.pivot_table(
+            index=selected_col,
+        )
+        fig = px.histogram(
+            plot_df,
+            x=selected_col,
+            color="cluster",
+            barmode="overlay"
+        )
+        tabs["cluster"].plotly_chart(fig)
+
 
 def get_clusters_data() -> Tuple[pd.DataFrame, pd.DataFrame]:
     mdata: MuData = st.session_state.get("mudata")

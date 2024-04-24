@@ -10,3 +10,10 @@ all_views: List[View] = [
     if hasattr(getattr(getattr(views, view_folder), view), "mdata")
     if hasattr(getattr(getattr(views, view_folder), view), "type")
 ]
+
+
+def get_view_by_type(view_type: str) -> View:
+    for view in all_views:
+        if view.type == view_type:
+            return view
+    return None
