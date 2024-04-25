@@ -8,6 +8,19 @@ class HelloWorld(View):
     name = "Hello World"
     desc = "Basic hello world view."
     categories = ["Testing"]
+    processed = True
+    defaults = {"name": "World"}
 
     def display(self, container: DeltaGenerator):
-        container.write("Hello, world!")
+        params = {
+            kw: self.params.get(kw, val)
+            for kw, val in self.defaults.items()
+        }
+        container.write(f"Hello, {params['name']}!")
+
+    def inputs(self, form: DeltaGenerator):
+        form.text_input(
+            "Name",
+            help="Enter your name here.",
+            **self.param_kwargs("name")
+        )

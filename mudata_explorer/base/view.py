@@ -1,10 +1,10 @@
-from typing import List
 import streamlit as st
-import muon as mu
+from typing import List
+from mudata_explorer.base.base import MuDataAppHelpers
 from streamlit.delta_generator import DeltaGenerator
 
 
-class View:
+class View(MuDataAppHelpers):
 
     ix: int
     type: str
@@ -15,6 +15,7 @@ class View:
     processed: bool = False
     logs: List[str] = []
     params: dict = {}
+    defaults: dict = {}
 
     def __init__(
         self,
@@ -24,7 +25,8 @@ class View:
         desc: str,
         processed: bool,
         logs: List[str],
-        params: dict
+        params: dict,
+        on_change: callable
     ):
         self.ix = ix
         self.type = type
@@ -32,7 +34,11 @@ class View:
         self.desc = desc
         self.processed = processed
         self.logs = logs
-        self.params = params
+        self.params = {
+            kw: params.get(kw, val)
+            for kw, val in self.defaults.items()
+        }
+        self.on_change = on_change
 
     @classmethod
     def template(cls):
@@ -45,21 +51,45 @@ class View:
             params=cls.params
         )
 
-    def inputs(self, container: DeltaGenerator):
-        """Render any input elements needed for this view."""
+    def display(self, container: DeltaGenerator):
+        """Primary method which is executed to render the view."""
+        pass
+
+    def inputs(self, form: DeltaGenerator):
+        """Render any input elements needed for this view within a form."""
         pass
 
     def process(self):
         pass
 
-    def display(self, container: DeltaGenerator):
-        pass
-
     @property
-    def mdata(self):
-        return st.session_state.get("mdata", None)
+    def key_prefix(self):
+        return f"view-{self.ix}-{self.refresh_ix}-"
 
-    @mdata.setter
-    def mdata(self, mdata: mu.MuData):
-        assert isinstance(mdata, mu.MuData)
-        st.session_state["mdata"] = mdata
+    def param_key(self, key: str):
+        return f"{self.key_prefix}{key}"
+
+    def param_kwargs(self, key: str):
+        return dict(
+            value=self.params.get(key, self.defaults[key]),
+            key=self.param_key(key),
+            on_change=self.on_change,
+            args=(self, key,)
+        )
+
+    def clear_params(self):
+        """Delete any param from the session state which would conflict."""
+        to_delete = [
+            key
+            for key in st.session_state.keys()
+            if key.startswith(self.key_prefix)
+        ]
+        for key in to_delete:
+            del st.session_state[key]
+
+    def get_params(self):
+
+        return {
+            kw: st.session_state.get(self.param_key(kw), val)
+            for kw, val in self.defaults.items()
+        }

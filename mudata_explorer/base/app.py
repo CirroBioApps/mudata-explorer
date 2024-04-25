@@ -1,55 +1,20 @@
-import anndata as ad
-from typing import Union
-import muon as mu
-import numpy as np
+import json
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
+from mudata_explorer.base.base import MuDataAppHelpers
 from mudata_explorer.base.view import View
 from mudata_explorer.helpers import all_views
 from mudata_explorer.helpers import get_view_by_type
+from mudata_explorer.helpers import make_view
 
 
-class App:
+class App(MuDataAppHelpers):
 
     mudata_uploader: DeltaGenerator
-    mdata: Union[None, mu.MuData]
 
     def __init__(self):
         self.setup_page()
         self.show_views()
-
-    @property
-    def mdata(self):
-        return st.session_state.get("mdata", None)
-
-    @mdata.setter
-    def mdata(self, mdata: mu.MuData):
-        assert isinstance(mdata, mu.MuData)
-        st.session_state["mdata"] = mdata
-
-    def setup_mdata(self):
-        self.mdata = mu.MuData({
-            'blank': ad.AnnData(
-                X=np.array([[]]),
-                obs=[],
-                var=[]
-            )
-        })
-        self.mdata.uns["mudata-explorer-views"] = []
-
-    @property
-    def views(self):
-        if self.mdata is None:
-            return []
-        views = self.mdata.uns.get("mudata-explorer-views", [])
-        assert isinstance(views, list)
-        return [
-            View(
-                ix=ix,
-                **view
-            )
-            for ix, view in enumerate(views)
-        ]
 
     def setup_page(self):
 
@@ -62,6 +27,21 @@ class App:
         # Set up an empty container to display the views
         self.view_empty = st.empty()
 
+    @property
+    def views(self):
+        if self.get_mdata() is None:
+            return []
+        views = self.get_mdata().uns.get("mudata-explorer-views", [])
+        assert isinstance(views, list)
+        return [
+            make_view(
+                ix=ix,
+                on_change=self.update_view,
+                **view
+            )
+            for ix, view in enumerate(views)
+        ]
+
     def show_views(self):
 
         # Increment the refresh index
@@ -70,59 +50,105 @@ class App:
         # Set up a container to display the views
         view_cont = self.view_empty.container()
 
-        view_cont.write(self.views)
-
         for ix, view in enumerate(self.views):
-            # Show the logs
-            view_cont.write("\n".join(view.logs))
-            # Show the inputs
-            view.inputs(view_cont)
+
+            # Show the name of the view
+            view_cont.write(f"#### {ix + 1}. {view.name}")
 
             # Show the display
-            if view.processed:
-                view.display(view_cont)
+            view.display(view_cont)
 
-            # Let the user delete the view
-            self.button_delete_view(view_cont, ix)
+            # Set up an expander element
+            expander = view_cont.expander("Edit Settings")
+
+            # Populate the form with the view params
+            view.inputs(expander)
+
+            # Make a set of columns
+            cols = expander.columns([1, 1, 1])
+
+            # Add buttons for editing, reordering, and deleting
+            if ix > 0:
+                cols[0].button(
+                    "Move Up",
+                    key=f"up-view-{ix}-{self.refresh_ix}",
+                    use_container_width=True,
+                    on_click=self.move_up,
+                    args=(ix,)
+                )
+            cols[1].button(
+                "Delete",
+                key=f"delete-view-{ix}-{self.refresh_ix}",
+                use_container_width=True,
+                on_click=self.delete_view,
+                args=(ix,)
+            )
+            if ix < (len(self.views) - 1):
+                cols[2].button(
+                    "Move Down",
+                    key=f"down-view-{ix}-{self.refresh_ix}",
+                    use_container_width=True,
+                    on_click=self.move_down,
+                    args=(ix,)
+                )
+
+            # Show a horizontal rule
+            view_cont.markdown("---")
 
         # Let the user add a new view
         self.button_add_view(view_cont)
 
-    @property
-    def refresh_ix(self):
-        return st.session_state.get("refresh-ix", 0)
+    def update_view(self, view: View, key: str):
+        # Get the new value
+        val = st.session_state[view.param_key(key)]
 
-    def button_delete_view(self, container: DeltaGenerator, ix: int):
-        container.button(
-            "Delete",
-            key=f"delete-view-{ix}-{self.refresh_ix}",
-            on_click=self.delete_view,
-            args=(ix,)
-        )
+        # If it does not match the old value
+        if val != view.params[key]:
+            # Update the view
+            view.params[key] = val
+            mdata = self.get_mdata()
+            mdata.uns["mudata-explorer-views"][view.ix]["params"] = view.params
+            self.set_mdata(mdata)
+            self.show_views()
+
+    def move_up(self, ix: int):
+        mdata = self.get_mdata()
+        mdata.uns["mudata-explorer-views"][ix - 1], mdata.uns["mudata-explorer-views"][ix] = mdata.uns["mudata-explorer-views"][ix], mdata.uns["mudata-explorer-views"][ix - 1]
+        self.set_mdata(mdata)
+        self.show_views()
+
+    def move_down(self, ix: int):
+        mdata = self.get_mdata()
+        mdata.uns["mudata-explorer-views"][ix + 1], mdata.uns["mudata-explorer-views"][ix] = mdata.uns["mudata-explorer-views"][ix], mdata.uns["mudata-explorer-views"][ix + 1]
+        self.set_mdata(mdata)
+        self.show_views()
 
     def delete_view(self, ix: int):
-        mdata = self.mdata
+        mdata = self.get_mdata()
         mdata.uns["mudata-explorer-views"].pop(ix)
-        self.mdata = mdata
+        self.set_mdata(mdata)
         self.show_views()
 
     def button_add_view(self, container: DeltaGenerator):
-        container.write("### Add")
+        container.write("#### Available Options")
         for ix, view in enumerate(all_views):
-            container.button(
-                view.name,
+            cols = container.columns([1, 5])
+            cols[1].write(f"**{view.name}**\n\n{view.desc}")
+            cols[0].button(
+                "Add",
                 help=view.desc,
                 key=f"add-view-button-{ix}-{self.refresh_ix}",
                 on_click=self.add_view,
-                args=(view.type,)
+                args=(view.type,),
+                use_container_width=True
             )
 
     def add_view(self, view_type: str):
-        if self.mdata is None:
+        if self.get_mdata() is None:
             self.setup_mdata()
-        mdata = self.mdata
+        mdata = self.get_mdata()
         mdata.uns["mudata-explorer-views"].append(
             get_view_by_type(view_type).template()
         )
-        self.mdata = mdata
+        self.set_mdata(mdata)
         self.show_views()
