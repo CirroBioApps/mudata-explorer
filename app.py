@@ -190,8 +190,8 @@ def get_clusters_data() -> Tuple[pd.DataFrame, pd.DataFrame]:
     metadata = metadata.reindex(columns=[
         cname for cname, cvals in metadata.items()
         if (
-            cvals.notnull().any() and 
-            len(cvals.unique()) > 1 and 
+            cvals.notnull().any() and
+            len(cvals.unique()) > 1 and
             len(cvals.unique()) < metadata.shape[0]
         )
     ])

@@ -28,3 +28,11 @@ class MuDataAppHelpers:
         })
         mdata.uns["mudata-explorer-views"] = []
         self.set_mdata(mdata)
+
+    def get_views(self):
+        return self.get_mdata().uns.get("mudata-explorer-views", [])
+
+    def set_views(self, views):
+        mdata = self.get_mdata()
+        mdata.uns["mudata-explorer-views"] = views
+        self.set_mdata(mdata)

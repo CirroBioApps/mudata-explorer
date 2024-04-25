@@ -8,7 +8,6 @@ class HelloWorld(View):
     name = "Hello World"
     desc = "Basic hello world view."
     categories = ["Testing"]
-    processed = True
     defaults = {"name": "World"}
 
     def display(self, container: DeltaGenerator):

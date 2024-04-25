@@ -12,7 +12,6 @@ class View(MuDataAppHelpers):
     name: str
     desc: str
     categories: List[str]
-    processed: bool = False
     logs: List[str] = []
     params: dict = {}
     defaults: dict = {}
@@ -23,22 +22,22 @@ class View(MuDataAppHelpers):
         type: str,
         name: str,
         desc: str,
-        processed: bool,
         logs: List[str],
         params: dict,
-        on_change: callable
+        on_change: callable,
+        refresh: callable
     ):
         self.ix = ix
         self.type = type
         self.name = name
         self.desc = desc
-        self.processed = processed
         self.logs = logs
         self.params = {
             kw: params.get(kw, val)
             for kw, val in self.defaults.items()
         }
         self.on_change = on_change
+        self.refresh = refresh
 
     @classmethod
     def template(cls):
@@ -46,7 +45,6 @@ class View(MuDataAppHelpers):
             type=cls.type,
             name=cls.name,
             desc=cls.desc,
-            processed=cls.processed,
             logs=cls.logs,
             params=cls.params
         )
@@ -69,13 +67,15 @@ class View(MuDataAppHelpers):
     def param_key(self, key: str):
         return f"{self.key_prefix}{key}"
 
-    def param_kwargs(self, key: str):
-        return dict(
-            value=self.params.get(key, self.defaults[key]),
+    def param_kwargs(self, key: str, incl_value=True):
+        kwargs = dict(
             key=self.param_key(key),
             on_change=self.on_change,
             args=(self, key,)
         )
+        if incl_value:
+            kwargs["value"] = self.params.get(key, self.defaults[key])
+        return kwargs
 
     def clear_params(self):
         """Delete any param from the session state which would conflict."""

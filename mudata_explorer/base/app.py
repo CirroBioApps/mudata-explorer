@@ -1,4 +1,3 @@
-import json
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 from mudata_explorer.base.base import MuDataAppHelpers
@@ -37,6 +36,7 @@ class App(MuDataAppHelpers):
             make_view(
                 ix=ix,
                 on_change=self.update_view,
+                refresh=self.show_views,
                 **view
             )
             for ix, view in enumerate(views)
@@ -112,21 +112,33 @@ class App(MuDataAppHelpers):
             self.show_views()
 
     def move_up(self, ix: int):
-        mdata = self.get_mdata()
-        mdata.uns["mudata-explorer-views"][ix - 1], mdata.uns["mudata-explorer-views"][ix] = mdata.uns["mudata-explorer-views"][ix], mdata.uns["mudata-explorer-views"][ix - 1]
-        self.set_mdata(mdata)
+        views = self.get_views()
+        (
+            views[ix - 1],
+            views[ix]
+        ) = (
+            views[ix],
+            views[ix - 1]
+        )
+        self.set_views(views)
         self.show_views()
 
     def move_down(self, ix: int):
-        mdata = self.get_mdata()
-        mdata.uns["mudata-explorer-views"][ix + 1], mdata.uns["mudata-explorer-views"][ix] = mdata.uns["mudata-explorer-views"][ix], mdata.uns["mudata-explorer-views"][ix + 1]
-        self.set_mdata(mdata)
+        views = self.get_views()
+        (
+            views[ix + 1],
+            views[ix]
+        ) = (
+            views[ix],
+            views[ix + 1]
+        )
+        self.set_views(views)
         self.show_views()
 
     def delete_view(self, ix: int):
-        mdata = self.get_mdata()
-        mdata.uns["mudata-explorer-views"].pop(ix)
-        self.set_mdata(mdata)
+        views = self.get_views()
+        views.pop(ix)
+        self.set_views(views)
         self.show_views()
 
     def button_add_view(self, container: DeltaGenerator):
@@ -146,9 +158,9 @@ class App(MuDataAppHelpers):
     def add_view(self, view_type: str):
         if self.get_mdata() is None:
             self.setup_mdata()
-        mdata = self.get_mdata()
-        mdata.uns["mudata-explorer-views"].append(
+        views = self.get_views()
+        views.append(
             get_view_by_type(view_type).template()
         )
-        self.set_mdata(mdata)
+        self.set_views(views)
         self.show_views()
