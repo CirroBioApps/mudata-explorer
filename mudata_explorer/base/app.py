@@ -1,3 +1,4 @@
+import json
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 from mudata_explorer.base.base import MuDataAppHelpers
@@ -31,6 +32,8 @@ class App(MuDataAppHelpers):
         if self.get_mdata() is None:
             return []
         views = self.get_mdata().uns.get("mudata-explorer-views", [])
+        if isinstance(views, str):
+            views = json.loads(views)
         assert isinstance(views, list)
         return [
             make_view(

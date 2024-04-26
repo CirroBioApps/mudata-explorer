@@ -23,18 +23,21 @@ class MakeMuData(View):
     }
 
     def display(self, container: DeltaGenerator):
+
         if self.params["obs"] is None:
             obs = self.get_mdata().obs
         else:
-            obs = pd.read_csv(StringIO(self.params["obs"]))
+            obs = pd.read_csv(StringIO(self.params["obs"]), index_col=0)
 
+        obs = self.sanitize_types(obs, container)
         container.write(f"Metadata: {obs.shape[0]:,} rows x {obs.shape[1]:,} columns.") # noqa
 
         if self.params["mod"] is None:
             container.write("No measurement data uploaded.")
             return
 
-        mod = pd.read_csv(StringIO(self.params["mod"]))
+        mod = pd.read_csv(StringIO(self.params["mod"]), index_col=0)
+        mod = self.sanitize_types(mod, container)
         container.write(f"Measurement: {mod.shape[0]:,} rows x {mod.shape[1]:,} columns.") # noqa
         container.write(f"Measurement Name: {self.params['mod_name']}")
 
@@ -46,25 +49,59 @@ class MakeMuData(View):
         if len(overlap) == 0:
             return
 
-        if container.button("Create MuData", key=self.param_key("create")):
-            obs = obs.loc[list(overlap)]
-            mod = mod.loc[list(overlap)]
+        container.button(
+            "Add to MuData",
+            key=self.param_key("create"),
+            on_click=self.add_mudata,
+            args=(obs, mod)
+        )
 
-            mdata = mu.MuData({
-                self.params['mod_name']: ad.AnnData(
-                    obs=obs,
-                    X=mod
-                )
-            })
-            mdata.update_obs()
-            views = self.get_views()
-            # Delete the data for this view
-            for kw in ["obs", "mod", "mod_name"]:
-                del views[self.ix]["params"][kw]
-            # Set the views in the new MuData object
-            mdata.uns["mudata-explorer-views"] = views
-            self.set_mdata(mdata)
-            self.refresh()
+    def sanitize_types(self, df: pd.DataFrame, container: DeltaGenerator):
+        # Convert every column to the type of the first non-null value
+        to_drop = []
+        for cname, col in df.items():
+            if col.dtype == "object":
+                try:
+                    df[cname] = col.astype(type(col.dropna().values[0]))
+                except Exception:
+                    to_drop.append(cname)
+            elif col.dtype == "str":
+                to_drop.append(cname)
+        if len(to_drop) > 0:
+            container.write(f"Dropping non-numeric columns: {to_drop}")
+            df = df.drop(columns=to_drop)
+
+        return df
+
+    def add_mudata(self, obs: pd.DataFrame, mod: pd.DataFrame):
+        overlap = set(obs.index).intersection(set(mod.index))
+        obs = obs.loc[list(overlap)]
+        mod = mod.loc[list(overlap)]
+
+        adata = ad.AnnData(obs=obs, X=mod)
+
+        mdata = self.get_mdata()
+
+        mdata = mu.MuData({
+            **{
+                kw: adata
+                for kw, adata in mdata.mod.items()
+                if kw != '_blank'
+            },
+            **{
+                self.params['mod_name']: adata
+            }
+        })
+
+        mdata.update_obs()
+        views = self.get_views()
+        # Delete the data for this view
+        for kw in ["obs", "mod", "mod_name"]:
+            del views[self.ix]["params"][kw]
+        # Set the views in the new MuData object
+        mdata.uns["mudata-explorer-views"] = views
+        self.set_mdata(mdata)
+        self.refresh()
 
     def inputs(self, form: DeltaGenerator):
         form.file_uploader(

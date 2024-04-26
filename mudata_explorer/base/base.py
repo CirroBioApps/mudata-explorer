@@ -3,6 +3,7 @@ import anndata as ad
 import muon as mu
 import numpy as np
 import streamlit as st
+import json
 
 
 class MuDataAppHelpers:
@@ -12,7 +13,15 @@ class MuDataAppHelpers:
         return st.session_state.get("refresh-ix", 0)
 
     def get_mdata(self) -> Union[None, mu.MuData]:
-        return st.session_state.get("mdata", None)
+        mdata = st.session_state.get("mdata", None)
+        if mdata is not None:
+            assert isinstance(mdata, mu.MuData)
+            views = mdata.uns.get("mudata-explorer-views", [])
+            if isinstance(views, str):
+                views = json.loads(views)
+                mdata.uns["mudata-explorer-views"] = views
+                self.set_mdata(mdata)
+        return mdata
 
     def set_mdata(self, mdata: mu.MuData):
         assert isinstance(mdata, mu.MuData)
@@ -20,7 +29,7 @@ class MuDataAppHelpers:
 
     def setup_mdata(self):
         mdata = mu.MuData({
-            'blank': ad.AnnData(
+            '_blank': ad.AnnData(
                 X=np.array([[]]),
                 obs=[],
                 var=[]
