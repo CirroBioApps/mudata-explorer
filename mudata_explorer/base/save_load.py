@@ -8,6 +8,11 @@ import json
 
 class SaveLoad(MuDataAppHelpers):
 
+    on_change: callable
+
+    def __init__(self, on_change):
+        self.on_change = on_change
+
     @property
     def key_prefix(self):
         return f"save-load-{self.refresh_ix('save-load')}-"
@@ -36,6 +41,7 @@ class SaveLoad(MuDataAppHelpers):
             return
 
         self.set_mdata(mdata)
+        self.on_change()
 
     def read_h5mu(self, h5mu_file):
         with open(h5mu_file.name, "wb") as f:

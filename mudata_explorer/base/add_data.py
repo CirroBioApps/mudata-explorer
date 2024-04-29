@@ -10,8 +10,10 @@ import streamlit as st
 
 class AddData(MuDataAppHelpers):
 
-    def __init__(self):
-        pass
+    on_change: callable
+
+    def __init__(self, on_change: callable):
+        self.on_change = on_change
 
     @property
     def key_prefix(self):
@@ -50,6 +52,7 @@ class AddData(MuDataAppHelpers):
 
         mdata.update_obs()
         self.set_mdata(mdata)
+        self.on_change()
 
     def show(self, empty: DeltaGenerator):
         container = empty.container()

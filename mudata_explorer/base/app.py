@@ -5,9 +5,8 @@ from mudata_explorer.base.base import MuDataAppHelpers
 from mudata_explorer.base.view import View
 from mudata_explorer.base.add_data import AddData
 from mudata_explorer.base.save_load import SaveLoad
-from mudata_explorer.helpers import all_views
-from mudata_explorer.helpers import get_view_by_type
-from mudata_explorer.helpers import make_view
+from mudata_explorer.helpers import all_views, get_view_by_type, make_view
+from mudata_explorer.helpers import all_processes, get_process_by_type
 
 
 class App(MuDataAppHelpers):
@@ -21,7 +20,7 @@ class App(MuDataAppHelpers):
     def __init__(self):
         self.setup_page()
         self.show_views()
-        # self.show_process()
+        self.show_process()
         self.show_add_data()
         self.show_save_load()
 
@@ -123,13 +122,50 @@ class App(MuDataAppHelpers):
         # Let the user add a new view
         self.button_add_view(plots_cont)
 
+    def show_process(self):
+
+        self.refresh_ix_increment("process")
+
+        # Set up a container to display
+        process_cont = self.process_empty.container()
+
+        # Get the MuData object
+        mdata = self.get_mdata()
+        if mdata is None or len(mdata.mod) == 1 and "_blank" in mdata.mod:
+            process_cont.write("No data to process.")
+            return
+
+        # Make a list of the process types that are available
+        type_list = [proc.type for proc in all_processes]
+        # Make a list of the descriptions to show
+        desc_list = [f"{proc.name}: {proc.desc}" for proc in all_processes]
+
+        # Let the user select the process to run
+        selection = process_cont.selectbox(
+            "Select a process",
+            desc_list,
+            key=f"select-process-{self.refresh_ix('process')}"
+        )
+        # Get the selected process type
+        selected_type = type_list[desc_list.index(selection)]
+
+        # Instantiate the selected process
+        selected_process = (
+            get_process_by_type
+            (selected_type)
+            (on_change=self.show_process)
+        )
+
+        # Run the method for the process
+        selected_process.run(process_cont, mdata)
+
     def show_add_data(self):
 
         # Set up a container to display
         add_data_cont = self.add_data_empty.container()
 
         # Set up the add data object
-        add_data = AddData()
+        add_data = AddData(on_change=self.refresh_mdata)
 
         # Show the form
         add_data.show(add_data_cont.empty())
@@ -143,10 +179,14 @@ class App(MuDataAppHelpers):
         save_load_cont = self.save_load_empty.container()
 
         # Set up the save load object
-        save_load = SaveLoad()
+        save_load = SaveLoad(on_change=self.refresh_mdata)
 
         # Show the download button
         save_load.show(save_load_cont.empty())
+
+    def refresh_mdata(self):
+        self.show_views()
+        self.show_process()
 
     def update_view(self, view: View, key: str):
         # Get the new value
