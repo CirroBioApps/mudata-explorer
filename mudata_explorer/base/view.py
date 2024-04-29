@@ -61,6 +61,10 @@ class View(MuDataAppHelpers):
         pass
 
     @property
+    def refresh_ix(self):
+        super().refresh_ix("view")
+
+    @property
     def key_prefix(self):
         return f"view-{self.ix}-{self.refresh_ix}-"
 

@@ -1,6 +1,8 @@
 from typing import List
 from mudata_explorer import views
 from mudata_explorer.base.view import View
+from mudata_explorer.helpers.read_table import read_table # noqa
+from mudata_explorer.helpers.sanitize_types import sanitize_types # noqa
 
 all_views: List[View] = [
     getattr(getattr(views, view_folder), view)
