@@ -4,6 +4,7 @@ from streamlit.delta_generator import DeltaGenerator
 from mudata_explorer.base.base import MuDataAppHelpers
 from mudata_explorer.base.view import View
 from mudata_explorer.base.add_data import AddData
+from mudata_explorer.base.save_load import SaveLoad
 from mudata_explorer.helpers import all_views
 from mudata_explorer.helpers import get_view_by_type
 from mudata_explorer.helpers import make_view
@@ -22,7 +23,7 @@ class App(MuDataAppHelpers):
         self.show_views()
         # self.show_process()
         self.show_add_data()
-        # self.show_save_load()
+        self.show_save_load()
 
     def setup_page(self):
 
@@ -124,7 +125,7 @@ class App(MuDataAppHelpers):
 
     def show_add_data(self):
 
-        # Set up a container to display the views
+        # Set up a container to display
         add_data_cont = self.add_data_empty.container()
 
         # Set up the add data object
@@ -135,6 +136,17 @@ class App(MuDataAppHelpers):
 
         # Process the inputs
         add_data.process(add_data_cont.empty())
+
+    def show_save_load(self):
+
+        # Set up a container to display
+        save_load_cont = self.save_load_empty.container()
+
+        # Set up the save load object
+        save_load = SaveLoad()
+
+        # Show the download button
+        save_load.show(save_load_cont.empty())
 
     def update_view(self, view: View, key: str):
         # Get the new value

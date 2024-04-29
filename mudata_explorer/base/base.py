@@ -40,10 +40,12 @@ class MuDataAppHelpers:
         mdata = self.get_mdata()
         if mdata is None:
             return
+        if len(mdata.mod) == 1 and "_blank" in mdata.mod:
+            return
         container.write("**Current MuData**")
         for mod_name, mod in mdata.mod.items():
             shape = mod.to_df().shape
-            container.write(f" - {mod_name} ({shape[0]:,} observations x {shape[1]:,} features)")
+            container.write(f" - {mod_name} ({shape[0]:,} observations x {shape[1]:,} features)") # noqa
 
     def setup_mdata(self):
         mdata = mu.MuData({

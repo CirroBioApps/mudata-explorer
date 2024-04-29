@@ -1,5 +1,4 @@
 import anndata as ad
-from io import StringIO
 import muon as mu
 import pandas as pd
 from mudata_explorer.base.base import MuDataAppHelpers
@@ -47,6 +46,8 @@ class AddData(MuDataAppHelpers):
                 }
             })
 
+        mdata.uns["mudata-explorer-views"] = []
+
         mdata.update_obs()
         self.set_mdata(mdata)
 
@@ -86,7 +87,7 @@ class AddData(MuDataAppHelpers):
             container.write("No metadata uploaded")
 
         else:
-            obs = sanitize_types(obs, container)
+            obs = sanitize_types(obs, container, keep_str=True)
             container.write(f"Metadata: {obs.shape[0]:,} rows x {obs.shape[1]:,} columns.") # noqa
 
         if mod is None:

@@ -1,10 +1,5 @@
-import anndata as ad
-from io import StringIO
-import muon as mu
-import pandas as pd
 from mudata_explorer.base.view import View
 from streamlit.delta_generator import DeltaGenerator
-import streamlit as st
 
 
 class SummarizeMuData(View):
