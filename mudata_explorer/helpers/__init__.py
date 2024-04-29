@@ -43,3 +43,41 @@ def get_process_by_type(process_type: str) -> Process:
 def make_process(type: str, **kwargs) -> Process:
     proc = get_process_by_type(type)
     return proc(type=type, **kwargs)
+
+
+def asset_categories(list_of_assets):
+
+    all_categories = list(set([
+        category
+        for asset in list_of_assets
+        for category in asset.categories
+    ]))
+    all_categories.sort()
+    return all_categories
+
+
+def filter_by_category(list_of_assets, category):
+    return [
+        asset
+        for asset in list_of_assets
+        if category in asset.categories
+    ]
+
+
+def asset_name_list(list_of_assets):
+    return [view.name for view in list_of_assets]
+
+
+def asset_type_list(list_of_assets):
+    return [view.type for view in list_of_assets]
+
+
+def asset_desc_list(list_of_assets):
+    return [f"{asset.name}: {asset.desc}" for asset in list_of_assets]
+
+
+def asset_type_desc_lists(list_of_assets):
+    return (
+        asset_type_list(list_of_assets),
+        asset_desc_list(list_of_assets)
+    )

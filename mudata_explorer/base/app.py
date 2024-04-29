@@ -7,6 +7,8 @@ from mudata_explorer.base.add_data import AddData
 from mudata_explorer.base.save_load import SaveLoad
 from mudata_explorer.helpers import all_views, get_view_by_type, make_view
 from mudata_explorer.helpers import all_processes, get_process_by_type
+from mudata_explorer.helpers import asset_categories, asset_type_desc_lists
+from mudata_explorer.helpers import filter_by_category
 
 
 class App(MuDataAppHelpers):
@@ -122,6 +124,39 @@ class App(MuDataAppHelpers):
         # Let the user add a new view
         self.button_add_view(plots_cont)
 
+    def button_add_view(self, container: DeltaGenerator):
+
+        # Let the user select the type of view to add
+        all_categories = asset_categories(all_views)
+
+        selected_category = container.selectbox(
+            "Select a category",
+            all_categories,
+            key=f"select-category-{self.refresh_ix('views')}"
+        )
+
+        # Let the user select which view to add, filtering by category
+        filtered_views = filter_by_category(all_views, selected_category)
+
+        # Get the assets needed to select from the filtered views
+        type_list, desc_list = asset_type_desc_lists(filtered_views)
+
+        selected_desc = container.selectbox(
+            "Select a view to add",
+            desc_list,
+            key=f"select-view-{self.refresh_ix('views')}"
+        )
+        selected_type = type_list[desc_list.index(selected_desc)]
+
+        # Instantiate the selected view type if the user clicks a button
+        container.button(
+            f"Add {selected_desc}",
+            key=f"add-view-button-{self.refresh_ix('views')}",
+            on_click=self.add_view,
+            args=(selected_type,),
+            use_container_width=True
+        )
+
     def show_process(self):
 
         self.refresh_ix_increment("process")
@@ -230,20 +265,6 @@ class App(MuDataAppHelpers):
         views.pop(ix)
         self.set_views(views)
         self.show_views()
-
-    def button_add_view(self, container: DeltaGenerator):
-        container.write("#### Available Options")
-        for ix, view in enumerate(all_views):
-            cols = container.columns([1, 5])
-            cols[1].write(f"**{view.name}**\n\n{view.desc}")
-            cols[0].button(
-                "Add",
-                help=view.desc,
-                key=f"add-view-button-{ix}-{self.refresh_ix('views')}",
-                on_click=self.add_view,
-                args=(view.type,),
-                use_container_width=True
-            )
 
     def add_view(self, view_type: str):
         if self.get_mdata() is None:
