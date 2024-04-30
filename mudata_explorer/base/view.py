@@ -73,7 +73,7 @@ class View(MuDataAppHelpers):
             on_change=self.input_value_change,
             args=(kw,)
         )
-    
+
     def input_value_change(self, kw):
         # Get the value provided by the user
         value = st.session_state[self.param_key(kw)]

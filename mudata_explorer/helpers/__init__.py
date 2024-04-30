@@ -42,7 +42,7 @@ def get_process_by_type(process_type: str) -> Process:
 
 def make_process(type: str, **kwargs) -> Process:
     proc = get_process_by_type(type)
-    return proc(type=type, **kwargs)
+    return proc(**kwargs)
 
 
 def asset_categories(list_of_assets):

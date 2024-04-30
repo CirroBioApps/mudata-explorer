@@ -16,6 +16,7 @@ def setup_pages():
     st.sidebar.page_link("pages/processes.py", label="Process")
     st.sidebar.page_link("pages/add_data.py", label="Add Data")
     st.sidebar.page_link("pages/save_load.py", label="Save/Load")
+    st.sidebar.page_link("pages/history.py", label="History")
     st.sidebar.page_link("pages/settings.py", label="Settings")
 
 
@@ -94,10 +95,32 @@ def set_views(views):
 
 
 def get_settings() -> dict:
-    return get_mdata().uns.get("mudata-explorer-settings", {})
+    settings = get_mdata().uns.get("mudata-explorer-settings", {})
+    for kw, val in dict(
+        editable=True
+    ).items():
+        if kw not in settings:
+            settings[kw] = val
+    return settings
 
 
-def set_settings(settings):
+def set_settings(settings: dict):
     mdata = get_mdata()
     mdata.uns["mudata-explorer-settings"] = settings
     set_mdata(mdata)
+
+
+def get_history() -> List[str]:
+    return get_mdata().uns.get("mudata-explorer-history", {})
+
+
+def set_history(history: List[str]):
+    mdata = get_mdata()
+    mdata.uns["mudata-explorer-history"] = history
+    set_mdata(mdata)
+
+
+def add_history(news: List[str]):
+    history = get_history()
+    history.extend(news)
+    set_history(history)
