@@ -8,36 +8,46 @@ class View(MuDataAppHelpers):
 
     ix: int
     type: str
+    editable: bool
     params: dict
     name: str
     desc: str
     categories: List[str]
-    logs: List[str] = []
     params: dict = {}
     defaults: dict = {}
+    view_container: DeltaGenerator
+    inputs_container: DeltaGenerator
 
     def __init__(
         self,
         ix: int,
         type: str,
+        editable: bool,
         name: str,
         desc: str,
-        logs: List[str],
-        params: dict,
-        on_change: callable,
-        refresh: callable
+        params: dict
     ):
         self.ix = ix
         self.type = type
+        self.editable = editable
         self.name = name
         self.desc = desc
-        self.logs = logs
         self.params = {
             kw: params.get(kw, val)
             for kw, val in self.defaults.items()
         }
-        self.on_change = on_change
-        self.refresh = refresh
+
+    def attach(self, container: DeltaGenerator):
+
+        # Set up a container for the view
+        self.view_container = container.container()
+
+        if self.editable:
+            # Set up an expander element for the parameters
+            self.inputs_container = container.expander("Edit Settings")
+
+        # Now make the display
+        self.display(self.view_container)
 
     @classmethod
     def template(cls):
@@ -45,55 +55,41 @@ class View(MuDataAppHelpers):
             type=cls.type,
             name=cls.name,
             desc=cls.desc,
-            logs=cls.logs,
             params=cls.params
         )
 
-    def display(self, container: DeltaGenerator):
+    def display(self):
         """Primary method which is executed to render the view."""
         pass
 
-    def inputs(self, form: DeltaGenerator):
-        """Render any input elements needed for this view within a form."""
-        pass
+    def param_key(self, kw):
+        return f"view-{self.ix}-{kw}"
 
-    def process(self):
-        pass
-
-    @property
-    def refresh_ix(self):
-        super().refresh_ix("view")
-
-    @property
-    def key_prefix(self):
-        return f"view-{self.ix}-{self.refresh_ix}-"
-
-    def param_key(self, key: str):
-        return f"{self.key_prefix}{key}"
-
-    def param_kwargs(self, key: str, incl_value=True):
-        kwargs = dict(
-            key=self.param_key(key),
-            on_change=self.on_change,
-            args=(self, key,)
+    def input_value_kwargs(self, kw):
+        """Each input value element will be populated with default kwargs."""
+        return dict(
+            value=self.params[kw],
+            key=self.param_key(kw),
+            on_change=self.input_value_change,
+            args=(kw,)
         )
-        if incl_value:
-            kwargs["value"] = self.params.get(key, self.defaults[key])
-        return kwargs
+    
+    def input_value_change(self, kw):
+        # Get the value provided by the user
+        value = st.session_state[self.param_key(kw)]
 
-    def clear_params(self):
-        """Delete any param from the session state which would conflict."""
-        to_delete = [
-            key
-            for key in st.session_state.keys()
-            if key.startswith(self.key_prefix)
-        ]
-        for key in to_delete:
-            del st.session_state[key]
+        # If this is different than the params
+        if value != self.params[kw]:
 
-    def get_params(self):
+            # Update the view in the mdata object
+            self.update_view_param(kw, value)
 
-        return {
-            kw: st.session_state.get(self.param_key(kw), val)
-            for kw, val in self.defaults.items()
-        }
+    def update_view_param(self, kw, value):
+        # Get the MuData object
+        mdata = self.get_mdata()
+
+        # Modify the value of this param for this view
+        mdata.uns["mudata-explorer-views"][self.ix]["params"][kw] = value
+
+        # Save the MuData object
+        self.set_mdata(mdata)

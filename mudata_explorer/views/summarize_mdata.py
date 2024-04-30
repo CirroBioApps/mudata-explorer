@@ -14,7 +14,11 @@ class SummarizeMuData(View):
 
         mdata = self.get_mdata()
 
-        if mdata is None or mdata.shape[0] == 0:
+        if (
+            mdata is None or
+            mdata.shape[0] == 0 or
+            (mdata.shape[0] == 1 and len(mdata.mod) == 1 and "_blank" in mdata.mod)
+        ):
             container.write("No MuData object available.")
             return
 

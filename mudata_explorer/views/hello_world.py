@@ -11,15 +11,11 @@ class HelloWorld(View):
     defaults = {"name": "World"}
 
     def display(self, container: DeltaGenerator):
-        params = {
-            kw: self.params.get(kw, val)
-            for kw, val in self.defaults.items()
-        }
-        container.write(f"Hello, {params['name']}!")
+        if self.editable:
+            self.params["name"] = self.inputs_container.text_input(
+                "Name",
+                help="Enter your name here.",
+                **self.input_value_kwargs("name")
+            )
 
-    def inputs(self, form: DeltaGenerator):
-        form.text_input(
-            "Name",
-            help="Enter your name here.",
-            **self.param_kwargs("name")
-        )
+        container.write(f"Hello, {self.params['name']}!")
