@@ -7,7 +7,11 @@ from streamlit.delta_generator import DeltaGenerator
 import streamlit as st
 
 
-def sanitize_types(df: pd.DataFrame, container: DeltaGenerator, keep_str=False):
+def sanitize_types(
+    df: pd.DataFrame,
+    container: DeltaGenerator,
+    keep_str=False
+):
     # Convert every column to the type of the first non-null value
     to_drop = []
     for cname in df.columns:
@@ -20,7 +24,9 @@ def sanitize_types(df: pd.DataFrame, container: DeltaGenerator, keep_str=False):
                     to_drop.append(cname)
             else:
                 try:
-                    df[cname] = df[cname].apply(type(df[cname].dropna().values[0]))
+                    df[cname] = df[cname].apply(
+                        type(df[cname].dropna().values[0])
+                    )
                 except Exception:
                     to_drop.append(cname)
         elif df[cname].dtype == str:
@@ -105,7 +111,8 @@ if __name__ == "__main__":
     app.setup_pages()
 
     container = st.container()
-    app.summarize_mdata(container)
+
+    container.write("#### Add Data")
 
     # Get input from the user
     obs_file = container.file_uploader(
@@ -150,8 +157,23 @@ if __name__ == "__main__":
 
         if len(overlap) > 0:
 
-            container.button(
+            # Figure out if all of the columns should be added
+            if container.checkbox("Use all columns", value=True):
+                columns = mod.columns.values
+            else:
+                columns = container.multiselect(
+                    "Select columns",
+                    mod.columns.values,
+                    default=mod.columns.values
+                )
+
+            if container.button(
                 "Add to MuData",
                 on_click=add_mudata,
-                args=(obs, mod, mod_name)
-            )
+                args=(
+                    obs,
+                    mod.reindex(columns=columns),
+                    mod_name
+                )
+            ):
+                container.write("Data added to MuData.")

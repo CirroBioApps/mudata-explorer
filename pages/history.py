@@ -1,5 +1,11 @@
+import json
 from mudata_explorer import app
 import streamlit as st
+
+
+def print_history(history, container):
+    container.write(json.dumps(history, indent=4))
+
 
 if __name__ == "__main__":
 
@@ -15,4 +21,4 @@ if __name__ == "__main__":
         container.write("No history to display.")
 
     else:
-        container.write("\n\n".join(history))
+        print_history(history, container)

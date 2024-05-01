@@ -10,7 +10,7 @@ def make_views(editable: bool):
     if app.get_mdata() is None:
         return []
     views = app.get_mdata().uns.get("mudata-explorer-views", [])
-    assert isinstance(views, list)
+    assert isinstance(views, list), type(views)
     return [
         make_view(
             ix=ix,
@@ -53,8 +53,6 @@ def edit_view(container: DeltaGenerator, ix: int, n_views: int):
 
 
 def button_add_view(container: DeltaGenerator):
-
-    container.write("#### Add a new view")
 
     # Let the user select the type of view to add
     all_categories = asset_categories(all_views)
@@ -136,5 +134,14 @@ if __name__ == "__main__":
             container.markdown("---")
 
     if settings["editable"]:
-        # Let the user add a new view
-        button_add_view(container)
+
+        container.write("#### Add a new view")
+
+        # If there is data
+        if app.get_mdata() is not None:
+            # Let the user add a new view
+            button_add_view(container)
+
+        # Otherwise, advise the user to add some data
+        else:
+            container.write("Add data to get started.")

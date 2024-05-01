@@ -1,10 +1,10 @@
+import json
 import pandas as pd
 import umap
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 from mudata_explorer import app
 from mudata_explorer.base.process import Process
-from muon import MuData
 
 
 class UMAP(Process):
@@ -36,13 +36,14 @@ class UMAP(Process):
             return
 
         # Let the user select the columns to use
+        all_columns = list(df.columns.values)
         if container.checkbox("Use all columns", value=True):
-            columns = df.columns.values
+            columns = all_columns
         else:
             columns = container.multiselect(
                 "Select columns",
-                df.columns.values,
-                default=df.columns.values
+                all_columns,
+                default=all_columns
             )
 
         if len(columns) == 0:
@@ -75,6 +76,9 @@ class UMAP(Process):
                 f"Filtered data: {df.shape[0]:,} rows x {df.shape[1]:,} columns."
             )
 
+        if df.shape[0] == 0:
+            return
+
         n_neighbors = container.number_input(
             "UMAP: Number of neighbors",
             value=15
@@ -93,34 +97,56 @@ class UMAP(Process):
             "UMAP Key",
             value="X_umap"
         )
+        # If the key already exists
+        if umap_key in mdata.mod[modality].obsm.keys():
+            provenance = app.query_provenance(modality, "obsm", umap_key)
+            if provenance is not None:
+                container.write(json.dumps(provenance, indent=4))
+            else:
+                container.write(
+                    f"Warning: overwriting existing key '{umap_key}'."
+                )
 
         # If the user clicks a button
         if container.button("Run UMAP"):
 
-            # Run UMAP
-            umap_df = run_umap(
-                df[columns],
+            params = dict(
                 n_neighbors=n_neighbors,
                 min_dist=min_dist,
                 metric=metric
             )
 
+            # Run UMAP
+            umap_df = run_umap(
+                df[columns],
+                **params
+            )
+
+            # Add the complete set of params
+            params["umap_key"] = umap_key
+            params["modality"] = modality
+            params["columns"] = columns
+
             # Add the UMAP coordinates to the obsm slot
             mdata.mod[modality].obsm[umap_key] = umap_df
 
-            # Add to the history
-            mdata.uns["mudata-explorer-history"] = mdata.uns.get("mudata-explorer-history", [])
-            mdata.uns["mudata-explorer-history"].extend([
-                f"Date: {pd.Timestamp.now()}",
-                " - Process: UMAP",
-                " - Modality: " + modality,
-                " - Columns: " + ", ".join(columns),
-                " - UMAP Key: " + umap_key,
-                " - Number of neighbors: " + str(n_neighbors),
-                " - Minimum distance: " + str(min_dist),
-                " - Metric: " + metric,
-                " --- "
-            ])
+            # Make a record of the process
+            event = dict(
+                process=self.type,
+                params=params,
+                timestamp=pd.Timestamp.now(),
+                updated_keys=umap_key
+            )
+
+            # Add it to the history
+            app.add_history(event, mdata)
+
+            # Mark the source of the table which was added
+            app.add_provenance(
+                umap_key,
+                event,
+                mdata
+            )
 
             # Update the MuData object
             app.set_mdata(mdata)

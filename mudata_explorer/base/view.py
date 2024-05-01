@@ -9,7 +9,6 @@ class View(MuDataAppHelpers):
     ix: int
     type: str
     editable: bool
-    params: dict
     name: str
     desc: str
     categories: List[str]
@@ -69,6 +68,23 @@ class View(MuDataAppHelpers):
         """Each input value element will be populated with default kwargs."""
         return dict(
             value=self.params[kw],
+            key=self.param_key(kw),
+            on_change=self.input_value_change,
+            args=(kw,)
+        )
+
+    def input_selectbox_kwargs(self, kw, options: list):
+        """Populate the selectbox element with default kwargs."""
+        if self.params[kw] not in options:
+            index = 0
+        else:
+            index = options.index(self.params[kw])
+
+        if self.params[kw] != options[index]:
+            self.update_view_param(kw, options[index])
+
+        return dict(
+            index=index,
             key=self.param_key(kw),
             on_change=self.input_value_change,
             args=(kw,)

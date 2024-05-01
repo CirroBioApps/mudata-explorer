@@ -26,3 +26,7 @@ class SummarizeMuData(View):
         container.write(f"{mdata.obs.shape[1]:,} metadata annotations")
         for key, adata in mdata.mod.items():
             container.write(f" - {key}: {adata.shape[1]:,} measurements")
+            for kw in adata.obsm.keys():
+                container.write(f"   - obsm[{kw}]: {adata.obsm[kw].shape[1]:,} observations")
+            for kw in adata.varm.keys():
+                container.write(f"   - varm[{kw}]: {adata.varm[kw].shape[1]:,} observations")
