@@ -72,7 +72,8 @@ class Plotly(View):
             container.write(f"No data available for {self.params['modality']}.")
             return
 
-        container.write("#### Coordinates")
+        if settings["editable"]:
+            container.write("#### Coordinates")
 
         # Column selection options
         cols = list(df.columns.values)
@@ -100,8 +101,8 @@ class Plotly(View):
                 )
 
         # Color options
-        container.write("#### Color options")
         if settings["editable"] and "color" in keys:
+            container.write("#### Color options")
             if container.checkbox(
                 "Use color",
                 **self.input_value_kwargs("use_color")
@@ -123,8 +124,8 @@ class Plotly(View):
                 self.update_view_param("color", None)
 
         # Size selection options
-        container.write("#### Size options")
         if settings["editable"] and "size" in keys:
+            container.write("#### Size options")
             if container.checkbox(
                 "Use size",
                 **self.input_value_kwargs("use_size")
