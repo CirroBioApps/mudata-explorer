@@ -83,7 +83,7 @@ def set_mdata(
 
     Optional Args:
 
-        timestamp = str e.g. str(pd.Timestamp.now())
+        timestamp = str e.g. app.get_timestamp()
         process = str
         params = dict
         updated_keys = List[str] e.g. ["rna.X", "rna.obs", "rna.var"]
@@ -348,3 +348,6 @@ def make_modality_df(mdata: mu.MuData, mod_name: str) -> pd.DataFrame:
     df = pd.concat(all_dfs.values(), axis=1)
 
     return df
+
+def get_timestamp():
+    return str(pd.Timestamp.now())
