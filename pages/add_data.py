@@ -70,6 +70,9 @@ def read_table(file, container: DeltaGenerator):
         container.error("The first column must have unique values.")
         return
 
+    # Set the first column as the index
+    df = df.set_index(df.columns[0])
+
     # Return the data
     return df
 
