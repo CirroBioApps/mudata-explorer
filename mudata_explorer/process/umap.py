@@ -97,15 +97,6 @@ class UMAP(Process):
             "UMAP Key",
             value="X_umap"
         )
-        # If the key already exists
-        if umap_key in mdata.mod[modality].obsm.keys():
-            provenance = app.query_provenance(modality, "obsm", umap_key)
-            if provenance is not None:
-                container.write(json.dumps(provenance, indent=4))
-            else:
-                container.write(
-                    f"Warning: overwriting existing key '{umap_key}'."
-                )
 
         # If the user clicks a button
         if container.button("Run UMAP"):
@@ -143,6 +134,8 @@ class UMAP(Process):
 
             # Mark the source of the table which was added
             app.add_provenance(
+                modality,
+                "obsm",
                 umap_key,
                 event,
                 mdata
@@ -151,6 +144,15 @@ class UMAP(Process):
             # Update the MuData object
             app.set_mdata(mdata)
 
+        # If the key already exists
+        if umap_key in mdata.mod[modality].obsm.keys():
+            prov = app.query_provenance(modality, "obsm", umap_key)
+            if prov is not None:
+                container.write(f"**Data currently in '{umap_key}'**")
+                container.write(prov)
+                container.write(
+                    f"> 'Run' will overwrite existing data in '{umap_key}'."
+                )
 
 @st.cache_data
 def run_umap(df: pd.DataFrame, **kwargs) -> pd.DataFrame:

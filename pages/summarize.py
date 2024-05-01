@@ -39,7 +39,7 @@ def display_table(container: DeltaGenerator):
     mdata = app.get_mdata()
     if mdata is None or len(mdata.mod) == 1 and "_blank" in mdata.mod:
         return
-    
+
     container.write("#### Display Table")
 
     # Select the modality to display

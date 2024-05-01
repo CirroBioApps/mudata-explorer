@@ -131,7 +131,12 @@ def setup_mdata():
 
 
 def format_provenance_key(mod_name: str, slot: str, kw: str):
-    return f"{mod_name}.{slot}[{kw}]"
+    assert isinstance(mod_name, str), mod_name
+    assert isinstance(slot, str), slot
+    if kw is None:
+        return f"{mod_name}.{slot}"
+    else:
+        return f"{mod_name}.{slot}[{kw}]"
 
 
 def validate_json(dat):
@@ -274,9 +279,16 @@ def set_provenance(provenance: dict, mdata: Union[None, mu.MuData] = None):
     set_mdata(mdata)
 
 
-def add_provenance(kw: str, event: dict, mdata: Union[None, mu.MuData] = None):
+def add_provenance(
+    mod_name: str,
+    slot: str,
+    kw: Union[str, None],
+    event: dict,
+    mdata: Union[None, mu.MuData] = None
+):
     provenance = get_provenance(mdata)
-    provenance[kw] = event
+    provenance_key = format_provenance_key(mod_name, slot, kw)
+    provenance[provenance_key] = event
     set_provenance(provenance)
 
 
