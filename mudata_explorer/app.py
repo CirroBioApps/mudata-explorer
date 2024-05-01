@@ -3,6 +3,7 @@ import hashlib
 import json
 import muon as mu
 import numpy as np
+import pandas as pd
 import streamlit as st
 from tempfile import NamedTemporaryFile
 from typing import Any, List, Union, Dict
@@ -82,7 +83,7 @@ def set_mdata(
 
     Optional Args:
 
-        timestamp = str e.g. pd.Timestamp.now()
+        timestamp = str e.g. str(pd.Timestamp.now())
         process = str
         params = dict
         updated_keys = List[str] e.g. ["rna.X", "rna.obs", "rna.var"]
@@ -133,6 +134,11 @@ def format_provenance_key(mod_name: str, slot: str, kw: str):
     return f"{mod_name}.{slot}[{kw}]"
 
 
+def validate_json(dat):
+    """Validate that an object can be serialized to JSON"""
+    return json.loads(json.dumps(dat, sort_keys=True))
+
+
 def delete_view(ix: int):
     views = get_views()
     views.pop(ix)
@@ -158,6 +164,10 @@ def get_views() -> List[dict]:
 
 def set_views(views):
     mdata = get_mdata()
+
+    # Make sure that the data is JSON serializable
+    views = validate_json(views)
+
     mdata.uns["mudata-explorer-views"] = views
     set_mdata(mdata)
 
@@ -185,6 +195,10 @@ def set_settings(settings: dict, mdata: Union[None, mu.MuData] = None):
         mdata = get_mdata()
     if mdata is None:
         return
+    
+    # Make sure that the data is JSON serializable
+    settings = validate_json(settings)
+
     mdata.uns["mudata-explorer-settings"] = settings
     if update_session_state:
         set_mdata(mdata)
@@ -210,6 +224,9 @@ def set_history(history: dict, mdata: Union[None, mu.MuData] = None):
     if mdata is None:
         mdata = get_mdata()
     assert isinstance(mdata, mu.MuData)
+
+    # Make sure that the data is JSON serializable
+    history = validate_json(history)
 
     mdata.uns["mudata-explorer-history"] = history
     set_mdata(mdata)
@@ -250,6 +267,9 @@ def set_provenance(provenance: dict, mdata: Union[None, mu.MuData] = None):
         mdata = get_mdata()
     assert isinstance(mdata, mu.MuData)
 
+    # Make sure that the data is JSON serializable
+    provenance = validate_json(provenance)
+
     mdata.uns["mudata-explorer-provenance"] = provenance
     set_mdata(mdata)
 
@@ -277,3 +297,33 @@ def dehydrate_uns(mdata: mu.MuData):
             if not isinstance(mdata.uns[kw], str):
                 mdata.uns[kw] = json.dumps(mdata.uns[kw], sort_keys=True)
 
+
+def make_modality_df(mdata: mu.MuData, mod_name: str) -> pd.DataFrame:
+    """
+    Make a single DataFrame which combines information from the modality.
+    If there are any conflicting column names, they will be suffixed with
+    the slot they came from.
+    """
+    adata: ad.AnnData = mdata.mod[mod_name]
+
+    # Data from the X slot
+    df = adata.to_df()
+
+    # Add metadata
+    df = df.merge(
+        adata.obs,
+        left_index=True,
+        right_index=True,
+        suffixes=("_data", "_metadata")
+    )
+
+    # For each obsm slot
+    for kw, slot in adata.obsm.items():
+        df = df.merge(
+            pd.DataFrame(slot, index=adata.obs.index),
+            left_index=True,
+            right_index=True,
+            suffixes=("_data", f"_{kw}")
+        )
+
+    return df

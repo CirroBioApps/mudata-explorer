@@ -134,7 +134,7 @@ class UMAP(Process):
             event = dict(
                 process=self.type,
                 params=params,
-                timestamp=pd.Timestamp.now(),
+                timestamp=str(pd.Timestamp.now()),
                 updated_keys=umap_key
             )
 

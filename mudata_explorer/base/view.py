@@ -1,5 +1,6 @@
 import streamlit as st
 from typing import List
+from mudata_explorer import app
 from mudata_explorer.base.base import MuDataAppHelpers
 from streamlit.delta_generator import DeltaGenerator
 
@@ -102,10 +103,13 @@ class View(MuDataAppHelpers):
 
     def update_view_param(self, kw, value):
         # Get the MuData object
-        mdata = self.get_mdata()
+        mdata = app.get_mdata()
 
         # Modify the value of this param for this view
         mdata.uns["mudata-explorer-views"][self.ix]["params"][kw] = value
 
         # Save the MuData object
-        self.set_mdata(mdata)
+        app.set_mdata(mdata)
+
+        # Also update the params object
+        self.params[kw] = value
