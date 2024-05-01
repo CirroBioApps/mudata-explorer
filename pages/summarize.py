@@ -19,18 +19,29 @@ def summarize_mdata(container: DeltaGenerator):
         return
 
     provenance = app.get_provenance(mdata)
+
     for mod_name, mod in mdata.mod.items():
         shape = mod.to_df().shape
         container.write(f" - {mod_name} ({shape[0]:,} observations x {shape[1]:,} features)") # noqa
+        show_provenance(mod_name, "X", None, provenance, container)
 
         for slot in ["obsm", "obsp", "varm", "varp"]:
 
             for kw, df in getattr(mod, slot).items():
                 container.write(f"   - {slot}[{kw}]: {df.shape[1]:,} cols")
-                provenance_kw = app.format_provenance_key(mod_name, slot, kw)
-                if provenance_kw in provenance:
-                    event_str = json.dumps(provenance[provenance_kw])
-                    container.write("   - " + event_str)
+                show_provenance(mod_name, slot, kw, provenance, container)
+
+
+def show_provenance(
+    mod_name: str,
+    slot: str,
+    kw: str,
+    provenance: dict,
+    container: DeltaGenerator
+):
+    provenance_key = app.format_provenance_key(mod_name, slot, kw)
+    if provenance.get(provenance_key) is not None:
+        container.write(provenance.get(provenance_key))
 
 
 def display_table(container: DeltaGenerator):
@@ -68,8 +79,15 @@ def display_table(container: DeltaGenerator):
     else:
         attr, kw = table.split("[")
         kw = kw[:-1]
-        df = pd.DataFrame(getattr(adata, attr)[kw], index=adata.obs.index)
+        df = pd.DataFrame(getattr(adata, attr)[kw], index=adata.obs_names)
     container.dataframe(df)
+
+    container.download_button(
+        "Download table as CSV",
+        df.to_csv(),
+        f"{modality}_{table}.csv",
+        "text/csv",  # Add the MIME type for CSV
+    )
 
 
 if __name__ == "__main__":
