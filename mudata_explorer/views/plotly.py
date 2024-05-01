@@ -19,7 +19,9 @@ class Plotly(View):
         "query": "",
         "use_color": False,
         "color": None,
-        "color_continuous_scale": "blues"
+        "color_continuous_scale": "blues",
+        "use_size": False,
+        "size": None
     }
 
     def get_data(
@@ -70,6 +72,9 @@ class Plotly(View):
             container.write(f"No data available for {self.params['modality']}.")
             return
 
+        container.write("#### Coordinates")
+
+        # Column selection options
         cols = list(df.columns.values)
 
         all_params = [
@@ -94,6 +99,8 @@ class Plotly(View):
                     **self.input_selectbox_kwargs(kw, cols)
                 )
 
+        # Color options
+        container.write("#### Color options")
         if settings["editable"] and "color" in keys:
             if container.checkbox(
                 "Use color",
@@ -115,6 +122,19 @@ class Plotly(View):
             else:
                 self.update_view_param("color", None)
 
+        # Size selection options
+        container.write("#### Size options")
+        if settings["editable"] and "size" in keys:
+            if container.checkbox(
+                "Use size",
+                **self.input_value_kwargs("use_size")
+            ):
+                self.params["size"] = container.selectbox(
+                    "Select size",
+                    cols,
+                    **self.input_selectbox_kwargs("size", cols)
+                )
+
         return df
 
 
@@ -128,7 +148,7 @@ class PlotlyScatter(Plotly):
 
         data = self.get_data(
             container,
-            keys=["x", "y", "color"]
+            keys=["x", "y", "color", "size"]
         )
         if data is None:
             return
@@ -136,6 +156,8 @@ class PlotlyScatter(Plotly):
         cols = [self.params["x"], self.params["y"]]
         if self.params["color"] is not None:
             cols.append(self.params["color"])
+        if self.params["size"] is not None:
+            cols.append(self.params["size"])
 
         cols = list(set(cols))
 
@@ -146,7 +168,8 @@ class PlotlyScatter(Plotly):
             x=self.params["x"],
             y=self.params["y"],
             color=self.params["color"],
-            color_continuous_scale=self.params["color_continuous_scale"]
+            color_continuous_scale=self.params["color_continuous_scale"],
+            size=self.params["size"] if self.params["use_size"] else None
         )
 
         container.plotly_chart(fig)
@@ -162,7 +185,7 @@ class PlotlyScatter3D(Plotly):
 
         data = self.get_data(
             container,
-            keys=["x", "y", "z", "color"]
+            keys=["x", "y", "z", "color", "size"]
         )
         if data is None:
             return
@@ -170,6 +193,8 @@ class PlotlyScatter3D(Plotly):
         cols = [self.params["x"], self.params["y"], self.params["z"]]
         if self.params["color"] is not None:
             cols.append(self.params["color"])
+        if self.params["size"] is not None:
+            cols.append(self.params["size"])
 
         cols = list(set(cols))
 
@@ -181,7 +206,8 @@ class PlotlyScatter3D(Plotly):
             y=self.params["y"],
             z=self.params["z"],
             color=self.params["color"],
-            color_continuous_scale=self.params["color_continuous_scale"]
+            color_continuous_scale=self.params["color_continuous_scale"],
+            size=self.params["size"] if self.params["use_size"] else None
         )
 
         container.plotly_chart(fig)
