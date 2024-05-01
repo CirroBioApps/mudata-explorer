@@ -115,6 +115,8 @@ if __name__ == "__main__":
 
     container = st.container()
 
+    container.page_link("pages/summarize.py", label="**View Existing Data**")
+
     container.write("#### Add Data")
 
     # Get input from the user
@@ -179,4 +181,17 @@ if __name__ == "__main__":
                     mod_name
                 )
             ):
+                event = dict(
+                    action="add_mudata",
+                    mod_name=mod_name,
+                    timestamp=app.get_timestamp()
+                )
+                app.add_provenance(
+                    mod_name,
+                    "X",
+                    None,
+                    event
+                )
+                app.add_history(event)
                 container.write("Data added to MuData.")
+                container.write(event)
