@@ -1,10 +1,23 @@
 import json
+from typing import List
 from mudata_explorer import app
 import streamlit as st
+from streamlit.delta_generator import DeltaGenerator
 
 
-def print_history(history, container):
-    container.write(json.dumps(history, indent=4))
+def print_history(history: List[dict], container: DeltaGenerator):
+    for ix, event in enumerate(history):
+        if "timestamp" in event:
+            container.write(f"**{event['timestamp']}**")
+        if "process" in event:
+            container.write(f"- Ran: {event['process']}")
+        if "updated_keys" in event:
+            container.write(f"- Updated: {event['updated_keys']}")
+        if "params" in event:
+            for kw, val in event['params'].items():
+                container.write(f" - {kw}: {val}")
+        if ix < len(history) - 1:
+            container.write("---")
 
 
 if __name__ == "__main__":
