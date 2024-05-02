@@ -164,7 +164,8 @@ def get_views() -> List[dict]:
     mdata = get_mdata()
     if mdata is None:
         return []
-    return get_mdata().uns.get("mudata-explorer-views", [])
+    assert isinstance(mdata, mu.MuData), type(mdata)
+    return mdata.uns.get("mudata-explorer-views", [])
 
 
 def set_views(views):
@@ -177,9 +178,8 @@ def set_views(views):
     set_mdata(mdata)
 
 
-def get_settings(mdata: Union[None, mu.MuData] = None) -> dict:
-    if mdata is None:
-        mdata = get_mdata()
+def get_settings() -> dict:
+    mdata = get_mdata()
     if mdata is None:
         settings = {}
     else:
@@ -193,41 +193,37 @@ def get_settings(mdata: Union[None, mu.MuData] = None) -> dict:
     return settings
 
 
-def set_settings(settings: dict, mdata: Union[None, mu.MuData] = None):
+def set_settings(settings: dict):
     """If mdata is provided, the modification will happen in place"""
-    update_session_state = mdata is not None
-    if mdata is None:
-        mdata = get_mdata()
-    if mdata is None:
-        return
-    
+    mdata = get_mdata()
+    assert isinstance(mdata, mu.MuData), type(mdata)
+
     # Make sure that the data is JSON serializable
     settings = validate_json(settings)
 
     mdata.uns["mudata-explorer-settings"] = settings
-    if update_session_state:
-        set_mdata(mdata)
+    set_mdata(mdata)
 
 
-def add_setting(kw: str, val: Any, mdata: Union[None, mu.MuData] = None):
-    settings = get_settings(mdata)
+def add_setting(kw: str, val: Any):
+    settings = get_settings()
     settings[kw] = val
-    set_settings(settings, mdata)
+    set_settings(settings)
 
 
-def get_history(mdata: Union[None, mu.MuData] = None) -> List[dict]:
-    if mdata is None:
-        mdata = get_mdata()
+def get_history() -> List[dict]:
+    mdata = get_mdata()
 
     if mdata is None:
         return []
 
+    assert isinstance(mdata, mu.MuData), type(mdata)
+
     return mdata.uns.get("mudata-explorer-history", [])
 
 
-def set_history(history: dict, mdata: Union[None, mu.MuData] = None):
-    if mdata is None:
-        mdata = get_mdata()
+def set_history(history: dict):
+    mdata = get_mdata()
     assert isinstance(mdata, mu.MuData)
 
     # Make sure that the data is JSON serializable
@@ -237,21 +233,21 @@ def set_history(history: dict, mdata: Union[None, mu.MuData] = None):
     set_mdata(mdata)
 
 
-def add_history(event: dict, mdata: Union[None, mu.MuData] = None):
-    """If mdata is provided, the modification will happen in place"""
-    update_session_state = mdata is not None
-    history = get_history(mdata)
-    history.append(event)
-    if update_session_state:
-        set_history(history)
-
-
-def get_provenance(mdata: Union[None, mu.MuData] = None) -> Dict[str, dict]:
+def add_history(event: dict):
+    mdata = get_mdata()
     if mdata is None:
-        mdata = get_mdata()
+        return
+    history = get_history()
+    history.append(event)
+    set_history(history)
+
+
+def get_provenance() -> Dict[str, dict]:
+    mdata = get_mdata()
 
     if mdata is None:
         return {}
+    assert isinstance(mdata, mu.MuData), type(mdata)
 
     return mdata.uns.get("mudata-explorer-provenance", {})
 
@@ -259,18 +255,16 @@ def get_provenance(mdata: Union[None, mu.MuData] = None) -> Dict[str, dict]:
 def query_provenance(
     mod_name: str,
     slot: str,
-    kw: str,
-    mdata: Union[None, mu.MuData] = None
+    kw: str
 ) -> Union[None, dict]:
     key = format_provenance_key(mod_name, slot, kw)
-    provenance = get_provenance(mdata)
+    provenance = get_provenance()
     return provenance.get(key, None)
 
 
-def set_provenance(provenance: dict, mdata: Union[None, mu.MuData] = None):
-    if mdata is None:
-        mdata = get_mdata()
-    assert isinstance(mdata, mu.MuData)
+def set_provenance(provenance: dict):
+    mdata = get_mdata()
+    assert isinstance(mdata, mu.MuData), type(mdata)
 
     # Make sure that the data is JSON serializable
     provenance = validate_json(provenance)
@@ -283,10 +277,9 @@ def add_provenance(
     mod_name: str,
     slot: str,
     kw: Union[str, None],
-    event: dict,
-    mdata: Union[None, mu.MuData] = None
+    event: dict
 ):
-    provenance = get_provenance(mdata)
+    provenance = get_provenance()
     provenance_key = format_provenance_key(mod_name, slot, kw)
     provenance[provenance_key] = event
     set_provenance(provenance)
@@ -348,6 +341,7 @@ def make_modality_df(mdata: mu.MuData, mod_name: str) -> pd.DataFrame:
     df = pd.concat(all_dfs.values(), axis=1)
 
     return df
+
 
 def get_timestamp():
     return str(pd.Timestamp.now())

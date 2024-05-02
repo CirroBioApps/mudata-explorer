@@ -18,7 +18,7 @@ def summarize_mdata(container: DeltaGenerator):
         container.write("No data loaded.")
         return
 
-    provenance = app.get_provenance(mdata)
+    provenance = app.get_provenance()
 
     for mod_name, mod in mdata.mod.items():
         shape = mod.to_df().shape

@@ -1,3 +1,4 @@
+from copy import copy
 from mudata_explorer import app
 
 import anndata as ad
@@ -92,6 +93,7 @@ def add_mudata(obs: pd.DataFrame, mod: pd.DataFrame, mod_name: str):
 
     else:
 
+        uns = copy(mdata.uns)
         mdata = mu.MuData({
             **{
                 kw: adata
@@ -102,11 +104,25 @@ def add_mudata(obs: pd.DataFrame, mod: pd.DataFrame, mod_name: str):
                 mod_name: adata
             }
         })
-
-    mdata.uns["mudata-explorer-views"] = []
+        for kw, val in uns.items():
+            mdata.uns[kw] = val
 
     mdata.update_obs()
     app.set_mdata(mdata)
+
+    event = dict(
+        timestamp=app.get_timestamp(),
+        process="add_data",
+        params=dict(name=mod_name),
+        updated_keys=["X"]
+    )
+    app.add_provenance(
+        mod_name,
+        "X",
+        None,
+        event
+    )
+    app.add_history(event)
 
 
 if __name__ == "__main__":
@@ -115,7 +131,8 @@ if __name__ == "__main__":
 
     container = st.container()
 
-    container.page_link("pages/summarize.py", label="**View Existing Data**")
+    if app.get_mdata() is not None:
+        container.page_link("pages/summarize.py", label="**View Existing Data**")
 
     container.write("#### Add Data")
 
@@ -181,17 +198,4 @@ if __name__ == "__main__":
                     mod_name
                 )
             ):
-                event = dict(
-                    action="add_mudata",
-                    mod_name=mod_name,
-                    timestamp=app.get_timestamp()
-                )
-                app.add_provenance(
-                    mod_name,
-                    "X",
-                    None,
-                    event
-                )
-                app.add_history(event)
                 container.write("Data added to MuData.")
-                container.write(event)
