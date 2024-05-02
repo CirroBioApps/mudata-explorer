@@ -32,19 +32,14 @@ class RunPCA(Process):
         if container.button("Run PCA"):
 
             # Run PCA
-            pca_df = run_pca(
-                (
-                    df[columns].apply(zscore)
-                    if use_zscore
-                    else df[columns]
-                )
-            )
+            pca_df = run_pca(df)
 
             # Add the complete set of params
             params = dict(
                 dest_key=dest_key,
                 modality=modality,
                 columns=columns,
+                use_zscore=use_zscore
             )
 
             # Add the PCA coordinates to the obsm slot

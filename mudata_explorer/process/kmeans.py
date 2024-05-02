@@ -56,6 +56,7 @@ class RunKmeans(Process):
                 dest_key=dest_key,
                 modality=modality,
                 columns=columns,
+                use_zscore=use_zscore,
                 k=k
             )
 

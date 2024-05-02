@@ -59,6 +59,7 @@ class UMAP(Process):
             params["dest_key"] = dest_key
             params["modality"] = modality
             params["columns"] = columns
+            params["use_zscore"] = use_zscore
 
             # Add the UMAP coordinates to the obsm slot
             mdata.mod[modality].obsm[dest_key] = umap_df
