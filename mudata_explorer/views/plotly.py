@@ -1,5 +1,4 @@
-from typing import Tuple, Union
-import anndata as ad
+from typing import Union
 from mudata_explorer import app
 from mudata_explorer.base.view import View
 import pandas as pd
@@ -15,6 +14,9 @@ class Plotly(View):
         "x": None,
         "y": None,
         "z": None,
+        "log_x": False,
+        "log_y": False,
+        "log_z": False,
         "sort_by": None,
         "query": "",
         "use_color": False,
@@ -136,6 +138,28 @@ class Plotly(View):
                     **self.input_selectbox_kwargs("size", cols)
                 )
 
+        # Log scale options
+        if settings["editable"] and "log_x" in keys or "log_y" in keys:
+            container.write("#### Size options")
+
+        if settings["editable"] and "log_x" in keys:
+            self.params["log_x"] = container.checkbox(
+                "Log Scale - X Axis",
+                **self.input_value_kwargs("log_x")
+            )
+
+        if settings["editable"] and "log_y" in keys:
+            self.params["log_y"] = container.checkbox(
+                "Log Scale - Y Axis",
+                **self.input_value_kwargs("log_y")
+            )
+
+        if settings["editable"] and "log_z" in keys:
+            self.params["log_z"] = container.checkbox(
+                "Log Scale - Z Axis",
+                **self.input_value_kwargs("log_z")
+            )
+
         return df
 
 
@@ -149,7 +173,7 @@ class PlotlyScatter(Plotly):
 
         data = self.get_data(
             container,
-            keys=["x", "y", "color", "size"]
+            keys=["x", "y", "color", "size", "log_x", "log_y"]
         )
         if data is None:
             return
@@ -168,6 +192,8 @@ class PlotlyScatter(Plotly):
             data,
             x=self.params["x"],
             y=self.params["y"],
+            log_x=self.params["log_x"],
+            log_y=self.params["log_y"],
             color=self.params["color"],
             color_continuous_scale=self.params["color_continuous_scale"],
             size=self.params["size"] if self.params["use_size"] else None
@@ -186,7 +212,7 @@ class PlotlyScatter3D(Plotly):
 
         data = self.get_data(
             container,
-            keys=["x", "y", "z", "color", "size"]
+            keys=["x", "y", "z", "color", "size", "log_x", "log_y", "log_z"]
         )
         if data is None:
             return
@@ -206,6 +232,9 @@ class PlotlyScatter3D(Plotly):
             x=self.params["x"],
             y=self.params["y"],
             z=self.params["z"],
+            log_x=self.params["log_x"],
+            log_y=self.params["log_y"],
+            log_z=self.params["log_z"],
             color=self.params["color"],
             color_continuous_scale=self.params["color_continuous_scale"],
             size=self.params["size"] if self.params["use_size"] else None
@@ -224,7 +253,7 @@ class PlotlyLine(Plotly):
 
         data = self.get_data(
             container,
-            keys=["x", "y", "sort_by", "color"]
+            keys=["x", "y", "sort_by", "color", "log_x", "log_y"]
         )
         if data is None:
             return
@@ -242,7 +271,43 @@ class PlotlyLine(Plotly):
             data,
             x=self.params["x"],
             y=self.params["y"],
-            color=self.params["color"]
+            color=self.params["color"],
+            log_x=self.params["log_x"],
+            log_y=self.params["log_y"],
+        )
+
+        container.plotly_chart(fig)
+
+
+class PlotlyBox(Plotly):
+
+    type = "plotly-box"
+    name = "Box Plot (Plotly)"
+    desc = "Display a series of data as a box graph using Plotly."
+
+    def display(self, container: DeltaGenerator):
+
+        data = self.get_data(
+            container,
+            keys=["x", "y", "color", "log_y"]
+        )
+        if data is None:
+            return
+
+        cols = [self.params["x"], self.params["y"]]
+        if self.params["color"] is not None:
+            cols.append(self.params["color"])
+
+        cols = list(set(cols))
+
+        data = data.reindex(columns=cols).dropna()
+
+        fig = px.box(
+            data,
+            x=self.params["x"],
+            y=self.params["y"],
+            color=self.params["color"],
+            log_y=self.params["log_y"]
         )
 
         container.plotly_chart(fig)

@@ -44,7 +44,7 @@ class View(MuDataAppHelpers):
 
         if self.editable:
             # Set up an expander element for the parameters
-            self.inputs_container = container.expander("Edit Settings")
+            self.inputs_container = container.expander("Edit Position")
 
         # Now make the display
         self.display(self.view_container)
