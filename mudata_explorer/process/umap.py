@@ -1,4 +1,3 @@
-from scipy.stats import zscore
 import pandas as pd
 import umap
 import streamlit as st

@@ -1,6 +1,5 @@
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
-from scipy.stats import zscore
 import pandas as pd
 import plotly.express as px
 import streamlit as st
@@ -134,7 +133,10 @@ class RunKmeans(Process):
         fig = px.line(
             x=list(silhouette_scores.keys()),
             y=list(silhouette_scores.values()),
-            labels={"x": "Number of clusters", "y": "Silhouette score (1=best)"},
+            labels={
+                "x": "Number of clusters",
+                "y": "Silhouette score (1=best)"
+            },
             title="Evaluate Clustering Performance"
         )
         container.plotly_chart(fig)
