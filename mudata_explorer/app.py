@@ -20,6 +20,7 @@ def setup_pages():
     st.sidebar.page_link("pages/save_load.py", label="Save/Load")
     st.sidebar.page_link("pages/history.py", label="History")
     st.sidebar.page_link("pages/settings.py", label="Settings")
+    st.sidebar.page_link("pages/about.py", label="About")
 
 
 def mdata_to_binary(mdata: mu.MuData) -> bytes:

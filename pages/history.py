@@ -1,4 +1,3 @@
-import json
 from typing import List
 from mudata_explorer import app
 import streamlit as st
