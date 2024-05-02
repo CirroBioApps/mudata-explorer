@@ -1,5 +1,4 @@
 import anndata as ad
-import json
 import pandas as pd
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator

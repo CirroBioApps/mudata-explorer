@@ -1,17 +1,17 @@
+from sklearn.decomposition import PCA
 from scipy.stats import zscore
 import pandas as pd
-import umap
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 from mudata_explorer import app
 from mudata_explorer.base.process import Process
 
 
-class UMAP(Process):
+class RunPCA(Process):
 
-    type = "umap"
-    name = "UMAP"
-    desc = "Uniform Manifold Approximation and Projection (UMAP)"
+    type = "pca"
+    name = "PCA"
+    desc = "Principle Coordinates Analysis (PCA)"
     categories = ["Dimensionality Reduction"]
 
     def run(self, container: DeltaGenerator):
@@ -21,48 +21,34 @@ class UMAP(Process):
             return
         mdata, modality, df, columns, use_zscore = inputs
 
-        n_neighbors = container.number_input(
-            "UMAP: Number of neighbors",
-            value=15
-        )
-        min_dist = container.number_input(
-            "UMAP: Minimum distance",
-            value=0.1
-        )
-        metric = container.selectbox(
-            "UMAP: Metric",
-            ["cosine", "euclidean", "manhattan", "correlation", "jaccard"]
-        )
-
         # Set the name of the obsm slot to use for the UMAP coordinates
         dest_key = container.text_input(
             "Destination Key",
             help="The name of the table which will be used for the results.",
-            value="X_umap"
+            value="X_pca"
         )
 
         # If the user clicks a button
-        if container.button("Run UMAP"):
+        if container.button("Run PCA"):
 
-            params = dict(
-                n_neighbors=n_neighbors,
-                min_dist=min_dist,
-                metric=metric
-            )
-
-            # Run UMAP
-            umap_df = run_umap(
-                df,
-                **params
+            # Run PCA
+            pca_df = run_pca(
+                (
+                    df[columns].apply(zscore)
+                    if use_zscore
+                    else df[columns]
+                )
             )
 
             # Add the complete set of params
-            params["dest_key"] = dest_key
-            params["modality"] = modality
-            params["columns"] = columns
+            params = dict(
+                dest_key=dest_key,
+                modality=modality,
+                columns=columns,
+            )
 
-            # Add the UMAP coordinates to the obsm slot
-            mdata.mod[modality].obsm[dest_key] = umap_df
+            # Add the PCA coordinates to the obsm slot
+            mdata.mod[modality].obsm[dest_key] = pca_df
 
             # Make a record of the process
             event = dict(
@@ -98,10 +84,10 @@ class UMAP(Process):
 
 
 @st.cache_data
-def run_umap(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
-    reducer = umap.UMAP(**kwargs)
+def run_pca(df: pd.DataFrame) -> pd.DataFrame:
+    pca = PCA()
     return pd.DataFrame(
-        reducer.fit_transform(df),
+        pca.fit_transform(df),
         index=df.index,
-        columns=["UMAP1", "UMAP2"]
+        columns=[f"PC{i + 1}" for i in range(df.shape[1])]
     )
