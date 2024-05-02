@@ -239,7 +239,7 @@ def add_history(event: dict):
     if mdata is None:
         return
     history = get_history()
-    history.append(event)
+    history.insert(0, event)
     set_history(history)
 
 
