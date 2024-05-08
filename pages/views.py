@@ -1,3 +1,4 @@
+import json
 from mudata_explorer import app
 from mudata_explorer.helpers import all_views, make_view
 from mudata_explorer.helpers import asset_categories, asset_type_desc_lists
@@ -7,10 +8,16 @@ from streamlit.delta_generator import DeltaGenerator
 
 
 def make_views(editable: bool):
-    if app.get_mdata() is None:
+    mdata = app.get_mdata()
+    if mdata is None:
         return []
-    views = app.get_mdata().uns.get("mudata-explorer-views", [])
-    assert isinstance(views, list), type(views)
+    views = mdata.uns.get("mudata-explorer-views", [])
+    if isinstance(views, str):
+        views = json.loads(views)
+        assert isinstance(views, list), (type(views), views)
+        mdata.uns["mudata-explorer-views"] = views
+        app.set_mdata(mdata)
+    assert isinstance(views, list), (type(views), views)
     return [
         make_view(
             ix=ix,

@@ -40,7 +40,8 @@ def show_provenance(
 ):
     provenance_key = app.format_provenance_key(mod_name, slot, kw)
     if provenance.get(provenance_key) is not None:
-        container.write(provenance.get(provenance_key))
+        with container.expander("Show provenance"):
+            st.write(provenance.get(provenance_key))
 
 
 def display_table(container: DeltaGenerator):

@@ -5,22 +5,65 @@ import muon as mu
 import numpy as np
 import pandas as pd
 import streamlit as st
+from streamlit.delta_generator import DeltaGenerator
 from tempfile import NamedTemporaryFile
 from typing import Any, List, Union, Dict
 from mudata_explorer.helpers import get_view_by_type
 
 
+def page_links():
+    return [
+        ("summarize", "Summarize"),
+        ("views", "Views"),
+        ("processes", "Process Data"),
+        ("add_data", "Add Data"),
+        ("save_load", "Save/Load"),
+        ("history", "History"),
+        ("settings", "Settings"),
+        ("about", "About")
+    ]
+
+
 def setup_pages():
     st.set_page_config("MuData Explorer", layout="centered")
     st.sidebar.title("MuData Explorer")
-    st.sidebar.page_link("pages/summarize.py", label="Summarize")
-    st.sidebar.page_link("pages/views.py", label="Views")
-    st.sidebar.page_link("pages/processes.py", label="Process Data")
-    st.sidebar.page_link("pages/add_data.py", label="Add Data")
-    st.sidebar.page_link("pages/save_load.py", label="Save/Load")
-    st.sidebar.page_link("pages/history.py", label="History")
-    st.sidebar.page_link("pages/settings.py", label="Settings")
-    st.sidebar.page_link("pages/about.py", label="About")
+
+    for path, label in page_links():
+        st.sidebar.page_link(
+            f"pages/{path}.py",
+            label=label
+        )
+
+
+def landing_shortcuts():
+
+    show_shortcuts([
+        ("add_data", "Upload Tables (*.csv)"),
+        ("save_load", "Load Dataset (*.h5mu)"),
+        ("about", "About")
+    ])
+
+
+def show_shortcuts(
+    shortcuts: List[tuple],
+    ncol=3,
+    container: Union[None, DeltaGenerator] = None
+):
+    cols = None
+
+    for ix, (path, label) in enumerate(shortcuts):
+        if ix % ncol == 0:
+            cols = (
+                st.columns(ncol)
+                if container is None
+                else container.columns(ncol)
+            )
+
+        cols[ix % 3].page_link(
+            f"pages/{path}.py",
+            label=label,
+            use_container_width=True
+        )
 
 
 def mdata_to_binary(mdata: mu.MuData) -> bytes:
