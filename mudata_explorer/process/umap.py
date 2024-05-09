@@ -32,6 +32,13 @@ class UMAP(Process):
             "UMAP: Metric",
             ["cosine", "euclidean", "manhattan", "correlation", "jaccard"]
         )
+        n_components = container.number_input(
+            "UMAP: Number of Components",
+            value=2,
+            min_value=1,
+            step=1,
+            help="The number of dimensions to reduce the data to.",
+        )
 
         # Set the name of the obsm slot to use for the UMAP coordinates
         dest_key = container.text_input(
@@ -46,7 +53,8 @@ class UMAP(Process):
             params = dict(
                 n_neighbors=n_neighbors,
                 min_dist=min_dist,
-                metric=metric
+                metric=metric,
+                n_components=n_components
             )
 
             # Run UMAP
@@ -98,10 +106,10 @@ class UMAP(Process):
 
 
 @st.cache_data
-def run_umap(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
-    reducer = umap.UMAP(**kwargs)
+def run_umap(df: pd.DataFrame, n_components=2, **kwargs) -> pd.DataFrame:
+    reducer = umap.UMAP(n_components=n_components, **kwargs)
     return pd.DataFrame(
         reducer.fit_transform(df),
         index=df.index,
-        columns=["UMAP1", "UMAP2"]
+        columns=[f"UMAP-{i+1}" for i in range(n_components)]
     )

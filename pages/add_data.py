@@ -199,3 +199,11 @@ if __name__ == "__main__":
                 )
             ):
                 container.write("Data added to MuData.")
+                app.show_shortcuts(
+                    [
+                        ("summarize", ":book: Inspect Uploaded Data"),
+                        ("views", ":bar_chart: View Data"),
+                        ("processes", ":running: Run Processes")
+                    ],
+                    container=container
+                )

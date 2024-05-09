@@ -38,9 +38,9 @@ def setup_pages():
 def landing_shortcuts():
 
     show_shortcuts([
-        ("add_data", "Upload Tables (*.csv)"),
-        ("save_load", "Load Dataset (*.h5mu)"),
-        ("about", "About")
+        ("add_data", ":page_facing_up: Upload Tables (*.csv)"),
+        ("save_load", ":open_file_folder: Load Dataset (*.h5mu)"),
+        ("about", ":information_source: About")
     ])
 
 

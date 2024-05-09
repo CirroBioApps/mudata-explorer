@@ -25,9 +25,9 @@ def upload_button(container: DeltaGenerator):
     # Provide links to view the data, add more tables, or run processes
     app.show_shortcuts(
         [
-            ("views", "View Data"),
-            ("processes", "Run Processes"),
-            ("add_data", "Add Tables")
+            ("views", ":bar_chart: View Data"),
+            ("processes", ":running: Run Processes"),
+            ("add_data", ":page_facing_up: Add Tables")
         ],
         container=container
     )
