@@ -65,6 +65,11 @@ class View(MuDataAppHelpers):
                         make_kw(prefix, key, kw),
                         elem.get(kw, None)
                     )
+                if elem.get("select_columns", False):
+                    yield (
+                        make_kw(prefix, key, "selected_columns"),
+                        []
+                    )
                 for col_kw, col_elem in elem.get("columns", {}).items():
                     yield (
                         make_kw(prefix, key, col_kw),
@@ -140,6 +145,18 @@ class View(MuDataAppHelpers):
             args=(kw,)
         )
 
+    def input_multiselect_kwargs(self, kw):
+        """Populate the multiselect element with default kwargs."""
+
+        default = self.params[kw]
+
+        return dict(
+            key=self.param_key(kw),
+            default=default,
+            on_change=self.input_value_change,
+            args=(kw,)
+        )
+
     def input_value_change(self, kw):
         # Get the value provided by the user
         value = st.session_state[self.param_key(kw)]
@@ -200,10 +217,18 @@ class View(MuDataAppHelpers):
             elif elem["type"] == "string":
 
                 if settings["editable"]:
-                    self.params[prefix_key] = container.text_input(
-                        key if elem.get("label") is None else elem["label"],
-                        **self.input_value_kwargs(prefix_key)
-                    )
+                    if elem.get("enum") is not None:
+                        self.params[prefix_key] = container.selectbox(
+                            key if elem.get("label") is None else elem["label"],
+                            elem["enum"],
+                            **self.input_selectbox_kwargs(prefix_key, elem["enum"])
+                        )
+
+                    else:
+                        self.params[prefix_key] = container.text_input(
+                            key if elem.get("label") is None else elem["label"],
+                            **self.input_value_kwargs(prefix_key)
+                        )
 
             elif elem["type"] in ["number", "float"]:
 
@@ -289,6 +314,32 @@ class View(MuDataAppHelpers):
 
         # Default column selection options
         cols = list(df.columns.values)
+
+        # If the user wants to select columns
+        if elem.get("select_columns", False):
+
+            selected_cols_kw = make_kw(prefix, key, "selected_columns")
+
+            if settings["editable"]:
+
+                # Let the user select the columns to use
+                if container.checkbox("Use all columns", value=True):
+                    self.params[selected_cols_kw] = cols
+                    self.update_view_param(selected_cols_kw, cols)
+                else:
+                    self.params[selected_cols_kw] = container.multiselect(
+                        "Select columns",
+                        cols,
+                        **self.input_multiselect_kwargs(selected_cols_kw)
+                    )
+
+            if len(self.params[selected_cols_kw]) == 0:
+                container.write("No columns selected.")
+                return
+
+            # Subset the table to just the selected columns
+            cols = self.params[selected_cols_kw]
+            df = df.reindex(columns=cols)
 
         # Iterate over the columns in the schema
         for col_kw, col_elem in elem.get("columns", {}).items():
