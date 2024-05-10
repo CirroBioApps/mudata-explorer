@@ -8,14 +8,18 @@ class Markdown(View):
     name = "Markdown Text"
     desc = "Write any text using markdown syntax."
     categories = ["Narrative"]
-    defaults = {"text": ""}
+    schema = {
+        "text": {
+            "type": "string",
+            "label": "Text",
+            "value": "",
+            "help": "Use markdown syntax to write formatted text.",
+            "multiline": True,
+        }
+    }
 
     def display(self, container: DeltaGenerator):
-        if self.editable:
-            self.params["text"] = self.inputs_container.text_area(
-                "Markdown Text",
-                help="Use markdown syntax to write formatted text.",
-                **self.input_value_kwargs("text")
-            )
 
-        container.write(self.params['text'])
+        text = self.params.get('text')
+        if text is not None and len(text) > 0:
+            container.write(text)

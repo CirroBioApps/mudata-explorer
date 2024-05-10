@@ -211,6 +211,9 @@ class View(MuDataAppHelpers):
 
             elif elem["type"] == "object":
 
+                if "label" in elem and settings["editable"]:
+                    container.write(f"#### {elem['label']}")
+
                 self.render_form(
                     container,
                     elem["properties"],
@@ -225,6 +228,12 @@ class View(MuDataAppHelpers):
                             key if elem.get("label") is None else elem["label"],
                             elem["enum"],
                             **self.input_selectbox_kwargs(prefix_key, elem["enum"])
+                        )
+
+                    elif elem.get("multiline", False):
+                        self.params[prefix_key] = container.text_area(
+                            key if elem.get("label") is None else elem["label"],
+                            **self.input_value_kwargs(prefix_key)
                         )
 
                     else:
