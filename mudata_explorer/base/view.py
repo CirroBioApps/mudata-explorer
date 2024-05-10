@@ -97,8 +97,11 @@ class View(MuDataAppHelpers):
         self.view_container = container.container()
 
         if self.editable:
-            # Set up an expander element for the parameters
+            # Set up an expander element for up/down/delete buttons
             self.inputs_container = container.expander("Edit Position")
+
+        # Get the parameters from the user
+        self.get_data(self.view_container)
 
         # Now make the display, catching any errors
         try:
@@ -201,9 +204,6 @@ class View(MuDataAppHelpers):
         for key, elem in schema.items():
 
             prefix_key = join_prefix_key(prefix, key)
-
-            if "label" in elem and settings["editable"]:
-                container.write(f"#### {elem['label']}")
 
             if elem["type"] == "dataframe":
 

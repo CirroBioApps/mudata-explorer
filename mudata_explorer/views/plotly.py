@@ -47,10 +47,6 @@ class PlotlyScatter(Plotly):
 
     def display(self, container: DeltaGenerator):
 
-        # Parse information from the user,
-        # as defined by the form schema
-        self.get_data(container)
-
         data: pd.DataFrame = self.params["data.dataframe"]
 
         fig = px.scatter(
@@ -110,10 +106,6 @@ class PlotlyScatter3D(Plotly):
 
     def display(self, container: DeltaGenerator):
 
-        # Parse information from the user,
-        # as defined by the form schema
-        self.get_data(container)
-
         data: pd.DataFrame = self.params["data.dataframe"]
 
         fig = px.scatter_3d(
@@ -172,10 +164,6 @@ class PlotlyLine(Plotly):
         self,
         container: DeltaGenerator
     ):
-        # Parse information from the user,
-        # as defined by the form schema
-        self.get_data(container)
-
         data: pd.DataFrame = self.params["data.dataframe"]
         data = data.sort_values(self.params["data.sort_by"])
 
@@ -224,10 +212,6 @@ class PlotlyBox(Plotly):
     }
 
     def display(self, container: DeltaGenerator):
-
-        # Parse information from the user,
-        # as defined by the form schema
-        self.get_data(container)
 
         data: pd.DataFrame = self.params["data.dataframe"]
 

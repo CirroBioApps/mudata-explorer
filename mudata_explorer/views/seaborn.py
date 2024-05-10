@@ -31,10 +31,6 @@ class Clustermap(Seaborn):
 
     def display(self, container: DeltaGenerator):
 
-        # Parse information from the user,
-        # as defined by the form schema
-        self.get_data(container)
-
         data: pd.DataFrame = self.params.get("data.dataframe")
 
         if data is None:
