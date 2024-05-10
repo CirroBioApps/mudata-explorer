@@ -238,21 +238,17 @@ def get_settings() -> dict:
 
 
 def set_settings(settings: dict):
-    """If mdata is provided, the modification will happen in place"""
     mdata = get_mdata()
     assert isinstance(mdata, mu.MuData), type(mdata)
 
     # Make sure that the data is JSON serializable
     settings = validate_json(settings)
 
-    mdata.uns["mudata-explorer-settings"] = settings
-    set_mdata(mdata)
+    if json.dumps(settings) != json.dumps(get_settings()):
 
-
-def add_setting(kw: str, val: Any):
-    settings = get_settings()
-    settings[kw] = val
-    set_settings(settings)
+        mdata.uns["mudata-explorer-settings"] = settings
+        set_mdata(mdata)
+        st.experimental_rerun()
 
 
 def get_history() -> List[dict]:
