@@ -100,8 +100,11 @@ class View(MuDataAppHelpers):
             # Set up an expander element for the parameters
             self.inputs_container = container.expander("Edit Position")
 
-        # Now make the display
-        self.display(self.view_container)
+        # Now make the display, catching any errors
+        try:
+            self.display(self.view_container)
+        except Exception as e:
+            self.view_container.write(f"Error: {e}")
 
     @classmethod
     def template(cls):
