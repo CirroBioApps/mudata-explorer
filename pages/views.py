@@ -61,6 +61,8 @@ def edit_view(container: DeltaGenerator, ix: int, n_views: int):
 
 def button_add_view(container: DeltaGenerator):
 
+    container.write("#### Add a new view")
+
     # Let the user select the type of view to add
     all_categories = asset_categories(all_views)
 
@@ -140,15 +142,40 @@ if __name__ == "__main__":
             # Show a horizontal rule
             container.markdown("---")
 
-    if settings["editable"]:
+    # If there is data
+    if app.get_mdata() is not None:
 
-        container.write("#### Add a new view")
+        # Make some columns of buttons
+        cols = container.columns([1, 1])
 
-        # If there is data
-        if app.get_mdata() is not None:
+        # Link to the settings page
+        cols[0].page_link(
+            "pages/settings.py",
+            label=":gear: Settings",
+            use_container_width=True
+        )
+
+        # Let the user save a copy
+        # Get the current dataset along with its unique hash
+        dat, hash = app.get_dat_hash()
+        if dat is not None:
+
+            # Name the downloaded file for the hash of the data
+            cols[1].download_button(
+                ":page_facing_up: Save a snapshot",
+                dat,
+                f"mudata-{hash}.h5mu",
+                help="Click here to download the MuData object as a file."
+            )
+            container.write("---")
+
+
+        if settings["editable"]:
+
             # Let the user add a new view
             button_add_view(container)
 
-        # Otherwise, advise the user to add some data
-        else:
-            container.write("Add data to get started.")
+    # Otherwise, advise the user to add some data
+    else:
+        container.write("Add data to get started.")
+        app.landing_shortcuts()

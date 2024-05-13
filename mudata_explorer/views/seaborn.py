@@ -2,6 +2,7 @@ import pandas as pd
 from mudata_explorer.base.view import View
 import seaborn as sns
 from streamlit.delta_generator import DeltaGenerator
+from mudata_explorer import app
 
 
 class Seaborn(View):
@@ -33,12 +34,39 @@ class Clustermap(Seaborn):
 
         data: pd.DataFrame = self.params.get("data.dataframe")
 
+        # Get the global settings
+        settings = app.get_settings()
+
         if data is None:
             return
 
         if data.shape[1] < 2:
             container.write("Please select at least two columns")
             return
+
+        if self.params["z_score"] == "row":
+            drop_rows = [
+                obs for obs, vals in data.iterrows()
+                if vals.std() == 0
+            ]
+            if len(drop_rows) > 0:
+                if settings["editable"]:
+                    container.write(
+                        f"Dropping {len(drop_rows):,} rows with no variance."
+                    )
+                data = data.drop(drop_rows)
+
+        elif self.params["z_score"] == "column":
+            drop_cols = [
+                col for col, vals in data.items()
+                if vals.std() == 0
+            ]
+            if len(drop_cols) > 0:
+                if settings["editable"]:
+                    container.write(
+                        f"Dropping {len(drop_cols):,} columns with no variance."
+                    )
+                data = data.drop(drop_cols, axis=1)
 
         g = sns.clustermap(
             data,

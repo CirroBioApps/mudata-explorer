@@ -148,62 +148,65 @@ if __name__ == "__main__":
         value="Measurement",
         help="Enter the name of the measurement.",
     )
-
-    mod_file = container.file_uploader(
-        "Measurement Data (.X)",
-        help="Provide a CSV/TSV where the first column is a unique identifier for each observation.", # noqa
-    )
-    mod = read_table(mod_file, container)
-
-    if obs is None:
-        container.write("No metadata uploaded")
-
-    else:
-        obs = sanitize_types(obs, container, keep_str=True)
-        container.write(f"Metadata: {obs.shape[0]:,} rows x {obs.shape[1]:,} columns.") # noqa
-
-    if mod is None:
-        container.write("No measurement data uploaded.")
-
+    if "." in mod_name:
+        container.error("The measurement name cannot contain a period.")
     else:
 
-        mod = sanitize_types(mod, container)
-        container.write(f"{mod_name}: {mod.shape[0]:,} rows x {mod.shape[1]:,} columns.") # noqa
+        mod_file = container.file_uploader(
+            "Measurement Data (.X)",
+            help="Provide a CSV/TSV where the first column is a unique identifier for each observation.", # noqa
+        )
+        mod = read_table(mod_file, container)
 
-    if mod is not None and obs is not None:
+        if obs is None:
+            container.write("No metadata uploaded")
 
-        # Find the overlapping index labels between the two tables
-        overlap = set(obs.index).intersection(set(mod.index))
+        else:
+            obs = sanitize_types(obs, container, keep_str=True)
+            container.write(f"Metadata: {obs.shape[0]:,} rows x {obs.shape[1]:,} columns.") # noqa
 
-        container.write(f"No. of overlapping observations: {len(overlap):,}")
+        if mod is None:
+            container.write("No measurement data uploaded.")
 
-        if len(overlap) > 0:
+        else:
 
-            # Figure out if all of the columns should be added
-            if container.checkbox("Use all columns", value=True):
-                columns = mod.columns.values
-            else:
-                columns = container.multiselect(
-                    "Select columns",
-                    mod.columns.values,
-                    default=mod.columns.values
-                )
+            mod = sanitize_types(mod, container)
+            container.write(f"{mod_name}: {mod.shape[0]:,} rows x {mod.shape[1]:,} columns.") # noqa
 
-            if container.button(
-                "Add to MuData",
-                on_click=add_mudata,
-                args=(
-                    obs,
-                    mod.reindex(columns=columns),
-                    mod_name
-                )
-            ):
-                container.write("Data added to MuData.")
-                app.show_shortcuts(
-                    [
-                        ("summarize", ":book: Inspect Uploaded Data"),
-                        ("views", ":bar_chart: View Data"),
-                        ("processes", ":running: Run Processes")
-                    ],
-                    container=container
-                )
+        if mod is not None and obs is not None:
+
+            # Find the overlapping index labels between the two tables
+            overlap = set(obs.index).intersection(set(mod.index))
+
+            container.write(f"No. of overlapping observations: {len(overlap):,}")
+
+            if len(overlap) > 0:
+
+                # Figure out if all of the columns should be added
+                if container.checkbox("Use all columns", value=True):
+                    columns = mod.columns.values
+                else:
+                    columns = container.multiselect(
+                        "Select columns",
+                        mod.columns.values,
+                        default=mod.columns.values
+                    )
+
+                if container.button(
+                    "Add to MuData",
+                    on_click=add_mudata,
+                    args=(
+                        obs,
+                        mod.reindex(columns=columns),
+                        mod_name
+                    )
+                ):
+                    container.write("Data added to MuData.")
+                    app.show_shortcuts(
+                        [
+                            ("summarize", ":book: Inspect Uploaded Data"),
+                            ("views", ":bar_chart: View Data"),
+                            ("processes", ":running: Run Processes")
+                        ],
+                        container=container
+                    )

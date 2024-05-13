@@ -3,6 +3,7 @@ import pandas as pd
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 from mudata_explorer import app
+from mudata_explorer.helpers import join_kws
 
 
 def summarize_mdata(container: DeltaGenerator):
@@ -38,7 +39,7 @@ def show_provenance(
     provenance: dict,
     container: DeltaGenerator
 ):
-    provenance_key = app.format_provenance_key(mod_name, slot, kw)
+    provenance_key = join_kws(mod_name, slot, kw)
     if provenance.get(provenance_key) is not None:
         with container.expander("Show provenance"):
             st.write(provenance.get(provenance_key))

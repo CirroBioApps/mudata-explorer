@@ -9,6 +9,7 @@ from streamlit.delta_generator import DeltaGenerator
 from tempfile import NamedTemporaryFile
 from typing import Any, List, Union, Dict
 from mudata_explorer.helpers import get_view_by_type
+from mudata_explorer.helpers.join_kws import join_kws
 
 
 def page_links():
@@ -174,15 +175,6 @@ def setup_mdata():
     set_mdata(mdata)
 
 
-def format_provenance_key(mod_name: str, slot: str, kw: str):
-    assert isinstance(mod_name, str), mod_name
-    assert isinstance(slot, str), slot
-    if kw is None:
-        return f"{mod_name}.{slot}"
-    else:
-        return f"{mod_name}.{slot}[{kw}]"
-
-
 def validate_json(dat):
     """Validate that an object can be serialized to JSON"""
     return json.loads(json.dumps(dat, sort_keys=True))
@@ -297,7 +289,7 @@ def query_provenance(
     slot: str,
     kw: str
 ) -> Union[None, dict]:
-    key = format_provenance_key(mod_name, slot, kw)
+    key = join_kws(mod_name, slot, kw)
     provenance = get_provenance()
     return provenance.get(key, None)
 
@@ -320,7 +312,7 @@ def add_provenance(
     event: dict
 ):
     provenance = get_provenance()
-    provenance_key = format_provenance_key(mod_name, slot, kw)
+    provenance_key = join_kws(mod_name, slot, kw)
     provenance[provenance_key] = event
     set_provenance(provenance)
 
@@ -385,3 +377,103 @@ def make_modality_df(mdata: mu.MuData, mod_name: str) -> pd.DataFrame:
 
 def get_timestamp():
     return str(pd.Timestamp.now())
+
+
+def list_modalities():
+    mdata = get_mdata()
+    if mdata is None:
+        return []
+    return list(mdata.mod.keys())
+
+
+def tree_tables() -> List[str]:
+    """Return a list of all tables in the MuData object."""
+    return [
+        join_kws(modality, table)
+        for modality in list_modalities()
+        for table in list_tables(modality)
+    ]
+
+
+def list_tables(modality: str):
+    mdata = get_mdata()
+    if mdata is None:
+        return []
+    adata: ad.AnnData = mdata.mod[modality]
+    tables = ["metadata", "data"]
+    for attr in ["obsm", "obsp"]:
+        for slot in getattr(adata, attr).keys():
+            tables.append(f"{attr}.{slot}")
+    return tables
+
+
+def list_cnames(modality: str, table: str):
+    mdata = get_mdata()
+    if mdata is None:
+        return []
+    adata: ad.AnnData = mdata.mod[modality]
+    if table == 'metadata':
+        return list(adata.obs.columns)
+    elif table == 'data':
+        return list(adata.to_df().columns)
+    else:
+        if table.startswith("obsm."):
+            return list(adata.obsm[table[5:]].columns)
+        elif table.startswith("obsp."):
+            return list(adata.obsp[table[5:]].columns)
+    raise ValueError(f"Invalid table: {table}")
+
+
+def get_dataframe_table(modality: str, table: str) -> pd.DataFrame:
+
+    # Get the complete set of data
+    mdata = get_mdata()
+
+    if modality not in mdata.mod:
+        return None
+
+    # Get the modality
+    adata: ad.AnnData = mdata.mod[modality]
+
+    # Get the table
+    if table == "metadata":
+        table = adata.obs
+    elif table == "data":
+        table = adata.to_df()
+    elif table.startswith("obsm."):
+        table = adata.obsm[table[5:]]
+    elif table.startswith("obsp."):
+        table = adata.obsp[table[5:]]
+    else:
+        raise ValueError(f"Invalid table: {table}")
+
+    return table
+
+
+def get_dataframe_column(
+    modality: str,
+    table: str,
+    cname: str
+):
+
+    table = get_dataframe_table(modality, table)
+
+    # Get the column
+    if cname not in table.columns:
+        return None
+
+    return table[cname]
+
+
+def get_dat_hash():
+    mdata = get_mdata()
+    if mdata is None:
+        return None, None
+
+    # Convert the MuData object to binary
+    dat = mdata_to_binary(mdata)
+
+    # Compute the hash of the file
+    hash = hash_dat(dat)
+
+    return dat, hash

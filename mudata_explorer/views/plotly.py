@@ -27,7 +27,7 @@ class PlotlyScatter(Plotly):
                     "continuous_scale": True
                 },
             },
-            "query": "",
+            "query": True,
         },
         "scale_options": {
             "type": "object",
@@ -51,13 +51,19 @@ class PlotlyScatter(Plotly):
 
         fig = px.scatter(
             data,
-            x=self.params["data.x"],
-            y=self.params["data.y"],
+            x="x",
+            y="y",
             log_x=self.params["scale_options.log_x"],
             log_y=self.params["scale_options.log_y"],
-            color=self.params["data.color"] if self.params["data.color.enabled"] else None,
+            color="color" if self.params["data.color.enabled"] else None,
             color_continuous_scale=self.params["data.color.continuous_scale"],
-            size=self.params["data.size"] if self.params["data.size.enabled"] else None
+            size="size" if self.params["data.size.enabled"] else None,
+            labels=dict(
+                x=self.params["data.x.label"],
+                y=self.params["data.y.label"],
+                color=self.params["data.color.label"],
+                size=self.params["data.size.label"]
+            )
         )
 
         container.plotly_chart(fig)
@@ -82,7 +88,7 @@ class PlotlyScatter3D(Plotly):
                     "continuous_scale": True
                 },
             },
-            "query": "",
+            "query": True,
         },
         "scale_options": {
             "type": "object",
@@ -110,15 +116,22 @@ class PlotlyScatter3D(Plotly):
 
         fig = px.scatter_3d(
             data,
-            x=self.params["data.x"],
-            y=self.params["data.y"],
-            z=self.params["data.z"],
+            x="x",
+            y="y",
+            z="z",
             log_x=self.params["scale_options.log_x"],
             log_y=self.params["scale_options.log_y"],
             log_z=self.params["scale_options.log_z"],
-            color=self.params["data.color"] if self.params["data.color.enabled"] else None,
+            color="color" if self.params["data.color.enabled"] else None,
             color_continuous_scale=self.params["data.color.continuous_scale"],
-            size=self.params["data.size"] if self.params["data.size.enabled"] else None
+            size="size" if self.params["data.size.enabled"] else None,
+            labels=dict(
+                x=self.params["data.x.label"],
+                y=self.params["data.y.label"],
+                z=self.params["data.z.label"],
+                color=self.params["data.color.label"],
+                size=self.params["data.size.label"]
+            )
         )
 
         container.plotly_chart(fig)
@@ -142,7 +155,7 @@ class PlotlyLine(Plotly):
                     "discrete_sequence": True
                 },
             },
-            "query": "",
+            "query": True,
         },
         "scale_options": {
             "type": "object",
@@ -165,16 +178,21 @@ class PlotlyLine(Plotly):
         container: DeltaGenerator
     ):
         data: pd.DataFrame = self.params["data.dataframe"]
-        data = data.sort_values(self.params["data.sort_by"])
+        data.sort_values("sort_by", inplace=True)
 
         fig = px.line(
             data,
-            x=self.params["data.x"],
-            y=self.params["data.y"],
-            color=self.params["data.color"],
-            color_discrete_sequence=self.params["data.color.discrete_sequence"],
+            x="x",
+            y="y",
+            color="color" if self.params["data.color.enabled"] else None,
+            color_discrete_sequence=getattr(px.colors.qualitative, self.params["data.color.discrete_sequence"]),
             log_x=self.params["scale_options.log_x"],
             log_y=self.params["scale_options.log_y"],
+            labels=dict(
+                x=self.params["data.x.label"],
+                y=self.params["data.y.label"],
+                color=self.params["data.color.label"]
+            )
         )
 
         container.plotly_chart(fig)
@@ -197,7 +215,7 @@ class PlotlyBox(Plotly):
                     "discrete_sequence": True
                 },
             },
-            "query": "",
+            "query": True,
         },
         "scale_options": {
             "type": "object",
@@ -217,10 +235,16 @@ class PlotlyBox(Plotly):
 
         fig = px.box(
             data,
-            x=self.params["x"],
-            y=self.params["y"],
-            color=self.params["color"],
-            log_y=self.params["log_y"]
+            x="x",
+            y="y",
+            log_y=self.params["scale_options.log_y"],
+            color="color" if self.params["data.color.enabled"] else None,
+            color_discrete_sequence=getattr(px.colors.qualitative, self.params["data.color.discrete_sequence"]),
+            labels=dict(
+                x=self.params["data.x.label"],
+                y=self.params["data.y.label"],
+                color=self.params["data.color.label"]
+            )
         )
 
         container.plotly_chart(fig)

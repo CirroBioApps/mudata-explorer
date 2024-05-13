@@ -5,6 +5,7 @@ from mudata_explorer.base.view import View
 from mudata_explorer.base.process import Process
 from mudata_explorer.helpers.read_table import read_table # noqa
 from mudata_explorer.helpers.sanitize_types import sanitize_types # noqa
+from mudata_explorer.helpers.join_kws import join_kws # noqa
 
 
 def list_resources(module):

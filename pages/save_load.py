@@ -35,15 +35,10 @@ def upload_button(container: DeltaGenerator):
 
 def download_button(container: DeltaGenerator):
 
-    mdata = app.get_mdata()
-    if mdata is None:
+    # Get the current dataset along with its unique hash
+    dat, hash = app.get_dat_hash()
+    if dat is None:
         return
-
-    # Convert the MuData object to binary
-    dat = app.mdata_to_binary(mdata)
-
-    # Compute the hash of the file
-    hash = app.hash_dat(dat)
 
     # Compute the size of the file
     size = len(dat) / 1024
