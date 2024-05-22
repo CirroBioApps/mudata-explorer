@@ -477,3 +477,54 @@ def get_dat_hash():
     hash = hash_dat(dat)
 
     return dat, hash
+
+
+def save_annot(
+    mdata: mu.MuData,
+    modality: str,
+    slot: str,
+    dest_key: str,
+    column_dat: pd.Series,
+    params: dict,
+    process_type: str
+):
+
+    # Add the PCA coordinates to the obs/var slot
+    getattr(mdata.mod[modality], slot)[dest_key] = column_dat
+
+    # Make a record of the process
+    event = dict(
+        process=process_type,
+        params=params,
+        timestamp=get_timestamp(),
+        updated_keys=dest_key
+    )
+
+    # Save the results
+
+    # Update the MuData object
+    set_mdata(mdata)
+
+    # Add it to the history
+    add_history(event)
+
+    # Mark the source of the table which was added
+    add_provenance(
+        modality,
+        slot,
+        dest_key,
+        event
+    )
+
+
+def show_provenance(mdata, modality, slot, dest_key, container):
+
+    # If the key already exists
+    if dest_key in getattr(mdata.mod[modality], slot).keys():
+        prov = query_provenance(modality, slot, dest_key)
+        if prov is not None:
+            container.write(f"**Data currently in '{slot}/{dest_key}'**")
+            container.write(prov)
+            container.write(
+                f"> 'Run' will overwrite existing data in '{slot}/{dest_key}'."
+            )

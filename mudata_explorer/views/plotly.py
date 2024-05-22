@@ -50,9 +50,10 @@ class PlotlyScatter(Plotly):
         data: pd.DataFrame = self.params["data.dataframe"]
 
         fig = px.scatter(
-            data,
+            data.reset_index(),
             x="x",
             y="y",
+            hover_name=data.index.name,
             log_x=self.params["scale_options.log_x"],
             log_y=self.params["scale_options.log_y"],
             color="color" if self.params["data.color.enabled"] else None,
@@ -115,10 +116,11 @@ class PlotlyScatter3D(Plotly):
         data: pd.DataFrame = self.params["data.dataframe"]
 
         fig = px.scatter_3d(
-            data,
+            data.reset_index(),
             x="x",
             y="y",
             z="z",
+            hover_name=data.index.name,
             log_x=self.params["scale_options.log_x"],
             log_y=self.params["scale_options.log_y"],
             log_z=self.params["scale_options.log_z"],

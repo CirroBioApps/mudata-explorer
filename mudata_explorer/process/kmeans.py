@@ -20,7 +20,7 @@ class RunKmeans(Process):
         inputs = self.prompt_input_df(container)
         if inputs is None:
             return
-        mdata, modality, df, columns, use_zscore = inputs
+        mdata, modality, axis, df, columns, use_zscore = inputs
 
         if container.checkbox(
             "Preview Clusters - Silhouette Scores",
@@ -51,51 +51,28 @@ class RunKmeans(Process):
             # Run KMeans
             clusters = run_clustering(df, n_clusters=k)
 
-            # Add the complete set of params
             params = dict(
                 dest_key=dest_key,
                 modality=modality,
+                axis=axis,
                 columns=columns,
                 use_zscore=use_zscore,
                 k=k
             )
 
-            # Add the PCA coordinates to the obsm slot
-            mdata.mod[modality].obs[dest_key] = clusters
-
-            # Make a record of the process
-            event = dict(
-                process=self.type,
-                params=params,
-                timestamp=app.get_timestamp(),
-                updated_keys=dest_key
-            )
-
-            # Save the results
-
-            # Update the MuData object
-            app.set_mdata(mdata)
-
-            # Add it to the history
-            app.add_history(event)
-
-            # Mark the source of the table which was added
-            app.add_provenance(
+            # Save the results to the MuData object
+            app.save_annot(
+                mdata,
                 modality,
-                "obs",
+                axis,
                 dest_key,
-                event
+                clusters,
+                params,
+                self.type
             )
 
-        # If the key already exists
-        if dest_key in mdata.mod[modality].obs.keys():
-            prov = app.query_provenance(modality, "obs", dest_key)
-            if prov is not None:
-                container.write(f"**Data currently in '{dest_key}'**")
-                container.write(prov)
-                container.write(
-                    f"> 'Run' will overwrite existing data in '{dest_key}'."
-                )
+        # Report to the user if data already exists in the destination key
+        app.show_provenance(mdata, modality, axis, dest_key, container)
 
     def show_silhouette_scores(
         self,

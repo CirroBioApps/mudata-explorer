@@ -18,7 +18,8 @@ class UMAP(Process):
         inputs = self.prompt_input_df(container)
         if inputs is None:
             return
-        mdata, modality, df, columns, use_zscore = inputs
+        mdata, modality, axis, df, columns, use_zscore = inputs
+        slot = axis + "m"
 
         n_neighbors = container.number_input(
             "UMAP: Number of neighbors",
@@ -69,40 +70,19 @@ class UMAP(Process):
             params["columns"] = columns
             params["use_zscore"] = use_zscore
 
-            # Add the UMAP coordinates to the obsm slot
-            mdata.mod[modality].obsm[dest_key] = umap_df
-
-            # Make a record of the process
-            event = dict(
-                process=self.type,
-                params=params,
-                timestamp=app.get_timestamp(),
-                updated_keys=dest_key
-            )
-
-            # Update the MuData object
-            app.set_mdata(mdata)
-
-            # Add it to the history
-            app.add_history(event)
-
-            # Mark the source of the table which was added
-            app.add_provenance(
+            # Save the results to the MuData object
+            app.save_annot(
+                mdata,
                 modality,
-                "obsm",
+                slot,
                 dest_key,
-                event
+                umap_df,
+                params,
+                self.type
             )
 
-        # If the key already exists
-        if dest_key in mdata.mod[modality].obsm.keys():
-            prov = app.query_provenance(modality, "obsm", dest_key)
-            if prov is not None:
-                container.write(f"**Data currently in '{dest_key}'**")
-                container.write(prov)
-                container.write(
-                    f"> 'Run' will overwrite existing data in '{dest_key}'."
-                )
+        # Report to the user if data already exists in the destination key
+        app.show_provenance(mdata, modality, slot, dest_key, container)
 
 
 @st.cache_data

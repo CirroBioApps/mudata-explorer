@@ -169,7 +169,6 @@ if __name__ == "__main__":
             )
             container.write("---")
 
-
         if settings["editable"]:
 
             # Let the user add a new view

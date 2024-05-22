@@ -20,7 +20,7 @@ class Process:
         self,
         container: DeltaGenerator
     ) -> Union[
-        None, 
+        None,
         Tuple[
             mu.MuData,
             str,
@@ -47,6 +47,16 @@ class Process:
         if df.shape[0] == 0 or df.shape[1] == 0:
             container.write(f"No data available for {modality}.")
             return
+
+        # Select the axis to use
+        axis = container.selectbox(
+            "Select axis",
+            ["Observations", "Variables"],
+            help="Select the axis to use for the analysis."
+        )
+        axis = axis.lower()[:3]
+        if axis == "var":
+            df = df.T
 
         # Let the user select the columns to use
         all_columns = list(df.columns.values)
@@ -113,4 +123,4 @@ class Process:
 
             df = df.apply(zscore)
 
-        return mdata, modality, df, columns, use_zscore
+        return mdata, modality, axis, df, columns, use_zscore
