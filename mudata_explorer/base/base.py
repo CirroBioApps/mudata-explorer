@@ -9,12 +9,26 @@ import streamlit as st
 
 class MuDataAppHelpers:
     params: dict = {}
+    schema: dict
+    orientation_schema: dict = {
+        "orientation": {
+            "type": "string",
+            "enum": ["observations", "variables"],
+            "default": "observations",
+            "label": "Orientation - Assign Outputs To:",
+            "help": "Select whether to use observations or variables."
+        }
+    }
 
     def param(self, *kws, default=None):
         return self.params.get(join_kws(*kws), default)
 
     def get_schema_defaults(self, schema: dict, prefix=None):
         """Yield the default values for each item in the schema."""
+
+        # Orientation is an essential parameter
+        yield "orientation", self.orientation_schema["orientation"]["default"]
+
         for key, elem in schema.items():
             assert isinstance(elem, dict), f"Expected dict, got {type(elem)}"
             assert "type" in elem, f"Missing 'type' key in schema: {elem}"
@@ -91,6 +105,19 @@ class MuDataAppHelpers:
             kwargs=dict(copy_to=copy_to)
         )
 
+    def update_view_param(self, kw, value):
+        # Get the MuData object
+        mdata = app.get_mdata()
+
+        # Modify the value of this param for this view
+        mdata.uns["mudata-explorer-views"][self.ix]["params"][kw] = value
+
+        # Save the MuData object
+        app.set_mdata(mdata)
+
+        # Also update the params object
+        self.params[kw] = value
+
     def input_selectbox_kwargs(self, kw, options: list, copy_to=None):
         """Populate the selectbox element with default kwargs."""
         if self.params[kw] not in options:
@@ -142,6 +169,17 @@ class MuDataAppHelpers:
 
     def get_data(self, container: DeltaGenerator):
 
+        container.write("##### Inputs")
+
+        # 'orientation' is a special-case parameter that is used to
+        # determine whether the user is selecting observations or variables
+        msg = "The 'orientation' parameter is reserved."
+        assert "orientation" not in self.schema.keys(), msg
+        self.render_form(
+            container,
+            self.orientation_schema
+        )
+
         # Parse the form schema of the object
         return self.render_form(container, self.schema)
 
@@ -181,6 +219,7 @@ class MuDataAppHelpers:
                         self.params[prefix_key] = container.selectbox(
                             key if elem.get("label") is None else elem["label"],
                             elem["enum"],
+                            help=elem.get("help"),
                             **self.input_selectbox_kwargs(
                                 prefix_key,
                                 elem["enum"]
@@ -194,6 +233,7 @@ class MuDataAppHelpers:
                                 if elem.get("label") is None
                                 else elem["label"]
                             ),
+                            help=elem.get("help"),
                             **self.input_value_kwargs(prefix_key)
                         )
 
@@ -204,6 +244,7 @@ class MuDataAppHelpers:
                                 if elem.get("label") is None
                                 else elem["label"]
                             ),
+                            help=elem.get("help"),
                             **self.input_value_kwargs(prefix_key)
                         )
 
@@ -212,6 +253,7 @@ class MuDataAppHelpers:
                 if settings["editable"]:
                     self.params[prefix_key] = container.number_input(
                         key if elem.get("label") is None else elem["label"],
+                        help=elem.get("help"),
                         **self.input_value_kwargs(prefix_key)
                     )
 
@@ -220,6 +262,7 @@ class MuDataAppHelpers:
                 if settings["editable"]:
                     self.params[prefix_key] = container.checkbox(
                         key if elem.get("label") is None else elem["label"],
+                        help=elem.get("help"),
                         **self.input_value_kwargs(prefix_key)
                     )
 
@@ -237,7 +280,6 @@ class MuDataAppHelpers:
         settings = app.get_settings()
 
         mdata = app.get_mdata()
-
         if mdata is None or mdata.shape[0] == 0:
             container.write("No MuData object available.")
             return
@@ -272,7 +314,7 @@ class MuDataAppHelpers:
             # Let the user select one or more tables
             if settings["editable"]:
 
-                all_tables = app.tree_tables()
+                all_tables = app.tree_tables(self.params["orientation"])
                 container.multiselect(
                     "Select table(s)",
                     all_tables,
@@ -296,7 +338,11 @@ class MuDataAppHelpers:
                     axis=1
                 )
 
-        # Let the user optionally filter samples
+            # If the orientation is set to variables, transpose the DataFrame
+            if self.params["orientation"] == "variables":
+                df = df.T
+
+        # Let the user optionally filter rows
         if elem.get("query", True):
             filtered_obs = self.render_query(prefix, key, container)
             if filtered_obs is not None:
@@ -400,7 +446,8 @@ class MuDataAppHelpers:
         if self.params.get(cname_kw) is None:
             cname_val = app.list_cnames(
                 self.params[mod_kw],
-                self.params[table_kw]
+                self.params[table_kw],
+                orientation=self.params["orientation"]
             )[0]
 
             self.update_view_param(cname_kw, cname_val)
@@ -434,7 +481,10 @@ class MuDataAppHelpers:
                 )
 
                 # Get the list of tables available for this modality
-                all_tables = app.list_tables(self.params[mod_kw])
+                all_tables = app.list_tables(
+                    self.params[mod_kw],
+                    self.params["orientation"]
+                )
 
                 # Select the table of interest
                 cols[1].selectbox(
@@ -574,7 +624,10 @@ class MuDataAppHelpers:
             )
 
             # Get the list of tables available for this modality
-            all_tables = app.list_tables(self.params[mod_kw])
+            all_tables = app.list_tables(
+                self.params[mod_kw],
+                self.params["orientation"]
+            )
 
             # Select the table of interest
             cols[1].selectbox(

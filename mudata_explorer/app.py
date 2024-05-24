@@ -420,41 +420,52 @@ def list_modalities():
     return list(mdata.mod.keys())
 
 
-def tree_tables() -> List[str]:
+def tree_tables(orientation) -> List[str]:
     """Return a list of all tables in the MuData object."""
     return [
         join_kws(modality, table)
         for modality in list_modalities()
-        for table in list_tables(modality)
+        for table in list_tables(modality, orientation)
     ]
 
 
-def list_tables(modality: str):
+def list_tables(modality: str, orientation: str):
+    assert orientation in ["observations", "variables"], orientation
     mdata = get_mdata()
     if mdata is None:
         return []
     adata: ad.AnnData = mdata.mod[modality]
     tables = ["metadata", "data"]
-    for attr in ["obsm", "obsp"]:
-        for slot in getattr(adata, attr).keys():
-            tables.append(f"{attr}.{slot}")
+    if orientation == "observations":
+        for attr in ["obsm", "obsp"]:
+            for slot in getattr(adata, attr).keys():
+                tables.append(f"{attr}.{slot}")
+    else:
+        for attr in ["varm", "varp"]:
+            for slot in getattr(adata, attr).keys():
+                tables.append(f"{attr}.{slot}")
     return tables
 
 
-def list_cnames(modality: str, table: str):
+def list_cnames(modality: str, table: str, orientation="observations"):
+    if orientation == "observations":
+        attr = "columns"
+    else:
+        assert orientation == "variables"
+        attr = "index"
+
     mdata = get_mdata()
     if mdata is None:
         return []
     adata: ad.AnnData = mdata.mod[modality]
     if table == 'metadata':
-        return list(adata.obs.columns)
+        return list(getattr(adata.obs, attr))
     elif table == 'data':
-        return list(adata.to_df().columns)
+        return list(getattr(adata.to_df(), attr))
     else:
-        if table.startswith("obsm."):
-            return list(adata.obsm[table[5:]].columns)
-        elif table.startswith("obsp."):
-            return list(adata.obsp[table[5:]].columns)
+        prefix, name = table.split(".", 1)
+        assert hasattr(adata, prefix)
+        return list(getattr(adata, prefix)[name].columns)
     raise ValueError(f"Invalid table: {table}")
 
 
@@ -518,7 +529,7 @@ def save_annot(
     modality: str,
     slot: str,
     dest_key: str,
-    column_dat: pd.Series,
+    column_dat: Union[pd.Series, pd.DataFrame],
     params: dict,
     process_type: str
 ):

@@ -1,3 +1,5 @@
+from typing import Union
+import pandas as pd
 from sklearn.cluster import DBSCAN
 from mudata_explorer.base.process import Process
 
@@ -57,16 +59,10 @@ class RunDBSCAN(Process):
             The metric to use when calculating distance between instances in a
             feature array.
             """
-        },
-        "dest_key": {
-            "type": "string",
-            "label": "Destination Key",
-            "help": "The name of the column which will be used for the results.",
-            "value": "cluster"
         }
     }
 
-    def execute(self):
+    def execute(self) -> Union[pd.Series, pd.DataFrame]:
 
         clusters = (
             DBSCAN(

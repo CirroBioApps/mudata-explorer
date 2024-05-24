@@ -18,7 +18,7 @@ class Process(MuDataAppHelpers):
 
     def __init__(
         self,
-        params={}
+        params: dict = {}
     ):
         self.params = {
             kw: params.get(kw, val)
@@ -27,17 +27,10 @@ class Process(MuDataAppHelpers):
 
     def run(self, container: DeltaGenerator):
 
-        # Get the parameters from the user
-        self.get_data(container)
+        pass
 
-        container.write(self.params)
-
-        # # Now run the method, catching any errors
-        # try:
-        #     self.display(self.view_container)
-        # except Exception as e:
-        #     # Log the full traceback of the exception
-        #     self.view_container.exception(e)
+    def execute(self) -> Union[pd.Series, pd.DataFrame]:
+        pass
 
     def param_key(self, kw):
         return f"process-{kw}"
@@ -164,3 +157,43 @@ class Process(MuDataAppHelpers):
 
         # Also update the params object
         self.params[kw] = value
+
+    def save_results(
+        self,
+        dest_modality: str,
+        dest_key: str,
+        res: Union[pd.Series, pd.DataFrame]
+    ):
+        # Get the MuData object
+        mdata = app.get_mdata()
+
+        assert isinstance(res, (pd.Series, pd.DataFrame)), type(res)
+
+        # Depending on the orientation, set the destination attribute
+        if self.params["orientation"] == "observations":
+            attr = "obs"
+        else:
+            attr = "var"
+
+        # DataFrames get written as their own table
+        if isinstance(res, pd.DataFrame):
+            attr = attr + "m"
+
+        # Save the results to the MuData object
+        app.save_annot(
+            mdata,
+            dest_modality,
+            attr,
+            dest_key,
+            res,
+            self.dehydrate_params(),
+            self.type
+        )
+
+    def dehydrate_params(self):
+        """Only save those params which can be loaded."""
+
+        return {
+            kw: self.params[kw]
+            for kw, _ in self.get_schema_defaults(self.schema)
+        }
