@@ -126,4 +126,10 @@ def run_clustering(df: pd.DataFrame, **kwargs):
         KMeans(**kwargs)
         .fit_predict(df.values)
     )
-    return list(map(str, clusters))
+    return pd.Series(
+        clusters,
+        index=df.index,
+        name="cluster"
+    ).apply(
+        str
+    )
