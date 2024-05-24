@@ -110,6 +110,12 @@ def get_mdata() -> Union[None, mu.MuData]:
     mdata = st.session_state.get("mdata", None)
     if mdata is not None:
         assert isinstance(mdata, mu.MuData)
+        if "mudata-explorer-process" not in mdata.uns.keys():
+            mdata.uns["mudata-explorer-process"] = {
+                "category": None,
+                "type": None,
+                "params": {}
+            }
     return mdata
 
 
@@ -169,6 +175,7 @@ def setup_mdata():
         )
     })
     mdata.uns["mudata-explorer-views"] = []
+    mdata.uns["mudata-explorer-process"] = {}
     mdata.uns["mudata-explorer-settings"] = {}
     mdata.uns["mudata-explorer-history"] = []
     mdata.uns["mudata-explorer-provenance"] = {}
@@ -178,6 +185,33 @@ def setup_mdata():
 def validate_json(dat):
     """Validate that an object can be serialized to JSON"""
     return json.loads(json.dumps(dat, sort_keys=True))
+
+
+def get_process() -> dict:
+    mdata = get_mdata()
+    if mdata is None:
+        return {}
+    assert isinstance(mdata, mu.MuData), type(mdata)
+    return mdata.uns.get("mudata-explorer-process", {})
+
+
+def set_process(process: dict) -> None:
+    mdata = get_mdata()
+    assert mdata is not None
+    assert isinstance(mdata, mu.MuData), type(mdata)
+    mdata.uns["mudata-explorer-process"] = process
+    set_mdata(mdata)
+
+
+def update_process_on_change(kw) -> None:
+    val = st.session_state[f"process-{kw}"]
+    update_process(kw, val)
+
+
+def update_process(kw, val) -> None:
+    process = get_process()
+    process[kw] = val
+    set_process(process)
 
 
 def delete_view(ix: int):

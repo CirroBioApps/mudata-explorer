@@ -2,19 +2,45 @@ from typing import List, Tuple, Union
 import pandas as pd
 import muon as mu
 from mudata_explorer import app
+from mudata_explorer.base.base import MuDataAppHelpers
 from scipy.stats import zscore
 from streamlit.delta_generator import DeltaGenerator
 
 
-class Process:
+class Process(MuDataAppHelpers):
 
     type: str
     name: str
     desc: str
     categories: List[str]
+    schema: dict
+    ix = -1
+
+    def __init__(
+        self,
+        params={}
+    ):
+        self.params = {
+            kw: params.get(kw, val)
+            for kw, val in self.get_schema_defaults(self.schema)
+        }
 
     def run(self, container: DeltaGenerator):
-        pass
+
+        # Get the parameters from the user
+        self.get_data(container)
+
+        container.write(self.params)
+
+        # # Now run the method, catching any errors
+        # try:
+        #     self.display(self.view_container)
+        # except Exception as e:
+        #     # Log the full traceback of the exception
+        #     self.view_container.exception(e)
+
+    def param_key(self, kw):
+        return f"process-{kw}"
 
     def prompt_input_df(
         self,
@@ -75,7 +101,8 @@ class Process:
 
         df = df[columns].dropna()
 
-        # Display the number of rows which contain values for all of the selected columns
+        # Display the number of rows which contain values
+        # for all of the selected columns
         n_rows = df.shape[0]
         container.write(f"{n_rows:,} rows with data for all selected columns.")
 
@@ -96,7 +123,7 @@ class Process:
                 .dropna()
             )
             container.write(
-                f"Filtered data: {df.shape[0]:,} rows x {df.shape[1]:,} columns."
+                f"Filtered: {df.shape[0]:,} rows x {df.shape[1]:,} columns."
             )
 
         if df.shape[0] == 0:
@@ -124,3 +151,16 @@ class Process:
             df = df.apply(zscore)
 
         return mdata, modality, axis, df, columns, use_zscore
+
+    def update_view_param(self, kw, value):
+        # Get the MuData object
+        mdata = app.get_mdata()
+
+        # Modify the value of this param for this view
+        mdata.uns["mudata-explorer-process"]["params"][kw] = value
+
+        # Save the MuData object
+        app.set_mdata(mdata)
+
+        # Also update the params object
+        self.params[kw] = value
