@@ -1,5 +1,7 @@
 from copy import copy
+from typing import Union
 from mudata_explorer import app
+from mudata_explorer.helpers import plotting
 
 import anndata as ad
 import muon as mu
@@ -78,12 +80,7 @@ def read_table(file, container: DeltaGenerator):
     return df
 
 
-def add_mudata(obs: pd.DataFrame, mod: pd.DataFrame, mod_name: str):
-    overlap = set(obs.index).intersection(set(mod.index))
-    obs = obs.loc[list(overlap)]
-    mod = mod.loc[list(overlap)]
-
-    adata = ad.AnnData(obs=obs, X=mod)
+def add_mudata(adata: ad.AnnData, mod_name: str):
 
     mdata = app.get_mdata()
     if mdata is None:
@@ -125,6 +122,148 @@ def add_mudata(obs: pd.DataFrame, mod: pd.DataFrame, mod_name: str):
     app.add_history(event)
 
 
+def _get_obs(container: DeltaGenerator):
+
+    # If there is no data, ask the user for observation metadata
+    if app.get_mdata() is None:
+
+        # Get a metadata table from the user
+        return _get_table(
+            container,
+            "Observation Metadata (.obs)",
+            help="Provide a CSV/TSV where the first column is a unique identifier for each observation.", # noqa
+            keep_str=True
+        )
+
+    else:
+        return None
+
+
+def _get_name(container: DeltaGenerator):
+
+    mod_name = container.text_input(
+        "Measurement Name",
+        value="Measurement",
+        help="Enter the name of the measurement.",
+    )
+    if "." in mod_name:
+        container.error("The measurement name cannot contain a period.")
+        return
+    else:
+        if mod_name in app.list_modalities():
+            container.error("A measurement with this name already exists.")
+            return
+        return mod_name
+
+
+def _get_df(container: DeltaGenerator):
+    return _get_table(
+        container,
+        "Measurement Data (.X)",
+        help="Provide a CSV/TSV where the first column is a unique identifier for each observation.", # noqa
+    )
+
+
+def _get_var(container: DeltaGenerator):
+
+    return _get_table(
+        container,
+        "Variable Metadata (.var)",
+        help="Provide a CSV/TSV where the first column is a unique identifier for each variable.", # noqa
+        keep_str=True
+    )
+
+
+def _get_table(
+    container: DeltaGenerator,
+    label: str,
+    help=None,
+    keep_str=False
+):
+
+    # Get input from the user
+    file = container.file_uploader(
+        label,
+        help=help
+    )
+    df = read_table(file, container)
+    if df is not None:
+        df = sanitize_types(df, container, keep_str=keep_str)
+    return df
+
+
+def _df_desc_str(name: str, df: pd.DataFrame):
+    return f"{name}: {df.shape[0]:,} rows x {df.shape[1]:,} columns."
+
+
+def _merge_data(
+    obs: Union[pd.DataFrame, None],
+    df: pd.DataFrame,
+    var: Union[pd.DataFrame, None],
+    container: DeltaGenerator
+):
+
+    if df is None:
+        container.write("No measurement data uploaded.")
+        return None
+
+    if obs is not None:
+        container.write(_df_desc_str("Observation Metadata", obs))
+
+    container.write(_df_desc_str("Measurement Data", df))
+
+    if var is not None:
+        container.write(_df_desc_str("Variable Metadata", var))
+
+    # Report if there are any rows in obs or var which are not in the data
+    missing_str = "There are {} in the metadata which are not in the data."
+
+    if obs is not None:
+        # Find if there are any values in obs.index which are not in df.index
+        missing = set(obs.index).difference(set(df.index))
+        if len(missing) > 0:
+            container.write(missing_str.format(f"{len(missing):,} observations"))
+
+        # Only keep the observations which are in the data
+        obs = obs.reindex(index=df.index)
+
+    if var is not None:
+        # Find if there are any values in var.index which are not in df.columns
+        missing = set(var.index).difference(set(df.columns))
+        if len(missing) > 0:
+            container.write(missing_str.format(f"{len(missing):,} variables"))
+
+        # Only keep the variables which are in the data
+        var = var.reindex(index=df.columns)
+
+    # Figure out if all of the columns should be added
+    if not container.checkbox("Use all columns (variables)", value=True):
+        df = df.reindex(
+            columns=container.multiselect(
+                "Select columns (variables)",
+                df.columns.values,
+                default=df.columns.values
+            )
+        )
+
+    # Figure out if all of the rows should be added
+    if not container.checkbox("Use all rows (observations)", value=True):
+        df = df.reindex(
+            index=container.multiselect(
+                "Select rows (observations)",
+                df.index.values,
+                default=df.index.values
+            )
+        )
+
+    # Make an AnnData object
+    return ad.AnnData(
+        X=df,
+        obs=obs,
+        var=var
+    )
+
+
 if __name__ == "__main__":
 
     app.setup_pages()
@@ -136,77 +275,36 @@ if __name__ == "__main__":
 
     container.write("#### Add Data")
 
-    # Get input from the user
-    obs_file = container.file_uploader(
-        "Observation Metadata (.obs)",
-        help="Provide a CSV/TSV where the first column is a unique identifier for each observation.", # noqa
-    )
-    obs = read_table(obs_file, container)
+    # Show the dataset
+    plotting.plot_mdata(container)
 
-    mod_name = container.text_input(
-        "Measurement Name",
-        value="Measurement",
-        help="Enter the name of the measurement.",
-    )
-    if "." in mod_name:
-        container.error("The measurement name cannot contain a period.")
-    else:
+    # Get the observation metadata (if needed)
+    obs = _get_obs(container)
 
-        mod_file = container.file_uploader(
-            "Measurement Data (.X)",
-            help="Provide a CSV/TSV where the first column is a unique identifier for each observation.", # noqa
+    # Get the measurement data
+    mod_name = _get_name(container)
+    df = _get_df(container)
+
+    # Get the variable annotations (if any)
+    var = _get_var(container)
+
+    # Merge into a single AnnData object
+    adata = _merge_data(obs, df, var, container)
+
+    if container.button(
+        "Add to MuData",
+        on_click=add_mudata,
+        args=(
+            adata,
+            mod_name
         )
-        mod = read_table(mod_file, container)
-
-        if obs is None:
-            container.write("No metadata uploaded")
-
-        else:
-            obs = sanitize_types(obs, container, keep_str=True)
-            container.write(f"Metadata: {obs.shape[0]:,} rows x {obs.shape[1]:,} columns.") # noqa
-
-        if mod is None:
-            container.write("No measurement data uploaded.")
-
-        else:
-
-            mod = sanitize_types(mod, container)
-            container.write(f"{mod_name}: {mod.shape[0]:,} rows x {mod.shape[1]:,} columns.") # noqa
-
-        if mod is not None and obs is not None:
-
-            # Find the overlapping index labels between the two tables
-            overlap = set(obs.index).intersection(set(mod.index))
-
-            container.write(f"No. of overlapping observations: {len(overlap):,}")
-
-            if len(overlap) > 0:
-
-                # Figure out if all of the columns should be added
-                if container.checkbox("Use all columns", value=True):
-                    columns = mod.columns.values
-                else:
-                    columns = container.multiselect(
-                        "Select columns",
-                        mod.columns.values,
-                        default=mod.columns.values
-                    )
-
-                if container.button(
-                    "Add to MuData",
-                    on_click=add_mudata,
-                    args=(
-                        obs,
-                        mod.reindex(columns=columns),
-                        mod_name
-                    )
-                ):
-                    container.write("Data added to MuData.")
-                    app.show_shortcuts(
-                        [
-                            ("summarize", ":book: Inspect Uploaded Data"),
-                            ("views", ":bar_chart: View Data"),
-                            ("processes", ":running: Run Processes")
-                        ],
-                        container=container
-                    )
+    ):
+        container.write("Data added to MuData.")
+        app.show_shortcuts(
+            [
+                ("summarize", ":book: Inspect Uploaded Data"),
+                ("views", ":bar_chart: View Data"),
+                ("processes", ":running: Run Processes")
+            ],
+            container=container
+        )

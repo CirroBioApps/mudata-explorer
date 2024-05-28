@@ -3,7 +3,7 @@ import pandas as pd
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 from mudata_explorer import app
-from mudata_explorer.helpers import join_kws
+from mudata_explorer.helpers import join_kws, plotting
 
 
 def summarize_mdata(container: DeltaGenerator):
@@ -95,6 +95,8 @@ if __name__ == "__main__":
     app.setup_pages()
 
     st.write("#### Summarize")
+
+    plotting.plot_mdata(st.container())
 
     summarize_mdata(st.container())
 

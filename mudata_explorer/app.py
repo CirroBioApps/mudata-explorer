@@ -521,7 +521,16 @@ def get_dat_hash():
     # Compute the hash of the file
     hash = hash_dat(dat)
 
-    return dat, hash
+    # Compute the size of the file
+    size = len(dat) / 1024
+
+    # Format the size as a string
+    if size < 1024:
+        size = f"{size:.2f} KB"
+    else:
+        size = f"{size/1024:.2f} MB"
+
+    return dat, hash, size
 
 
 def save_annot(

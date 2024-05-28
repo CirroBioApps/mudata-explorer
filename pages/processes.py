@@ -1,5 +1,6 @@
 from typing import List
 from mudata_explorer import app
+from mudata_explorer.helpers import plotting
 from mudata_explorer.helpers import asset_categories, filter_by_category
 from mudata_explorer.helpers import asset_type_desc_lists
 from mudata_explorer.helpers import all_processes, make_process
@@ -35,6 +36,9 @@ if __name__ == "__main__":
     process_def = app.get_process()
 
     container.write("#### Process Data")
+
+    # Show the dataset
+    plotting.plot_mdata(container)
 
     # Let the user select the type of process to add
     all_categories = asset_categories(all_processes)
@@ -103,3 +107,6 @@ if __name__ == "__main__":
         except Exception as e:
             # Log the full traceback of the exception
             container.exception(e)
+
+    # Report to the user if data already exists in the destination key
+    app.show_provenance(mdata, modality, axis, dest_key, container)

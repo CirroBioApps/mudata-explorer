@@ -1,4 +1,5 @@
 from mudata_explorer import app
+from mudata_explorer.helpers import plotting
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 
@@ -33,23 +34,22 @@ def upload_button(container: DeltaGenerator):
     )
 
 
-def download_button(container: DeltaGenerator):
+def show_hash(container: DeltaGenerator):
 
     # Get the current dataset along with its unique hash
-    dat, hash = app.get_dat_hash()
+    dat, hash, _ = app.get_dat_hash()
     if dat is None:
         return
 
-    # Compute the size of the file
-    size = len(dat) / 1024
-    # Format the size as a string
-    if size < 1024:
-        size = f"{size:.2f} KB"
-    else:
-        size = f"{size/1024:.2f} MB"
-
     container.write(f"**Unique Hash**: {hash}")
-    container.write("---")
+
+
+def download_button(container: DeltaGenerator):
+
+    # Get the current dataset along with its unique hash
+    dat, hash, size = app.get_dat_hash()
+    if dat is None:
+        return
 
     # Name the downloaded file for the hash of the data
     container.write("**Download MuData**")
@@ -70,7 +70,8 @@ if __name__ == "__main__":
     container.write(
         "Download a snapshot of an existing dataset or upload a new one."
     )
-    container.write("---")
-    upload_button(container)
-    container.write("---")
-    download_button(container)
+    cols = container.columns(2)
+    upload_button(cols[0])
+    download_button(cols[1])
+    show_hash(container)
+    plotting.plot_mdata(container)
