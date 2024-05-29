@@ -2,7 +2,6 @@ import anndata as ad
 import hashlib
 import json
 import muon as mu
-import numpy as np
 import pandas as pd
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
@@ -10,15 +9,15 @@ from tempfile import NamedTemporaryFile
 from typing import Any, List, Union, Dict
 from mudata_explorer.helpers import get_view_by_type
 from mudata_explorer.helpers.join_kws import join_kws
+from mudata_explorer.helpers import mudata, plotting
 from mudata_explorer.base.slice import MuDataSlice
 
 
 def page_links():
     return [
-        ("summarize", "Summarize"),
+        ("tables", "Tables"),
         ("views", "Views"),
         ("processes", "Process Data"),
-        ("add_data", "Add Data"),
         ("save_load", "Save/Load"),
         ("history", "History"),
         ("settings", "Settings"),
@@ -36,11 +35,13 @@ def setup_pages():
             label=label
         )
 
+    plotting.plot_mdata(st.sidebar)
+
 
 def landing_shortcuts():
 
     show_shortcuts([
-        ("add_data", ":page_facing_up: Upload Tables (*.csv)"),
+        ("tables", ":page_facing_up: Upload Tables (*.csv)"),
         ("save_load", ":open_file_folder: Load Dataset (*.h5mu)"),
         ("about", ":information_source: About")
     ])
@@ -108,7 +109,11 @@ def hash_dat(dat, n: Union[int, None] = 16):
 
 
 def get_mdata() -> Union[None, mu.MuData]:
-    mdata = st.session_state.get("mdata", None)
+    if "mdata" not in st.session_state:
+        mdata = None
+    else:
+        mdata = st.session_state["mdata"]
+
     if mdata is not None:
         assert isinstance(mdata, mu.MuData)
         if "mudata-explorer-process" not in mdata.uns.keys():
@@ -121,13 +126,7 @@ def get_mdata() -> Union[None, mu.MuData]:
 
 
 def has_mdata() -> bool:
-    mdata: mu.MuData = get_mdata()
-    if mdata is None:
-        return False
-    mods = mdata.mod.keys()
-    return (
-        len(mods) > 0 and '_blank' not in mods
-    )
+    return len(list_modalities()) > 0
 
 
 def set_mdata(
@@ -151,7 +150,7 @@ def set_mdata(
         updated_keys = List[str] e.g. ["rna.X", "rna.obs", "rna.var"]
     """
 
-    assert isinstance(mdata, mu.MuData)
+    assert isinstance(mdata, mu.MuData), type(mdata)
     if (
         timestamp is not None or
         process is not None or
@@ -178,18 +177,7 @@ def set_mdata(
 
 
 def setup_mdata():
-    mdata = mu.MuData({
-        '_blank': ad.AnnData(
-            X=np.array([[]]),
-            obs=[],
-            var=[]
-        )
-    })
-    mdata.uns["mudata-explorer-views"] = []
-    mdata.uns["mudata-explorer-process"] = {}
-    mdata.uns["mudata-explorer-settings"] = {}
-    mdata.uns["mudata-explorer-history"] = []
-    mdata.uns["mudata-explorer-provenance"] = {}
+    mdata = mudata.setup_mdata()
     set_mdata(mdata)
 
 
@@ -203,7 +191,7 @@ def get_process() -> dict:
         return {}
     mdata = get_mdata()
     assert isinstance(mdata, mu.MuData), type(mdata)
-    return mdata.uns.get("mudata-explorer-process", {})
+    return _json_safe(mdata.uns.get("mudata-explorer-process", {}))
 
 
 def set_process(process: dict) -> None:
@@ -249,7 +237,7 @@ def get_views() -> List[dict]:
         return []
     mdata = get_mdata()
     assert isinstance(mdata, mu.MuData), type(mdata)
-    return mdata.uns.get("mudata-explorer-views", [])
+    return _json_safe(mdata.uns.get("mudata-explorer-views", []))
 
 
 def set_views(views):
@@ -262,11 +250,20 @@ def set_views(views):
     set_mdata(mdata)
 
 
+def _json_safe(obj: Union[str, dict]):
+    if isinstance(obj, str):
+        return json.loads(obj)
+    else:
+        return obj
+
+
 def get_settings() -> dict:
     if not has_mdata():
         settings = {}
     else:
-        settings = get_mdata().uns.get("mudata-explorer-settings", {})
+        settings = _json_safe(
+            get_mdata().uns.get("mudata-explorer-settings", {})
+        )
 
     for kw, val in dict(
         editable=True
@@ -294,7 +291,9 @@ def get_history() -> List[dict]:
     if not has_mdata():
         return []
     else:
-        return get_mdata().uns.get("mudata-explorer-history", [])
+        return _json_safe(
+            get_mdata().uns.get("mudata-explorer-history", [])
+        )
 
 
 def set_history(history: dict):
@@ -323,7 +322,7 @@ def get_provenance() -> Dict[str, dict]:
     mdata = get_mdata()
     assert isinstance(mdata, mu.MuData), type(mdata)
 
-    return mdata.uns.get("mudata-explorer-provenance", {})
+    return _json_safe(mdata.uns.get("mudata-explorer-provenance", {}))
 
 
 def query_provenance(loc: MuDataSlice) -> Union[None, dict]:
@@ -414,9 +413,15 @@ def get_timestamp():
 
 
 def list_modalities():
-    if not has_mdata():
+    mdata: mu.MuData = get_mdata()
+    if mdata is None:
         return []
-    return list(get_mdata().mod.keys())
+    mods = [
+        mod
+        for mod in mdata.mod.keys()
+        if not mod.startswith("_")
+    ]
+    return mods
 
 
 def tree_tables(orientation) -> List[str]:

@@ -17,6 +17,7 @@ class Markdown(View):
             "multiline": True,
         }
     }
+    use_orientation = False
 
     def display(self, container: DeltaGenerator):
 

@@ -31,6 +31,10 @@ class Process(MuDataAppHelpers):
 
         pass
 
+    def display(self, container: DeltaGenerator):
+
+        pass
+
     def execute(self) -> Union[pd.Series, pd.DataFrame]:
         pass
 
@@ -42,6 +46,10 @@ class Process(MuDataAppHelpers):
         mdata = app.get_mdata()
 
         # Modify the value of this param for this view
+        if "params" not in mdata.uns["mudata-explorer-process"]:
+            mdata.uns["mudata-explorer-process"]["params"] = {}
+
+        # Set the value of the parameter
         mdata.uns["mudata-explorer-process"]["params"][kw] = value
 
         # Save the MuData object

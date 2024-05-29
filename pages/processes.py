@@ -73,9 +73,6 @@ if __name__ == "__main__":
 
     container.write("#### Process Data")
 
-    # Show the dataset
-    plotting.plot_mdata(container)
-
     if app.has_mdata():
 
         # Let the user select a process to run
@@ -90,6 +87,9 @@ if __name__ == "__main__":
 
         # Get the parameters from the user
         process.get_data(container)
+
+        # Show any plots that the process generates
+        process.display(container)
 
         container.write("##### Outputs")
 
@@ -115,9 +115,13 @@ if __name__ == "__main__":
             dest_key
         )
 
+        # Report to the user if data already exists in the destination key
+        app.show_provenance(loc, container)
+
         # Let the user run the method, catching any errors
         if container.button("Generate Results"):
             try:
+
                 # Generate the results
                 res = process.execute()
 
@@ -131,5 +135,4 @@ if __name__ == "__main__":
                 # Log the full traceback of the exception
                 container.exception(e)
 
-        # Report to the user if data already exists in the destination key
-        app.show_provenance(loc, container)
+            st.rerun()

@@ -1,3 +1,4 @@
+from typing import Union
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 import pandas as pd
@@ -14,71 +15,43 @@ class RunKmeans(Process):
     name = "K-Means"
     desc = "K-Means Clustering"
     categories = ["Clustering"]
+    output_type = pd.Series
+    schema = {
+        "data": {
+            "type": "dataframe",
+            "select_columns": True,
+            "query": "",
+        },
+        "preview_clusters": {
+            "type": "boolean",
+            "label": "Preview Clusters - Silhouette Scores",
+            "help": """
+            Evaluate a range of values for K using the silhouette score
+            """
+        },
+        "k": {
+            "type": "integer",
+            "min_value": 2,
+            "value": 5,
+            "label": "Number of Clusters (K)",
+            "help": """
+            Number of clusters to group samples into
+            """
+        }
+    }
 
-    def run(self, container: DeltaGenerator):
+    def execute(self) -> Union[pd.Series, pd.DataFrame]:
 
-        inputs = self.prompt_input_df(container)
-        if inputs is None:
+        # Run KMeans
+        return run_clustering(
+            self.params["data.dataframe"],
+            n_clusters=self.params["k"]
+        )
+
+    def display(self, container: DeltaGenerator):
+        if not self.params["preview_clusters"]:
             return
-        mdata, modality, axis, df, columns, use_zscore = inputs
 
-        if container.checkbox(
-            "Preview Clusters - Silhouette Scores",
-            help="Evaluate a range of values for K using the silhouette score"
-        ):
-            # Try a number of different values for k
-            self.show_silhouette_scores(df, container)
-
-        # Prompt for the value of K to use
-        k = container.number_input(
-            "Number of Clusters (K)",
-            min_value=2,
-            value=5,
-            step=1,
-            help="Number of clusters to group samples into"
-        )
-
-        # Set the name of the obsm slot to use for the UMAP coordinates
-        dest_key = container.text_input(
-            "Destination Key",
-            help="The name of the column which will be used for the results.",
-            value="cluster"
-        )
-
-        # If the user clicks a button
-        if container.button("Run K-Means Clustering"):
-
-            # Run KMeans
-            clusters = run_clustering(df, n_clusters=k)
-
-            params = dict(
-                dest_key=dest_key,
-                modality=modality,
-                axis=axis,
-                columns=columns,
-                use_zscore=use_zscore,
-                k=k
-            )
-
-            # Save the results to the MuData object
-            app.save_annot(
-                mdata,
-                modality,
-                axis,
-                dest_key,
-                clusters,
-                params,
-                self.type
-            )
-
-        # Report to the user if data already exists in the destination key
-        app.show_provenance(mdata, modality, axis, dest_key, container)
-
-    def show_silhouette_scores(
-        self,
-        df: pd.DataFrame,
-        container: DeltaGenerator
-    ):
         min_k = container.number_input(
             "Min: K",
             min_value=2,
@@ -96,14 +69,17 @@ class RunKmeans(Process):
 
         # Cluster the data
         clusters = {
-            n: run_clustering(df, n_clusters=n)
+            n: run_clustering(
+                self.params["data.dataframe"],
+                n_clusters=n
+            )
             for n in range(min_k, max_k)
-            if n < df.shape[0]
+            if n < self.params["data.dataframe"].shape[0]
         }
 
         # Compute silhouette scores for the clusters
         silhouette_scores = {
-            n: silhouette_score(df, clust)
+            n: silhouette_score(self.params["data.dataframe"], clust)
             for n, clust in clusters.items()
         }
 
@@ -126,4 +102,7 @@ def run_clustering(df: pd.DataFrame, **kwargs):
         KMeans(**kwargs)
         .fit_predict(df.values)
     )
-    return list(map(str, clusters))
+    return pd.Series(
+        list(map(str, clusters)),
+        index=df.index
+    )

@@ -2,6 +2,7 @@ import json
 from anndata import AnnData
 from typing import List, Optional, Union
 from muon import MuData
+import numpy as np
 import pandas as pd
 
 
@@ -84,6 +85,10 @@ class MuDataSlice:
             msg = "If the modality is None, the slot must be 'obs'"
             assert self.slot == "obs", msg
 
+        # If the slot is .obs, the modality will be coerced to None
+        if self.slot == "obs":
+            self.modality = None
+
     @property
     def params(self):
         return dict(
@@ -104,7 +109,11 @@ class MuDataSlice:
     @property
     def address(self) -> str:
         """Return a string representation of the slice."""
-        address = f"{self.modality}.{self.slot}"
+        address = (
+            f"{self.modality}.{self.slot}"
+            if self.modality is not None
+            else self.slot
+        )
 
         for key in ["attr", "subattr"]:
             if getattr(self, key) is not None:
@@ -118,6 +127,9 @@ class MuDataSlice:
 
     def dataframe(self, mdata: MuData) -> pd.DataFrame:
         """Return a DataFrame containing the data in the slice."""
+
+        if mdata is None:
+            return None
 
         assert isinstance(mdata, MuData)
 
@@ -140,28 +152,44 @@ class MuDataSlice:
         if self.subattr is not None:
             dat = dat[self.subattr]
 
-        return dat
+        assert isinstance(dat, (pd.Series, pd.DataFrame))
+
+        dat.index.name = self.orientation
+
+        return dat.dropna(how="all")
 
     def write(self, mdata: MuData, dat: Union[pd.Series, pd.DataFrame]):
         """Write the data in the slice to the container."""
 
-        assert self.attr is not None
+        assert isinstance(dat, (pd.Series, pd.DataFrame)), type(dat)
 
         # Writing to the observation metadata
+        # Note that this is a special case
         if self.slot == "obs":
-            # Can only write a column
-            assert isinstance(dat, pd.Series)
             assert self.subattr is None
             assert self.orientation == "obs"
-            mdata.obs[self.attr] = dat
+
+            self._write_obs(mdata, dat)
 
         # Writing to the variable metadata
         elif self.slot == "var":
-            # Can only write a column
-            assert isinstance(dat, pd.Series)
+
+            # The modality must be defined
+            assert self.modality is not None
             assert self.subattr is None
             assert self.orientation == "var"
-            mdata.var[self.attr] = dat
+
+            # Set the index to the variables
+            dat = dat.reindex(mdata.mod[self.modality].var.index)
+
+            # If writing a column
+            if self.attr is not None:
+                assert isinstance(dat, pd.Series)
+                mdata.mod[self.modality].var[self.attr] = dat
+
+            # If writing a DataFrame
+            else:
+                mdata.mod[self.modality].var = dat
 
         # Writing to obsm/obsp/varm/varp
         elif self.slot in ["obsm", "obsp", "varm", "varp"]:
@@ -186,3 +214,42 @@ class MuDataSlice:
                     [self.attr]
                     [self.subattr]
                 ) = dat
+
+    def _write_obs(self, mdata: MuData, dat: Union[pd.Series, pd.DataFrame]):
+        """
+        Writing to the .obs is a special case.
+
+        The index of dat may contain observations which are not in the
+        current mdata object.
+
+        To ensure that all values may be added, a dummy modality will be
+        added which contains the observations which are in the provided
+        metadata table.
+        """
+
+        # If writing a column, simply add to the existing table
+        if self.attr is not None:
+            assert isinstance(dat, pd.Series)
+            mdata.obs[self.attr] = dat
+
+        # If writing a DataFrame
+        else:
+
+            # If any of the observations are not in the current mdata object
+            if len(set(dat.index) - set(mdata.obs.index)) > 0:
+
+                # Add a new modality
+                mdata.mod["_obs"] = AnnData(
+                    X=pd.DataFrame(
+                        np.zeros((dat.shape[0], 1)),
+                        index=dat.index
+                    )
+                )
+
+                # Update the complete set of observations
+                mdata.update()
+
+            # Set the metadata
+            mdata.obs = dat.reindex(
+                index=mdata.obs_names
+            )

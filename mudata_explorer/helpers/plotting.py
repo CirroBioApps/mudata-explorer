@@ -36,6 +36,9 @@ def plot_mdata(
     # For each modality
     for mod_name in mdata.mod.keys():
 
+        if mod_name.startswith("_"):
+            continue
+
         # Get the number of features
         nvar = mdata.mod[mod_name].shape[1]
 
@@ -116,9 +119,9 @@ def plot_mdata(
     fig.update_layout(
         showlegend=False,
         hovermode="closest",
-        plot_bgcolor="white",
+        plot_bgcolor="rgba(0, 0, 0, 0)",  # Transparent background
         margin=dict(l=0, r=0, t=0, b=0),
-        paper_bgcolor="white"
+        paper_bgcolor="rgba(0, 0, 0, 0)"  # Transparent background
     )
 
     container.plotly_chart(fig)

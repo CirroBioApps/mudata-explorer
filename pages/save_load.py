@@ -23,16 +23,6 @@ def upload_button(container: DeltaGenerator):
 
     app.set_mdata(mdata)
 
-    # Provide links to view the data, add more tables, or run processes
-    app.show_shortcuts(
-        [
-            ("views", ":bar_chart: View Data"),
-            ("processes", ":running: Run Processes"),
-            ("add_data", ":page_facing_up: Add Tables")
-        ],
-        container=container
-    )
-
 
 def show_hash(container: DeltaGenerator):
 
@@ -74,4 +64,14 @@ if __name__ == "__main__":
     upload_button(cols[0])
     download_button(cols[1])
     show_hash(container)
-    plotting.plot_mdata(container)
+
+    # Provide links to view the data, add more tables, or run processes
+    app.show_shortcuts(
+        [
+            ("views", ":bar_chart: View Data"),
+            ("processes", ":running: Run Processes"),
+            ("tables", ":page_facing_up: Add Tables")
+        ],
+        container=container
+    )
+

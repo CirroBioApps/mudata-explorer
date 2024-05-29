@@ -93,8 +93,6 @@ if __name__ == "__main__":
 
     st.write("#### Summarize")
 
-    plotting.plot_mdata(st.container())
-
     summarize_mdata(st.container())
 
     display_table(st.container())

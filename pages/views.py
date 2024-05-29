@@ -157,7 +157,7 @@ if __name__ == "__main__":
 
         # Let the user save a copy
         # Get the current dataset along with its unique hash
-        dat, hash = app.get_dat_hash()
+        dat, hash, size = app.get_dat_hash()
         if dat is not None:
 
             # Name the downloaded file for the hash of the data

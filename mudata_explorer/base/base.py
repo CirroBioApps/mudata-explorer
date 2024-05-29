@@ -19,6 +19,7 @@ class MuDataAppHelpers:
             "help": "Select whether to use observations or variables."
         }
     }
+    use_orientation: bool = True
 
     def param(self, *kws, default=None):
         return self.params.get(join_kws(*kws), default)
@@ -181,14 +182,15 @@ class MuDataAppHelpers:
 
         container.write("##### Inputs")
 
-        # 'orientation' is a special-case parameter that is used to
-        # determine whether the user is selecting observations or variables
-        msg = "The 'orientation' parameter is reserved."
-        assert "orientation" not in self.schema.keys(), msg
-        self.render_form(
-            container,
-            self.orientation_schema
-        )
+        if self.use_orientation:
+            # 'orientation' is a special-case parameter that is used to
+            # determine whether the user is selecting observations or variables
+            msg = "The 'orientation' parameter is reserved."
+            assert "orientation" not in self.schema.keys(), msg
+            self.render_form(
+                container,
+                self.orientation_schema
+            )
 
         # Parse the form schema of the object
         return self.render_form(container, self.schema)
@@ -275,7 +277,13 @@ class MuDataAppHelpers:
             elif elem["type"] == "integer":
 
                 # Make sure that the value is an integer
-                val = st.session_state.get(self.param_key(prefix_key), elem.get("default", 0))
+                val = st.session_state.get(
+                    self.param_key(prefix_key),
+                    elem.get("default")
+                )
+                if val is None:
+                    val = 0
+
                 if not isinstance(val, int):
                     # Update the value
                     self.update_view_param(prefix_key, int(val))
