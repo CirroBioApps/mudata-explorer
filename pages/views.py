@@ -8,9 +8,9 @@ from streamlit.delta_generator import DeltaGenerator
 
 
 def make_views(editable: bool):
-    mdata = app.get_mdata()
-    if mdata is None:
+    if not app.has_mdata():
         return []
+    mdata = app.get_mdata()
     views = mdata.uns.get("mudata-explorer-views", [])
     if isinstance(views, str):
         views = json.loads(views)

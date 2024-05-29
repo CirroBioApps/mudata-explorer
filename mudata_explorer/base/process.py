@@ -3,6 +3,7 @@ import pandas as pd
 import muon as mu
 from mudata_explorer import app
 from mudata_explorer.base.base import MuDataAppHelpers
+from mudata_explorer.base.slice import MuDataSlice
 from scipy.stats import zscore
 from streamlit.delta_generator import DeltaGenerator
 
@@ -15,6 +16,7 @@ class Process(MuDataAppHelpers):
     categories: List[str]
     schema: dict
     ix = -1
+    output_type: Union[pd.Series, pd.DataFrame]
 
     def __init__(
         self,
@@ -35,116 +37,6 @@ class Process(MuDataAppHelpers):
     def param_key(self, kw):
         return f"process-{kw}"
 
-    def prompt_input_df(
-        self,
-        container: DeltaGenerator
-    ) -> Union[
-        None,
-        Tuple[
-            mu.MuData,
-            str,
-            pd.DataFrame,
-            List[str]
-        ]
-    ]:
-        mdata = app.get_mdata()
-
-        if mdata is None or mdata.shape[0] == 0:
-            container.write("No MuData object available.")
-            return
-
-        # Select the modality to use
-        modality = container.selectbox(
-            "Select modality",
-            list(mdata.mod.keys())
-        )
-
-        # Get the data for the selected modality
-        df: pd.DataFrame = mdata.mod[modality].to_df()
-
-        # If there is no data, return
-        if df.shape[0] == 0 or df.shape[1] == 0:
-            container.write(f"No data available for {modality}.")
-            return
-
-        # Select the axis to use
-        axis = container.selectbox(
-            "Select axis",
-            ["Observations", "Variables"],
-            help="Select the axis to use for the analysis."
-        )
-        axis = axis.lower()[:3]
-        if axis == "var":
-            df = df.T
-
-        # Let the user select the columns to use
-        all_columns = list(df.columns.values)
-        if container.checkbox("Use all columns", value=True):
-            columns = all_columns
-        else:
-            columns = container.multiselect(
-                "Select columns",
-                all_columns,
-                default=all_columns
-            )
-
-        if len(columns) == 0:
-            container.write("No columns selected.")
-            return
-
-        df = df[columns].dropna()
-
-        # Display the number of rows which contain values
-        # for all of the selected columns
-        n_rows = df.shape[0]
-        container.write(f"{n_rows:,} rows with data for all selected columns.")
-
-        if n_rows == 0:
-            return
-
-        # Let the user optionally filter samples
-        query = container.text_input(
-            "Filter samples (optional)",
-            help="Enter a query to filter samples (using metadata or data)."
-        )
-        if query is not None and len(query) > 0:
-            df = (
-                df
-                .merge(mdata.obs, left_index=True, right_index=True)
-                .query(query)
-                .reindex(columns=columns)
-                .dropna()
-            )
-            container.write(
-                f"Filtered: {df.shape[0]:,} rows x {df.shape[1]:,} columns."
-            )
-
-        if df.shape[0] == 0:
-            return
-
-        use_zscore = container.checkbox(
-            "Normalize: Z-score",
-            value=False,
-            help="Weight each variable equally by computing the z-score"
-        )
-
-        df = df[columns]
-
-        if use_zscore:
-            # Drop any columns with no variance
-            dropping_cnames = [
-                cname for cname in columns
-                if df[cname].std() == 0
-            ]
-            if len(dropping_cnames) > 0:
-                container.write("Dropping columns with zero variance:")
-                container.write("- " + "\n- ".join(dropping_cnames))
-                columns = list(set(columns) - set(dropping_cnames))
-
-            df = df.apply(zscore)
-
-        return mdata, modality, axis, df, columns, use_zscore
-
     def update_view_param(self, kw, value):
         # Get the MuData object
         mdata = app.get_mdata()
@@ -158,16 +50,12 @@ class Process(MuDataAppHelpers):
         # Also update the params object
         self.params[kw] = value
 
-    def save_results(
+    def locate_results(
         self,
         dest_modality: str,
-        dest_key: str,
-        res: Union[pd.Series, pd.DataFrame]
-    ):
-        # Get the MuData object
-        mdata = app.get_mdata()
-
-        assert isinstance(res, (pd.Series, pd.DataFrame)), type(res)
+        dest_key: str
+    ) -> MuDataSlice:
+        """Determine the location where a set of results will be saved."""
 
         # Depending on the orientation, set the destination attribute
         if self.params["orientation"] == "observations":
@@ -176,24 +64,43 @@ class Process(MuDataAppHelpers):
             attr = "var"
 
         # DataFrames get written as their own table
-        if isinstance(res, pd.DataFrame):
+        if self.output_type == pd.DataFrame:
             attr = attr + "m"
+
+        # Return the location which was written
+        return MuDataSlice(
+            orientation=self.params["orientation"][:3],
+            modality=dest_modality,
+            slot=attr,
+            attr=dest_key
+        )
+
+    def save_results(
+        self,
+        loc: MuDataSlice,
+        res: Union[pd.Series, pd.DataFrame]
+    ) -> MuDataSlice:
+
+        # Get the MuData object
+        mdata = app.get_mdata()
 
         # Save the results to the MuData object
         app.save_annot(
             mdata,
-            dest_modality,
-            attr,
-            dest_key,
+            loc,
             res,
-            self.dehydrate_params(),
+            self.dehydrate(),
             self.type
         )
 
-    def dehydrate_params(self):
+    def dehydrate(self):
         """Only save those params which can be loaded."""
 
         return {
             kw: self.params[kw]
             for kw, _ in self.get_schema_defaults(self.schema)
         }
+
+    @classmethod
+    def hydrate(cls, params: dict):
+        return cls(params)

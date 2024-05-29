@@ -5,6 +5,7 @@ from mudata_explorer.helpers import asset_categories, filter_by_category
 from mudata_explorer.helpers import asset_type_desc_lists
 from mudata_explorer.helpers import all_processes, make_process
 import streamlit as st
+from streamlit.delta_generator import DeltaGenerator
 
 
 def update_process_kwargs(kw):
@@ -24,21 +25,7 @@ def update_process_type(
     app.update_process("type", selected_process)
 
 
-if __name__ == "__main__":
-
-    app.setup_pages()
-
-    container = st.container()
-
-    settings = app.get_settings()
-
-    # Get the setup of the current process
-    process_def = app.get_process()
-
-    container.write("#### Process Data")
-
-    # Show the dataset
-    plotting.plot_mdata(container)
+def _get_selected_process(container: DeltaGenerator):
 
     # Let the user select the type of process to add
     all_categories = asset_categories(all_processes)
@@ -70,43 +57,79 @@ if __name__ == "__main__":
         args=(type_list, desc_list,)
     )
     selected_process = type_list[desc_list.index(selected_desc)]
+    return selected_process
 
-    # Instantiate the process using any parameters
-    # which have been set
-    process = make_process(
-        selected_process,
-        params=process_def.get("params", {})
-    )
 
-    # Get the parameters from the user
-    process.get_data(container)
+if __name__ == "__main__":
 
-    container.write("##### Outputs")
+    app.setup_pages()
 
-    # Let the user select where to save the results
+    container = st.container()
 
-    # The user must select a modality
-    all_modalities = app.list_modalities()
-    dest_modality = container.selectbox(
-        "Write results to modality:",
-        all_modalities
-    )
+    settings = app.get_settings()
 
-    # Get the key used for the resulting data
-    dest_key = container.text_input(
-        "Label to use for results:",
-        process_def.get("dest_key", "results"),
-        **update_process_kwargs("dest_key")
-    )
+    # Get the setup of the current process
+    process_def = app.get_process()
 
-    # Let the user run the method, catching any errors
-    if container.button("Generate Results"):
-        try:
-            res = process.execute()
-            process.save_results(dest_modality, dest_key, res)
-        except Exception as e:
-            # Log the full traceback of the exception
-            container.exception(e)
+    container.write("#### Process Data")
 
-    # Report to the user if data already exists in the destination key
-    app.show_provenance(mdata, modality, axis, dest_key, container)
+    # Show the dataset
+    plotting.plot_mdata(container)
+
+    if app.has_mdata():
+
+        # Let the user select a process to run
+        selected_process = _get_selected_process(container)
+
+        # Instantiate the process using any parameters
+        # which have been set
+        process = make_process(
+            selected_process,
+            params=process_def.get("params", {})
+        )
+
+        # Get the parameters from the user
+        process.get_data(container)
+
+        container.write("##### Outputs")
+
+        # Let the user select where to save the results
+
+        # The user must select a modality
+        all_modalities = app.list_modalities()
+        dest_modality = container.selectbox(
+            "Write results to modality:",
+            all_modalities
+        )
+
+        # Get the key used for the resulting data
+        dest_key = container.text_input(
+            "Label to use for results:",
+            process_def.get("dest_key", "results"),
+            **update_process_kwargs("dest_key")
+        )
+
+        # Define the location where the output will be written
+        loc = process.locate_results(
+            dest_modality,
+            dest_key
+        )
+
+        # Let the user run the method, catching any errors
+        if container.button("Generate Results"):
+            try:
+                # Generate the results
+                res = process.execute()
+
+                # Make sure that the results conform to the expected type
+                assert isinstance(res, process.output_type), type(res)
+
+                # Save the results
+                process.save_results(loc, res)
+
+            except Exception as e:
+                # Log the full traceback of the exception
+                container.exception(e)
+
+        # Report to the user if data already exists in the destination key
+        app.show_provenance(loc, container)

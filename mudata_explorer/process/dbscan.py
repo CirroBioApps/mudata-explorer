@@ -10,6 +10,7 @@ class RunDBSCAN(Process):
     name = "DBSCAN"
     desc = "DBSCAN Clustering"
     categories = ["Clustering"]
+    output_type = pd.Series
     schema = {
         "data": {
             "type": "dataframe",
@@ -38,9 +39,8 @@ class RunDBSCAN(Process):
             """
         },
         "min_samples": {
-            "type": "number",
+            "type": "integer",
             "min_value": 2,
-            "step": 1,
             "value": 5,
             "label": "Neighborhood Size - min_samples",
             "help": """
@@ -66,13 +66,15 @@ class RunDBSCAN(Process):
 
         clusters = (
             DBSCAN(
-                self.params["data.dataframe"],
                 eps=self.params["eps"],
-                min_samples=self.params["min_samples"],
+                min_samples=int(self.params["min_samples"]),
                 metric=self.params["metric"]
             )
             .fit_predict(
                 self.params["data.dataframe"].values
             )
         )
-        return list(map(str, clusters))
+        return pd.Series(
+            list(map(str, clusters)),
+            index=self.params["data.dataframe"].index
+        )

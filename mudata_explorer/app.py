@@ -10,6 +10,7 @@ from tempfile import NamedTemporaryFile
 from typing import Any, List, Union, Dict
 from mudata_explorer.helpers import get_view_by_type
 from mudata_explorer.helpers.join_kws import join_kws
+from mudata_explorer.base.slice import MuDataSlice
 
 
 def page_links():
@@ -119,6 +120,16 @@ def get_mdata() -> Union[None, mu.MuData]:
     return mdata
 
 
+def has_mdata() -> bool:
+    mdata: mu.MuData = get_mdata()
+    if mdata is None:
+        return False
+    mods = mdata.mod.keys()
+    return (
+        len(mods) > 0 and '_blank' not in mods
+    )
+
+
 def set_mdata(
     mdata: mu.MuData,
     timestamp: Union[None, str] = None,
@@ -188,14 +199,17 @@ def validate_json(dat):
 
 
 def get_process() -> dict:
-    mdata = get_mdata()
-    if mdata is None:
+    if not has_mdata():
         return {}
+    mdata = get_mdata()
     assert isinstance(mdata, mu.MuData), type(mdata)
     return mdata.uns.get("mudata-explorer-process", {})
 
 
 def set_process(process: dict) -> None:
+    if not has_mdata():
+        setup_mdata()
+
     mdata = get_mdata()
     assert mdata is not None
     assert isinstance(mdata, mu.MuData), type(mdata)
@@ -231,9 +245,9 @@ def add_view(view_type: str):
 
 
 def get_views() -> List[dict]:
-    mdata = get_mdata()
-    if mdata is None:
+    if not has_mdata():
         return []
+    mdata = get_mdata()
     assert isinstance(mdata, mu.MuData), type(mdata)
     return mdata.uns.get("mudata-explorer-views", [])
 
@@ -249,8 +263,7 @@ def set_views(views):
 
 
 def get_settings() -> dict:
-    mdata = get_mdata()
-    if mdata is None:
+    if not has_mdata():
         settings = {}
     else:
         settings = get_mdata().uns.get("mudata-explorer-settings", {})
@@ -278,14 +291,10 @@ def set_settings(settings: dict):
 
 
 def get_history() -> List[dict]:
-    mdata = get_mdata()
-
-    if mdata is None:
+    if not has_mdata():
         return []
-
-    assert isinstance(mdata, mu.MuData), type(mdata)
-
-    return mdata.uns.get("mudata-explorer-history", [])
+    else:
+        return get_mdata().uns.get("mudata-explorer-history", [])
 
 
 def set_history(history: dict):
@@ -300,8 +309,7 @@ def set_history(history: dict):
 
 
 def add_history(event: dict):
-    mdata = get_mdata()
-    if mdata is None:
+    if not has_mdata():
         return
     history = get_history()
     history.insert(0, event)
@@ -309,23 +317,18 @@ def add_history(event: dict):
 
 
 def get_provenance() -> Dict[str, dict]:
-    mdata = get_mdata()
-
-    if mdata is None:
+    if not has_mdata():
         return {}
+
+    mdata = get_mdata()
     assert isinstance(mdata, mu.MuData), type(mdata)
 
     return mdata.uns.get("mudata-explorer-provenance", {})
 
 
-def query_provenance(
-    mod_name: str,
-    slot: str,
-    kw: str
-) -> Union[None, dict]:
-    key = join_kws(mod_name, slot, kw)
+def query_provenance(loc: MuDataSlice) -> Union[None, dict]:
     provenance = get_provenance()
-    return provenance.get(key, None)
+    return provenance.get(loc.dehydrate(), None)
 
 
 def set_provenance(provenance: dict):
@@ -340,14 +343,11 @@ def set_provenance(provenance: dict):
 
 
 def add_provenance(
-    mod_name: str,
-    slot: str,
-    kw: Union[str, None],
+    loc: MuDataSlice,
     event: dict
 ):
     provenance = get_provenance()
-    provenance_key = join_kws(mod_name, slot, kw)
-    provenance[provenance_key] = event
+    provenance[loc.dehydrate()] = event
     set_provenance(provenance)
 
 
@@ -414,10 +414,9 @@ def get_timestamp():
 
 
 def list_modalities():
-    mdata = get_mdata()
-    if mdata is None:
+    if not has_mdata():
         return []
-    return list(mdata.mod.keys())
+    return list(get_mdata().mod.keys())
 
 
 def tree_tables(orientation) -> List[str]:
@@ -430,10 +429,10 @@ def tree_tables(orientation) -> List[str]:
 
 
 def list_tables(modality: str, orientation: str):
+    if not has_mdata():
+        return []
     assert orientation in ["observations", "variables"], orientation
     mdata = get_mdata()
-    if mdata is None:
-        return []
     adata: ad.AnnData = mdata.mod[modality]
     tables = ["metadata", "data"]
     if orientation == "observations":
@@ -448,6 +447,10 @@ def list_tables(modality: str, orientation: str):
 
 
 def list_cnames(modality: str, table: str, orientation="observations"):
+
+    if not has_mdata():
+        return []
+        
     if orientation == "observations":
         attr = "columns"
     else:
@@ -455,8 +458,6 @@ def list_cnames(modality: str, table: str, orientation="observations"):
         attr = "index"
 
     mdata = get_mdata()
-    if mdata is None:
-        return []
     adata: ad.AnnData = mdata.mod[modality]
     if table == 'metadata':
         return list(getattr(adata.obs, attr))
@@ -464,12 +465,17 @@ def list_cnames(modality: str, table: str, orientation="observations"):
         return list(getattr(adata.to_df(), attr))
     else:
         prefix, name = table.split(".", 1)
-        assert hasattr(adata, prefix)
+        assert hasattr(adata, prefix), f"Invalid table: {table}"
         return list(getattr(adata, prefix)[name].columns)
-    raise ValueError(f"Invalid table: {table}")
 
 
-def get_dataframe_table(modality: str, table: str) -> pd.DataFrame:
+def get_dataframe_table(
+    modality: str,
+    table: str,
+    orientation: str
+) -> pd.DataFrame:
+    
+    assert orientation in ["observations", "variables"], orientation
 
     # Get the complete set of data
     mdata = get_mdata()
@@ -482,38 +488,63 @@ def get_dataframe_table(modality: str, table: str) -> pd.DataFrame:
 
     # Get the table
     if table == "metadata":
-        table = adata.obs
+        table = adata.obs if orientation == "observations" else adata.var
     elif table == "data":
         table = adata.to_df()
-    elif table.startswith("obsm."):
-        table = adata.obsm[table[5:]]
-    elif table.startswith("obsp."):
-        table = adata.obsp[table[5:]]
+        if orientation == "variables":
+            table = table.T
     else:
-        raise ValueError(f"Invalid table: {table}")
+        assert "." in table, f"Invalid table: {table}"
+        attr, kw = table.split(".", 1)
+        table = getattr(adata, attr)[kw]
 
     return table
 
 
 def get_dataframe_column(
+    orientation: str,
     modality: str,
     table: str,
     cname: str
 ):
 
-    table = get_dataframe_table(modality, table)
+    # Parse the slot, attr, and subattr from the table name
+    # Get the table
+    subattr = None
+    if table == "metadata":
+        if orientation == "observations":
+            slot = "obs"
+        else:
+            slot = "var"
+        attr = cname
+    elif table == "data":
+        slot = "X"
+        attr = cname
+    elif "." in table:
+        slot, attr = table.split(".", 1)
+        subattr = cname
+    else:
+        raise ValueError(f"Invalid table: {table}")
 
-    # Get the column
-    if cname not in table.columns:
-        return None
+    # Define the slice of the data
+    slice = MuDataSlice(
+        get_mdata(),
+        modality=modality,
+        orientation=orientation[:3],
+        slot=slot,
+        attr=attr,
+        subattr=subattr
+    )
 
-    return table[cname]
+    # Return the data
+    return slice.dataframe()[cname]
 
 
 def get_dat_hash():
+    if not has_mdata():
+        return None, None, None
+
     mdata = get_mdata()
-    if mdata is None:
-        return None, None
 
     # Convert the MuData object to binary
     dat = mdata_to_binary(mdata)
@@ -535,23 +566,21 @@ def get_dat_hash():
 
 def save_annot(
     mdata: mu.MuData,
-    modality: str,
-    slot: str,
-    dest_key: str,
+    loc: MuDataSlice,
     column_dat: Union[pd.Series, pd.DataFrame],
     params: dict,
     process_type: str
 ):
-
-    # Add the PCA coordinates to the obs/var slot
-    getattr(mdata.mod[modality], slot)[dest_key] = column_dat
+    
+    # Write the data to the specified address
+    loc.write(mdata, column_dat)
 
     # Make a record of the process
     event = dict(
         process=process_type,
         params=params,
         timestamp=get_timestamp(),
-        updated_keys=dest_key
+        loc=loc.params
     )
 
     # Save the results
@@ -563,22 +592,17 @@ def save_annot(
     add_history(event)
 
     # Mark the source of the table which was added
-    add_provenance(
-        modality,
-        slot,
-        dest_key,
-        event
-    )
+    add_provenance(loc, event)
 
 
-def show_provenance(mdata, modality, slot, dest_key, container):
+def show_provenance(loc: MuDataSlice, container: DeltaGenerator):
 
-    # If the key already exists
-    if dest_key in getattr(mdata.mod[modality], slot).keys():
-        prov = query_provenance(modality, slot, dest_key)
-        if prov is not None:
-            container.write(f"**Data currently in '{slot}/{dest_key}'**")
-            container.write(prov)
-            container.write(
-                f"> 'Run' will overwrite existing data in '{slot}/{dest_key}'."
-            )
+    prov = query_provenance(loc)
+    if prov is not None:
+        container.write(
+            f"**Data currently in '{loc.address}'**"
+        )
+        container.write(prov)
+        container.write(
+            f"> 'Run' will overwrite existing data in '{loc.address}'."
+        )

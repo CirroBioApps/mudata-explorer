@@ -8,9 +8,10 @@ def plot_mdata(
     hspace=10,
     vspace=10
 ):
-    mdata = app.get_mdata()
-    if mdata is None:
+    if not app.has_mdata():
         return
+
+    mdata = app.get_mdata()
 
     # Set up a figure
     fig = go.Figure()
@@ -97,7 +98,8 @@ def plot_mdata(
                 width=ncol,
                 y=0,
                 height=-nobs,
-                label=f"{mod_name} .obsm[{obsm_key}]"
+                label=f"{mod_name} .obsm[{obsm_key}]",
+                textangle=90
             )
 
             # Update the offset
