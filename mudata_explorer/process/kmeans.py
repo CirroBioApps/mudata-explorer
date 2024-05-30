@@ -3,6 +3,7 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 import pandas as pd
 import plotly.express as px
+from plotly import io
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 from mudata_explorer import app
@@ -22,50 +23,40 @@ class RunKmeans(Process):
             "select_columns": True,
             "query": "",
         },
-        "preview_clusters": {
-            "type": "boolean",
-            "label": "Preview Clusters - Silhouette Scores",
-            "help": """
-            Evaluate a range of values for K using the silhouette score
-            """
-        },
         "k": {
             "type": "integer",
             "min_value": 2,
-            "value": 5,
+            "default": 5,
             "label": "Number of Clusters (K)",
             "help": """
             Number of clusters to group samples into
+            """
+        },
+        "min_k": {
+            "type": "integer",
+            "min_value": 2,
+            "default": 2,
+            "label": "Evaluate Values of K: Lower Bound",
+            "help": """
+            Generate a plot showing the silhouette score for a range of K
+            """
+        },
+        "max_k": {
+            "type": "integer",
+            "min_value": 2,
+            "default": 10,
+            "label": "Evaluate Values of K: Upper Bound",
+            "help": """
+            Generate a plot showing the silhouette score for a range of K
             """
         }
     }
 
     def execute(self) -> Union[pd.Series, pd.DataFrame]:
 
-        # Run KMeans
-        return run_clustering(
-            self.params["data.dataframe"],
-            n_clusters=self.params["k"]
-        )
-
-    def display(self, container: DeltaGenerator):
-        if not self.params["preview_clusters"]:
-            return
-
-        min_k = container.number_input(
-            "Min: K",
-            min_value=2,
-            value=2,
-            step=1,
-            help="Smallest value of K used for evaluation"
-        )
-        max_k = container.number_input(
-            "Min: K",
-            min_value=2,
-            value=10,
-            step=1,
-            help="Largest value of K used for evaluation"
-        )
+        msg = "Selected value of K must fall between the lower and upper bound"
+        assert self.params["k"] >= self.params["min_k"], msg
+        assert self.params["k"] <= self.params["max_k"], msg
 
         # Cluster the data
         clusters = {
@@ -73,7 +64,10 @@ class RunKmeans(Process):
                 self.params["data.dataframe"],
                 n_clusters=n
             )
-            for n in range(min_k, max_k)
+            for n in range(
+                self.params["min_k"],
+                self.params["max_k"]
+            )
             if n < self.params["data.dataframe"].shape[0]
         }
 
@@ -93,7 +87,13 @@ class RunKmeans(Process):
             },
             title="Evaluate Clustering Performance"
         )
-        container.plotly_chart(fig)
+        fig.add_vline(x=self.params["k"])
+
+        # Save the figure
+        self.figures = [io.to_json(fig, validate=False)]
+
+        # Return the clusters for the selected value of K
+        return clusters[self.params["k"]]
 
 
 @st.cache_data

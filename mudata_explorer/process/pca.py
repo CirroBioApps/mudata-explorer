@@ -18,7 +18,7 @@ class RunPCA(Process):
             "type": "dataframe",
             "select_columns": True,
             "query": "",
-        },
+        }
     }
 
     def execute(self) -> pd.DataFrame:

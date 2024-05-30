@@ -1,4 +1,4 @@
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 import pandas as pd
 import muon as mu
 from mudata_explorer import app
@@ -17,6 +17,8 @@ class Process(MuDataAppHelpers):
     schema: dict
     ix = -1
     output_type: Union[pd.Series, pd.DataFrame]
+    output_modalities: List[str]
+    figures: Optional[List[dict]] = None
 
     def __init__(
         self,
@@ -31,9 +33,56 @@ class Process(MuDataAppHelpers):
 
         pass
 
-    def display(self, container: DeltaGenerator):
+    def get_data(self, container: DeltaGenerator):
+        """The difference between .get_data for the Process and View
+        is that the Process needs to know where to store the results."""
 
-        pass
+        # Run the method of the parent class
+        super().get_data(container)
+
+        # Now figure out what the output modalities are
+
+        # If the orientation is to obs
+        if self.orientation == "observations":
+
+            # Ask the user which modality to save the outputs to
+            all_modalities = app.list_modalities()
+            dest_modality = container.selectbox(
+                "Write results to modality:",
+                all_modalities
+            )
+            self.output_modalities = [dest_modality]
+
+        # If the orientation is to var
+        else:
+
+            # Look through the tables which were selected by the user
+            self.output_modalities = self._find_modalities()
+
+        # Make sure that all of the output modalities are valid
+        assert all([
+            mod in app.list_modalities()
+            for mod in self.output_modalities
+        ]), self.output_modalities
+
+    def _find_modalities(self) -> List[str]:
+        """Look through all of the params and return a list of all
+        of the modalities which have been selected for source data."""
+
+        return list(set(
+            [
+                # If the user selects a table
+                table.split(".", 1)[0]
+                for kw, vals in self.params.items()
+                if kw.endswith('.tables')
+                for table in vals
+            ] + [
+                # If the user selects a column
+                val.split(".", 1)[0]
+                for kw, val in self.params.items()
+                if kw.endswith('.modality')
+            ]
+        ))
 
     def execute(self) -> Union[pd.Series, pd.DataFrame]:
         pass
@@ -98,7 +147,8 @@ class Process(MuDataAppHelpers):
             loc,
             res,
             self.dehydrate(),
-            self.type
+            self.type,
+            self.figures
         )
 
     def dehydrate(self):

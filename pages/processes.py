@@ -1,6 +1,5 @@
 from typing import List
 from mudata_explorer import app
-from mudata_explorer.helpers import plotting
 from mudata_explorer.helpers import asset_categories, filter_by_category
 from mudata_explorer.helpers import asset_type_desc_lists
 from mudata_explorer.helpers import all_processes, make_process
@@ -25,7 +24,7 @@ def update_process_type(
     app.update_process("type", selected_process)
 
 
-def _get_selected_process(container: DeltaGenerator):
+def _get_selected_process(container: DeltaGenerator, process_def: dict):
 
     # Let the user select the type of process to add
     all_categories = asset_categories(all_processes)
@@ -60,54 +59,49 @@ def _get_selected_process(container: DeltaGenerator):
     return selected_process
 
 
-if __name__ == "__main__":
+def main():
 
     app.setup_pages()
 
     container = st.container()
-
-    settings = app.get_settings()
 
     # Get the setup of the current process
     process_def = app.get_process()
 
     container.write("#### Process Data")
 
-    if app.has_mdata():
+    if not app.has_mdata():
+        container.write("Upload data to get started")
+        app.landing_shortcuts()
+        return
 
-        # Let the user select a process to run
-        selected_process = _get_selected_process(container)
+    # Let the user select a process to run
+    selected_process = _get_selected_process(container, process_def)
 
-        # Instantiate the process using any parameters
-        # which have been set
-        process = make_process(
-            selected_process,
-            params=process_def.get("params", {})
-        )
+    # Instantiate the process using any parameters
+    # which have been set
+    process = make_process(
+        selected_process,
+        params=process_def.get("params", {})
+    )
 
-        # Get the parameters from the user
-        process.get_data(container)
+    # Get the parameters from the user
+    process.get_data(container)
 
-        # Show any plots that the process generates
-        process.display(container)
+    # Get the key used for the resulting data
+    dest_key = container.text_input(
+        "Label to use for results:",
+        process_def.get("dest_key", process.type),
+        **update_process_kwargs("dest_key")
+    )
 
-        container.write("##### Outputs")
+    # If no data has been selected
+    if len(process.output_modalities) == 0:
+        container.write("Please select input data")
+        return
 
-        # Let the user select where to save the results
-
-        # The user must select a modality
-        all_modalities = app.list_modalities()
-        dest_modality = container.selectbox(
-            "Write results to modality:",
-            all_modalities
-        )
-
-        # Get the key used for the resulting data
-        dest_key = container.text_input(
-            "Label to use for results:",
-            process_def.get("dest_key", "results"),
-            **update_process_kwargs("dest_key")
-        )
+    # For each of the destination modalities
+    for dest_modality in process.output_modalities:
 
         # Define the location where the output will be written
         loc = process.locate_results(
@@ -118,21 +112,30 @@ if __name__ == "__main__":
         # Report to the user if data already exists in the destination key
         app.show_provenance(loc, container)
 
-        # Let the user run the method, catching any errors
-        if container.button("Generate Results"):
-            try:
+    # Let the user run the method, catching any errors
+    if not process.params_complete:
+        container.write("Please complete all input fields")
+        return
 
-                # Generate the results
-                res = process.execute()
+    if container.button("Generate Results"):
 
-                # Make sure that the results conform to the expected type
-                assert isinstance(res, process.output_type), type(res)
+        try:
+            # Generate the results
+            res = process.execute()
 
-                # Save the results
-                process.save_results(loc, res)
+            # Make sure that the results conform to the expected type
+            assert isinstance(res, process.output_type), type(res)
 
-            except Exception as e:
-                # Log the full traceback of the exception
-                container.exception(e)
+            # Save the results
+            process.save_results(loc, res)
 
-            st.rerun()
+        except Exception as e:
+            # Log the full traceback of the exception
+            container.exception(e)
+
+        st.rerun()
+
+
+if __name__ == "__main__":
+
+    main()

@@ -12,7 +12,7 @@ class Markdown(View):
         "text": {
             "type": "string",
             "label": "Text",
-            "value": "",
+            "default": "",
             "help": "Use markdown syntax to write formatted text.",
             "multiline": True,
         }

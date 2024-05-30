@@ -22,14 +22,14 @@ class UMAP(Process):
         "n_neighbors": {
             "type": "integer",
             "min_value": 2,
-            "value": 15,
+            "default": 15,
             "label": "Number of Neighbors",
             "help": "Number of neighbors to use in the UMAP algorithm."
         },
         "min_dist": {
-            "type": "number",
+            "type": "float",
             "min_value": 0.,
-            "value": 0.1,
+            "default": 0.1,
             "label": "Minimum Distance",
             "help": "Minimum distance between points in the UMAP algorithm."
         },
@@ -37,12 +37,13 @@ class UMAP(Process):
             "type": "string",
             "label": "UMAP: Metric",
             "enum": ["cosine", "euclidean", "manhattan", "correlation", "jaccard"],
+            "default": "correlation",
             "help": "The metric to use for the UMAP algorithm."
         },
         "n_components": {
             "type": "integer",
             "min_value": 1,
-            "value": 2,
+            "default": 2,
             "label": "Number of Components",
             "help": "Number of dimensions to reduce the data to."
         }

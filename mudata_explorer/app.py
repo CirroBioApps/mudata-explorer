@@ -6,11 +6,12 @@ import pandas as pd
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 from tempfile import NamedTemporaryFile
-from typing import Any, List, Union, Dict
+from typing import Any, List, Optional, Union, Dict
 from mudata_explorer.helpers import get_view_by_type
 from mudata_explorer.helpers.join_kws import join_kws
 from mudata_explorer.helpers import mudata, plotting
 from mudata_explorer.base.slice import MuDataSlice
+from plotly import io
 
 
 def page_links():
@@ -574,9 +575,10 @@ def save_annot(
     loc: MuDataSlice,
     column_dat: Union[pd.Series, pd.DataFrame],
     params: dict,
-    process_type: str
+    process_type: str,
+    figures: Optional[List[dict]]
 ):
-    
+
     # Write the data to the specified address
     loc.write(mdata, column_dat)
 
@@ -585,7 +587,8 @@ def save_annot(
         process=process_type,
         params=params,
         timestamp=get_timestamp(),
-        loc=loc.params
+        loc=loc.params,
+        figures=figures
     )
 
     # Save the results
@@ -607,7 +610,16 @@ def show_provenance(loc: MuDataSlice, container: DeltaGenerator):
         container.write(
             f"**Data currently in '{loc.address}'**"
         )
-        container.write(prov)
+        container.write({
+            kw: val
+            for kw, val in prov.items()
+            if kw != "figures"
+        })
+        if isinstance(prov.get("figures"), list):
+            for fig_json in prov["figures"]:
+                print("here1")
+                fig = io.from_json(fig_json)
+                container.plotly_chart(fig)
         container.write(
             f"> 'Run' will overwrite existing data in '{loc.address}'."
         )

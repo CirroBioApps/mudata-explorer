@@ -26,9 +26,9 @@ class RunDBSCAN(Process):
             """
         },
         "eps": {
-            "type": "number",
+            "type": "float",
             "min_value": 0.,
-            "value": 0.5,
+            "default": 0.5,
             "label": "Distance threshold - eps",
             "help": """
             The maximum distance between two samples for one to be considered
@@ -41,7 +41,7 @@ class RunDBSCAN(Process):
         "min_samples": {
             "type": "integer",
             "min_value": 2,
-            "value": 5,
+            "default": 5,
             "label": "Neighborhood Size - min_samples",
             "help": """
             The number of samples (or total weight) in a neighborhood for a point to

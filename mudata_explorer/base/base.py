@@ -20,6 +20,8 @@ class MuDataAppHelpers:
         }
     }
     use_orientation: bool = True
+    # Flag used to indicate whether all parameters have been provided
+    params_complete: bool
 
     def param(self, *kws, default=None):
         return self.params.get(join_kws(*kws), default)
@@ -46,7 +48,6 @@ class MuDataAppHelpers:
 
             elif elem["type"] in [
                 "string",
-                "number",
                 "float",
                 "boolean",
                 "integer"
@@ -180,6 +181,9 @@ class MuDataAppHelpers:
 
     def get_data(self, container: DeltaGenerator):
 
+        # By default, params are complete until proven otherwise
+        self.params_complete = True
+
         container.write("##### Inputs")
 
         if self.use_orientation:
@@ -193,7 +197,7 @@ class MuDataAppHelpers:
             )
 
         # Parse the form schema of the object
-        return self.render_form(container, self.schema)
+        self.render_form(container, self.schema)
 
     def render_form(
         self,
@@ -229,7 +233,11 @@ class MuDataAppHelpers:
                 if settings["editable"]:
                     if elem.get("enum") is not None:
                         self.params[prefix_key] = container.selectbox(
-                            key if elem.get("label") is None else elem["label"],
+                            (
+                                key
+                                if elem.get("label") is None
+                                else elem["label"]
+                            ),
                             elem["enum"],
                             help=elem.get("help"),
                             **self.input_selectbox_kwargs(
@@ -260,7 +268,10 @@ class MuDataAppHelpers:
                             **self.input_value_kwargs(prefix_key)
                         )
 
-            elif elem["type"] in ["number", "float"]:
+                if not isinstance(self.params[prefix_key], str):
+                    self.params_complete = False
+
+            elif elem["type"] == "float":
 
                 if settings["editable"]:
                     self.params[prefix_key] = container.number_input(
@@ -273,6 +284,8 @@ class MuDataAppHelpers:
                             if elem.get(kw) is not None
                         }
                     )
+                if not isinstance(self.params[prefix_key], (float, int)):
+                    self.params_complete = False
 
             elif elem["type"] == "integer":
 
@@ -325,6 +338,7 @@ class MuDataAppHelpers:
 
         if not app.has_mdata():
             container.write("No MuData object available.")
+            self.params_complete = False
             return
 
         # The user can either:
@@ -371,6 +385,7 @@ class MuDataAppHelpers:
             selected_tables = self.params.get(tables_kw, [])
             if len(selected_tables) == 0:
                 container.write("No tables selected.")
+                self.params_complete = False
                 return
             else:
                 df = pd.concat(
@@ -410,19 +425,14 @@ class MuDataAppHelpers:
                 ]
                 self.update_view_param(selected_columns_kw, selected_columns)
 
-            # If no columns are selected
-            if len(selected_columns) == 0:
-                # Select all of the columns
-                self.update_view_param(selected_columns_kw, avail_columns)
-
             # Let the user select the columns to use
             if settings["editable"]:
                 # Check to see if the user wants to select all of the columns
                 if container.checkbox(
                     "Use all columns",
-                    set(selected_columns) == set(avail_columns)
+                    len(selected_columns) == 0
                 ):
-                    self.update_view_param(selected_columns_kw, avail_columns)
+                    self.update_view_param(selected_columns_kw, [])
 
                 # Otherwise, present a list of columns to select from
                 else:
@@ -436,7 +446,8 @@ class MuDataAppHelpers:
                     )
 
             # Filter the DataFrame to the selected columns
-            df = df[selected_columns].dropna()
+            if len(selected_columns) > 0:
+                df = df[selected_columns].dropna()
 
         if settings["editable"] and df.shape[0] == 0:
             container.write("No data available.")
