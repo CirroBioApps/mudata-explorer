@@ -1,8 +1,6 @@
 import pandas as pd
 import umap
 import streamlit as st
-from streamlit.delta_generator import DeltaGenerator
-from mudata_explorer import app
 from mudata_explorer.base.process import Process
 
 
@@ -11,78 +9,61 @@ class UMAP(Process):
     type = "umap"
     name = "UMAP"
     desc = "Uniform Manifold Approximation and Projection (UMAP)"
-    categories = ["Dimensionality Reduction"]
+    category = "Dimensionality Reduction"
+    output_type = pd.DataFrame
+    schema = {
+        "data": {
+            "type": "dataframe",
+            "select_columns": True,
+            "query": "",
+        },
+        "n_neighbors": {
+            "type": "integer",
+            "min_value": 2,
+            "default": 15,
+            "label": "Number of Neighbors",
+            "help": "Number of neighbors to use in the UMAP algorithm."
+        },
+        "min_dist": {
+            "type": "float",
+            "min_value": 0.,
+            "default": 0.1,
+            "label": "Minimum Distance",
+            "help": "Minimum distance between points in the UMAP algorithm."
+        },
+        "metric": {
+            "type": "string",
+            "label": "UMAP: Metric",
+            "enum": ["cosine", "euclidean", "manhattan", "correlation", "jaccard"],
+            "default": "correlation",
+            "help": "The metric to use for the UMAP algorithm."
+        },
+        "n_components": {
+            "type": "integer",
+            "min_value": 1,
+            "default": 2,
+            "label": "Number of Components",
+            "help": "Number of dimensions to reduce the data to."
+        }
+    }
 
-    def run(self, container: DeltaGenerator):
+    def execute(self) -> pd.DataFrame:
 
-        inputs = self.prompt_input_df(container)
-        if inputs is None:
-            return
-        mdata, modality, axis, df, columns, use_zscore = inputs
-        slot = axis + "m"
+        df: pd.DataFrame = self.params["data.dataframe"]
 
-        n_neighbors = container.number_input(
-            "UMAP: Number of neighbors",
-            value=15
+        # Run UMAP
+        return run_umap(
+            df,
+            **{
+                kw: self.params[kw]
+                for kw in [
+                    "n_neighbors",
+                    "min_dist",
+                    "metric",
+                    "n_components"
+                ]
+            }
         )
-        min_dist = container.number_input(
-            "UMAP: Minimum distance",
-            value=0.1
-        )
-        metric = container.selectbox(
-            "UMAP: Metric",
-            ["cosine", "euclidean", "manhattan", "correlation", "jaccard"]
-        )
-        n_components = container.number_input(
-            "UMAP: Number of Components",
-            value=2,
-            min_value=1,
-            step=1,
-            help="The number of dimensions to reduce the data to.",
-        )
-
-        # Set the name of the obsm slot to use for the UMAP coordinates
-        dest_key = container.text_input(
-            "Destination Key",
-            help="The name of the table which will be used for the results.",
-            value="X_umap"
-        )
-
-        # If the user clicks a button
-        if container.button("Run UMAP"):
-
-            params = dict(
-                n_neighbors=n_neighbors,
-                min_dist=min_dist,
-                metric=metric,
-                n_components=n_components
-            )
-
-            # Run UMAP
-            umap_df = run_umap(
-                df,
-                **params
-            )
-
-            # Add the complete set of params
-            params["dest_key"] = dest_key
-            params["modality"] = modality
-            params["columns"] = columns
-            params["use_zscore"] = use_zscore
-
-            # Save the results to the MuData object
-            app.save_annot(
-                mdata,
-                modality,
-                slot,
-                dest_key,
-                umap_df,
-                params,
-                self.type
-            )
-
-        # Report to the user if data already exists in the destination key
-        app.show_provenance(mdata, modality, slot, dest_key, container)
 
 
 @st.cache_data
@@ -91,5 +72,5 @@ def run_umap(df: pd.DataFrame, n_components=2, **kwargs) -> pd.DataFrame:
     return pd.DataFrame(
         reducer.fit_transform(df),
         index=df.index,
-        columns=[f"UMAP-{i+1}" for i in range(n_components)]
+        columns=[f"UMAP {i+1}" for i in range(n_components)]
     )

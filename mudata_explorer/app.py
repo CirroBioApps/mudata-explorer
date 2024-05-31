@@ -1,3 +1,4 @@
+from collections import defaultdict
 import anndata as ad
 import hashlib
 import json
@@ -7,40 +8,78 @@ import pandas as pd
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 from tempfile import NamedTemporaryFile
-from typing import Any, List, Union, Dict
+from typing import Any, List, Optional, Tuple, Union, Dict
 from mudata_explorer.helpers import get_view_by_type
 from mudata_explorer.helpers.join_kws import join_kws
+from mudata_explorer.helpers import mudata, plotting, save_load
+from mudata_explorer.base.slice import MuDataSlice
+from plotly import io
 
 
-def page_links():
-    return [
-        ("summarize", "Summarize"),
-        ("views", "Views"),
-        ("processes", "Process Data"),
-        ("add_data", "Add Data"),
-        ("save_load", "Save/Load"),
-        ("history", "History"),
-        ("settings", "Settings"),
-        ("about", "About")
-    ]
-
-
-def setup_pages():
-    st.set_page_config("MuData Explorer", layout="centered")
-    st.sidebar.title("MuData Explorer")
-
-    for path, label in page_links():
+def sidebar_page_links(page_links):
+    for path, label in page_links:
         st.sidebar.page_link(
             f"pages/{path}.py",
             label=label
         )
 
 
+def sidebar_edit_views():
+    if get_mdata() is None:
+        return
+
+    settings = get_settings()
+
+    settings["editable"] = st.sidebar.checkbox(
+        "Edit Figures",
+        value=settings.get("editable", True),
+        help="Display a set of menus to modify the figures.",
+        on_change=update_edit_views,
+        key="sidebar_edit_views"
+    )
+
+
+def update_edit_views():
+    flag = st.session_state["sidebar_edit_views"]
+    settings = get_settings()
+    if flag != settings["editable"]:
+        settings["editable"] = flag
+        set_settings(settings)
+
+
+def setup_sidebar(edit_views=False):
+    """
+    Setup the sidebar with links to all of the pages.
+    If edit_views is True, add a checkbox to allow the user to edit the views.
+    """
+    st.set_page_config("MuData Explorer", layout="centered")
+    # st.sidebar.title("MuData Explorer")
+
+    sidebar_page_links([
+        ("tables", "Tables"),
+        ("processes", "Analysis"),
+        ("views", "Figures"),
+        ("history", "History"),
+        # ("settings", "Settings"),
+        ("about", "About")
+    ])
+    if edit_views:
+        sidebar_edit_views()
+
+    load_cont, save_cont = st.sidebar.columns(2)
+    if has_mdata():
+        if save_cont.button("Save File", use_container_width=True):
+            save_load.download_button()
+    if load_cont.button("Load File", use_container_width=True):
+        save_load.upload_button()
+
+    plotting.plot_mdata(st.sidebar)
+
+
 def landing_shortcuts():
 
     show_shortcuts([
-        ("add_data", ":page_facing_up: Upload Tables (*.csv)"),
-        ("save_load", ":open_file_folder: Load Dataset (*.h5mu)"),
+        ("tables", ":page_facing_up: Upload Tables (*.csv)"),
         ("about", ":information_source: About")
     ])
 
@@ -107,10 +146,24 @@ def hash_dat(dat, n: Union[int, None] = 16):
 
 
 def get_mdata() -> Union[None, mu.MuData]:
-    mdata = st.session_state.get("mdata", None)
+    if "mdata" not in st.session_state:
+        mdata = None
+    else:
+        mdata = st.session_state["mdata"]
+
     if mdata is not None:
         assert isinstance(mdata, mu.MuData)
+        if "mudata-explorer-process" not in mdata.uns.keys():
+            mdata.uns["mudata-explorer-process"] = {
+                "category": None,
+                "type": None,
+                "params": {}
+            }
     return mdata
+
+
+def has_mdata() -> bool:
+    return len(list_modalities()) > 0
 
 
 def set_mdata(
@@ -134,7 +187,7 @@ def set_mdata(
         updated_keys = List[str] e.g. ["rna.X", "rna.obs", "rna.var"]
     """
 
-    assert isinstance(mdata, mu.MuData)
+    assert isinstance(mdata, mu.MuData), type(mdata)
     if (
         timestamp is not None or
         process is not None or
@@ -161,28 +214,72 @@ def set_mdata(
 
 
 def setup_mdata():
-    mdata = mu.MuData({
-        '_blank': ad.AnnData(
-            X=np.array([[]]),
-            obs=[],
-            var=[]
-        )
-    })
-    mdata.uns["mudata-explorer-views"] = []
-    mdata.uns["mudata-explorer-settings"] = {}
-    mdata.uns["mudata-explorer-history"] = []
-    mdata.uns["mudata-explorer-provenance"] = {}
+    mdata = mudata.setup_mdata()
     set_mdata(mdata)
+
+
+def jsonify(dat):
+    if isinstance(dat, (list, np.ndarray)):
+        return [jsonify(val) for val in dat]
+    elif isinstance(dat, dict):
+        return {kw: jsonify(val) for kw, val in dat.items()}
+    else:
+        return dat
 
 
 def validate_json(dat):
     """Validate that an object can be serialized to JSON"""
-    return json.loads(json.dumps(dat, sort_keys=True))
+    try:
+        return json.loads(
+            json.dumps(
+                jsonify(dat),
+                sort_keys=True
+            )
+        )
+    except Exception as e:
+        print(dat)
+        raise ValueError(f"Could not serialize object to JSON: {e}")
+
+
+def get_process() -> dict:
+    if not has_mdata():
+        return {}
+    mdata = get_mdata()
+    assert isinstance(mdata, mu.MuData), type(mdata)
+    return _json_safe(mdata.uns.get("mudata-explorer-process", {}))
+
+
+def set_process(process: dict) -> None:
+    if not has_mdata():
+        setup_mdata()
+
+    mdata = get_mdata()
+    assert mdata is not None
+    assert isinstance(mdata, mu.MuData), type(mdata)
+    mdata.uns["mudata-explorer-process"] = process
+    set_mdata(mdata)
+
+
+def update_process_on_change(kw) -> None:
+    val = st.session_state[f"process-{kw}"]
+    update_process(kw, val)
+
+
+def update_process(kw, val) -> None:
+    process = get_process()
+    process[kw] = val
+    set_process(process)
 
 
 def delete_view(ix: int):
     views = get_views()
     views.pop(ix)
+    set_views(views)
+
+
+def duplicate_view(ix: int):
+    views = get_views()
+    views.insert(ix, views[ix])
     set_views(views)
 
 
@@ -197,11 +294,11 @@ def add_view(view_type: str):
 
 
 def get_views() -> List[dict]:
-    mdata = get_mdata()
-    if mdata is None:
+    if not has_mdata():
         return []
+    mdata = get_mdata()
     assert isinstance(mdata, mu.MuData), type(mdata)
-    return mdata.uns.get("mudata-explorer-views", [])
+    return _json_safe(mdata.uns.get("mudata-explorer-views", []))
 
 
 def set_views(views):
@@ -214,12 +311,20 @@ def set_views(views):
     set_mdata(mdata)
 
 
+def _json_safe(obj: Union[str, dict]):
+    if isinstance(obj, str):
+        return json.loads(obj)
+    else:
+        return obj
+
+
 def get_settings() -> dict:
-    mdata = get_mdata()
-    if mdata is None:
+    if not has_mdata():
         settings = {}
     else:
-        settings = get_mdata().uns.get("mudata-explorer-settings", {})
+        settings = _json_safe(
+            get_mdata().uns.get("mudata-explorer-settings", {})
+        )
 
     for kw, val in dict(
         editable=True
@@ -244,14 +349,12 @@ def set_settings(settings: dict):
 
 
 def get_history() -> List[dict]:
-    mdata = get_mdata()
-
-    if mdata is None:
+    if not has_mdata():
         return []
-
-    assert isinstance(mdata, mu.MuData), type(mdata)
-
-    return mdata.uns.get("mudata-explorer-history", [])
+    else:
+        return _json_safe(
+            get_mdata().uns.get("mudata-explorer-history", [])
+        )
 
 
 def set_history(history: dict):
@@ -266,8 +369,7 @@ def set_history(history: dict):
 
 
 def add_history(event: dict):
-    mdata = get_mdata()
-    if mdata is None:
+    if not has_mdata():
         return
     history = get_history()
     history.insert(0, event)
@@ -275,23 +377,18 @@ def add_history(event: dict):
 
 
 def get_provenance() -> Dict[str, dict]:
-    mdata = get_mdata()
-
-    if mdata is None:
+    if not has_mdata():
         return {}
+
+    mdata = get_mdata()
     assert isinstance(mdata, mu.MuData), type(mdata)
 
-    return mdata.uns.get("mudata-explorer-provenance", {})
+    return _json_safe(mdata.uns.get("mudata-explorer-provenance", {}))
 
 
-def query_provenance(
-    mod_name: str,
-    slot: str,
-    kw: str
-) -> Union[None, dict]:
-    key = join_kws(mod_name, slot, kw)
+def query_provenance(loc: MuDataSlice) -> Union[None, dict]:
     provenance = get_provenance()
-    return provenance.get(key, None)
+    return provenance.get(loc.dehydrate(), None)
 
 
 def set_provenance(provenance: dict):
@@ -306,14 +403,11 @@ def set_provenance(provenance: dict):
 
 
 def add_provenance(
-    mod_name: str,
-    slot: str,
-    kw: Union[str, None],
+    loc: MuDataSlice,
     event: dict
 ):
     provenance = get_provenance()
-    provenance_key = join_kws(mod_name, slot, kw)
-    provenance[provenance_key] = event
+    provenance[loc.dehydrate()] = event
     set_provenance(provenance)
 
 
@@ -380,54 +474,118 @@ def get_timestamp():
 
 
 def list_modalities():
-    mdata = get_mdata()
+    mdata: mu.MuData = get_mdata()
     if mdata is None:
         return []
-    return list(mdata.mod.keys())
-
-
-def tree_tables() -> List[str]:
-    """Return a list of all tables in the MuData object."""
-    return [
-        join_kws(modality, table)
-        for modality in list_modalities()
-        for table in list_tables(modality)
+    mods = [
+        mod
+        for mod in mdata.mod.keys()
+        if not mod.startswith("_")
     ]
+    return mods
 
 
-def list_tables(modality: str):
-    mdata = get_mdata()
-    if mdata is None:
-        return []
-    adata: ad.AnnData = mdata.mod[modality]
-    tables = ["metadata", "data"]
-    for attr in ["obsm", "obsp"]:
-        for slot in getattr(adata, attr).keys():
-            tables.append(f"{attr}.{slot}")
+def tree_tables(orientation) -> List[str]:
+    """Return a list of all tables in the MuData object."""
+
+    tables = []
+
+    if has_mdata():
+
+        # If the orientation is to observations, and there is observation metadata
+        if orientation == "observations":
+            if get_mdata().obs.shape[1] > 0:
+                tables.append("Observation Metadata")
+
+        # Add tables for each modality
+        tables.extend([
+            join_kws(modality, table)
+            for modality in list_modalities()
+            for table in list_tables(modality, orientation)
+        ])
+
     return tables
 
 
-def list_cnames(modality: str, table: str):
-    mdata = get_mdata()
-    if mdata is None:
+def list_tables(modality: str, orientation: str):
+    if not has_mdata():
         return []
+    assert orientation in ["observations", "variables"], orientation
+    mdata = get_mdata()
     adata: ad.AnnData = mdata.mod[modality]
-    if table == 'metadata':
-        return list(adata.obs.columns)
-    elif table == 'data':
-        return list(adata.to_df().columns)
+    tables = ["data"]
+    if orientation == "observations":
+        for attr in ["obsm", "obsp"]:
+            for slot in getattr(adata, attr).keys():
+                tables.append(f"{attr}.{slot}")
     else:
-        if table.startswith("obsm."):
-            return list(adata.obsm[table[5:]].columns)
-        elif table.startswith("obsp."):
-            return list(adata.obsp[table[5:]].columns)
-    raise ValueError(f"Invalid table: {table}")
+        if adata.var.shape[1] > 0:
+            tables.append("metadata")
+        for attr in ["varm", "varp"]:
+            for slot in getattr(adata, attr).keys():
+                tables.append(f"{attr}.{slot}")
+    return tables
 
 
-def get_dataframe_table(modality: str, table: str) -> pd.DataFrame:
+def list_cnames(table: str, orientation="observations"):
+
+    msg = f"Unexpected orientation: {orientation}"
+    assert orientation in ["observations", "variables"], msg
+
+    if not has_mdata():
+        return []
+
+    mdata = get_mdata()
+
+    if table == "Observation Metadata":
+        assert orientation == "observations"
+        return list(mdata.obs.columns)
+
+    # Otherwise, parse the modality from the name
+    modality, table = table.split(".", 1)
+    adata: ad.AnnData = mdata.mod[modality]
+
+    if table == 'metadata':
+        cnames = (
+            (
+                # Note that observations metadata is on mdata.obs
+                # while variable metadata is on adata.var
+                mdata.obs
+                if orientation == "observations"
+                else adata.var
+            )
+            .columns
+        )
+
+    elif table == 'data':
+        cnames = getattr(
+            adata.to_df(),
+            "columns" if orientation == "observations" else "index"
+        )
+
+    else:
+        prefix, name = table.split(".", 1)
+        assert hasattr(adata, prefix), f"Invalid table: {table}"
+        cnames = getattr(adata, prefix)[name].columns
+
+    return list(cnames)
+
+
+def get_dataframe_table(
+    modality: str,
+    table: str,
+    orientation: str
+) -> pd.DataFrame:
+
+    msg = f"Unexpected orientation: {orientation}"
+    assert orientation in ["observations", "variables"], msg
 
     # Get the complete set of data
     mdata = get_mdata()
+
+    # Special case for observation metadata
+    if orientation == "observations" and table == "metadata":
+        return mdata.obs
 
     if modality not in mdata.mod:
         return None
@@ -437,38 +595,122 @@ def get_dataframe_table(modality: str, table: str) -> pd.DataFrame:
 
     # Get the table
     if table == "metadata":
-        table = adata.obs
+        table = mdata.obs if orientation == "observations" else adata.var
     elif table == "data":
         table = adata.to_df()
-    elif table.startswith("obsm."):
-        table = adata.obsm[table[5:]]
-    elif table.startswith("obsp."):
-        table = adata.obsp[table[5:]]
+        if orientation == "variables":
+            table = table.T
     else:
-        raise ValueError(f"Invalid table: {table}")
+        assert "." in table, f"Invalid table: {table}"
+        attr, kw = table.split(".", 1)
+        table = getattr(adata, attr)[kw]
 
     return table
 
 
+def join_dataframe_tables(
+    tables: List[str],
+    orientation: str
+) -> pd.DataFrame:
+    """
+    Tables from the same modality:
+        Joined along the index (if the orientation is to observations)
+        Joined along the columns (if the orientation is to variables)
+    Tables from different modalities:
+        Joined along the columns (if the orientation is to observations)
+        Joined along the index (if the orientation is to variables)
+
+    """
+
+    assert orientation in ["observations", "variables"]
+
+    # Keep track of which tables are from the same modality
+    modality_tables = defaultdict(list)
+
+    for table in tables:
+        if table == "Observation Metadata":
+            assert orientation == "observations"
+            modality = 'None'
+            df = get_dataframe_table(None, "metadata", orientation)
+        else:
+            modality, attr = table.split(".", 1)
+            df = get_dataframe_table(modality, attr, orientation)
+
+        assert df is not None, f"Could not find table: {table}"
+        modality_tables[modality].append(df)
+
+    # Join within each modality
+    modalities = {
+        modality: (
+            pd.concat(tables, axis=orientation != "observations")
+            if len(tables) > 1 else tables[0]
+        )
+        for modality, tables in modality_tables.items()
+    }
+
+    # Join across different modalities
+    if len(modalities) > 1:
+        df = pd.concat(
+            modalities.values(),
+            axis=orientation == "observations"
+        )
+    else:
+        df: pd.DataFrame = list(modalities.values())[0]
+
+    # Drop any rows or columns which are missing in their entirety
+    df = df.dropna(axis=0, how="all").dropna(axis=1, how="all")
+
+    return df
+
+
 def get_dataframe_column(
-    modality: str,
+    orientation: str,
     table: str,
     cname: str
 ):
+    if table == "Observation Metadata":
+        modality = None
+        table = "metadata"
+    else:
+        assert "." in table, table
+        modality, table = table.split(".", 1)
 
-    table = get_dataframe_table(modality, table)
+    # Parse the slot, attr, and subattr from the table name
+    # Get the table
+    subattr = None
+    if table == "metadata":
+        if orientation == "observations":
+            slot = "obs"
+        else:
+            slot = "var"
+        attr = cname
+    elif table == "data":
+        slot = "X"
+        attr = cname
+    elif "." in table:
+        slot, attr = table.split(".", 1)
+        subattr = cname
+    else:
+        raise ValueError(f"Invalid table: {table}")
 
-    # Get the column
-    if cname not in table.columns:
-        return None
+    # Define the slice of the data
+    slice = MuDataSlice(
+        modality=modality,
+        orientation=orientation[:3],
+        slot=slot,
+        attr=attr,
+        subattr=subattr
+    )
 
-    return table[cname]
+    # Return the data
+    return slice.dataframe(get_mdata())
 
 
 def get_dat_hash():
+    if not has_mdata():
+        return None, None, None
+
     mdata = get_mdata()
-    if mdata is None:
-        return None, None
 
     # Convert the MuData object to binary
     dat = mdata_to_binary(mdata)
@@ -476,28 +718,37 @@ def get_dat_hash():
     # Compute the hash of the file
     hash = hash_dat(dat)
 
-    return dat, hash
+    # Compute the size of the file
+    size = len(dat) / 1024
+
+    # Format the size as a string
+    if size < 1024:
+        size = f"{size:.2f} KB"
+    else:
+        size = f"{size/1024:.2f} MB"
+
+    return dat, hash, size
 
 
 def save_annot(
     mdata: mu.MuData,
-    modality: str,
-    slot: str,
-    dest_key: str,
-    column_dat: pd.Series,
+    loc: MuDataSlice,
+    column_dat: Union[pd.Series, pd.DataFrame],
     params: dict,
-    process_type: str
+    process_type: str,
+    figures: Optional[List[dict]]
 ):
 
-    # Add the PCA coordinates to the obs/var slot
-    getattr(mdata.mod[modality], slot)[dest_key] = column_dat
+    # Write the data to the specified address
+    loc.write(mdata, column_dat)
 
     # Make a record of the process
     event = dict(
         process=process_type,
         params=params,
         timestamp=get_timestamp(),
-        updated_keys=dest_key
+        loc=loc.params,
+        figures=figures
     )
 
     # Save the results
@@ -509,22 +760,39 @@ def save_annot(
     add_history(event)
 
     # Mark the source of the table which was added
-    add_provenance(
-        modality,
-        slot,
-        dest_key,
-        event
-    )
+    add_provenance(loc, event)
 
 
-def show_provenance(mdata, modality, slot, dest_key, container):
+def show_provenance(loc: MuDataSlice, container: DeltaGenerator):
 
-    # If the key already exists
-    if dest_key in getattr(mdata.mod[modality], slot).keys():
-        prov = query_provenance(modality, slot, dest_key)
-        if prov is not None:
-            container.write(f"**Data currently in '{slot}/{dest_key}'**")
-            container.write(prov)
-            container.write(
-                f"> 'Run' will overwrite existing data in '{slot}/{dest_key}'."
-            )
+    prov = query_provenance(loc)
+    if prov is not None:
+        container.write(
+            f"**Data currently in '{loc.address}'**"
+        )
+        container.write({
+            kw: val
+            for kw, val in prov.items()
+            if kw != "figures"
+        })
+        if isinstance(prov.get("figures"), list):
+            if len(prov.get("figures")) > 0:
+                container.write("Supporting Figures")
+            for fig_json in prov["figures"]:
+                fig = io.from_json(fig_json)
+                container.plotly_chart(fig)
+        container.write(
+            f"> 'Run' will overwrite existing data in '{loc.address}'."
+        )
+
+
+def get_supp_figs() -> List[Tuple[str, dict]]:
+    """Return the list of figures which are stored in the provenance."""
+
+    return [
+        f"{loc}:{ix}"
+        for loc, prov in get_provenance().items()
+        if prov.get("figures") is not None
+        for ix, fig in enumerate(prov["figures"])
+        if fig is not None
+    ]

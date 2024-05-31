@@ -11,10 +11,7 @@ def summarize_mdata(container: DeltaGenerator):
     container.write("**Current MuData**")
 
     mdata = app.get_mdata()
-    if mdata is None:
-        container.write("No data loaded.")
-        return
-    if len(mdata.mod) == 1 and "_blank" in mdata.mod:
+    if not app.has_mdata():
         container.write("No data loaded.")
         return
 
@@ -49,7 +46,7 @@ def display_table(container: DeltaGenerator):
     """Allow the user to display a table of the data."""
 
     mdata = app.get_mdata()
-    if mdata is None or len(mdata.mod) == 1 and "_blank" in mdata.mod:
+    if not app.has_mdata():
         return
 
     container.write("#### Display Table")
@@ -91,8 +88,8 @@ def display_table(container: DeltaGenerator):
     )
 
 
-if __name__ == "__main__":
-    app.setup_pages()
+def run():
+    app.setup_sidebar()
 
     st.write("#### Summarize")
 

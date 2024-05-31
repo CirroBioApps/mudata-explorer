@@ -7,7 +7,7 @@ from mudata_explorer import app
 
 class Seaborn(View):
 
-    categories = ["Plotting"]
+    category = "Plotting"
 
 
 class Clustermap(Seaborn):
@@ -25,7 +25,7 @@ class Clustermap(Seaborn):
             "type": "string",
             "label": "Z-Score Normalize",
             "help": "Normalize the data before clustering",
-            "value": "None",
+            "default": "None",
             "enum": ["None", "row", "column"]
         }
     }

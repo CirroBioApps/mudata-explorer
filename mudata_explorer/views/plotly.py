@@ -6,7 +6,43 @@ from streamlit.delta_generator import DeltaGenerator
 
 class Plotly(View):
 
-    categories = ["Plotting"]
+    category = "Plotting"
+
+    def fetch_dataframe(self, table_kw):
+        """
+        Helper method to fetch a dataframe from the params.
+        This provides added functionality for parsing the color scales.
+        """
+
+        data: pd.DataFrame = self.params[f"{table_kw}.dataframe"]
+        colorscale = {}
+
+        # Check each column to see if it is a color scale
+        for col_kw in [
+            kw[:-len(".scale")] for kw in self.params.keys()
+            if kw.endswith(".scale") and kw.startswith(table_kw)
+        ]:
+            cname = col_kw[len(table_kw) + 1:]
+
+            if self.params[f"{col_kw}.enabled"]:
+                if self.params[f"{col_kw}.is_categorical"]:
+                    data = data.assign(**{
+                        cname: data[cname].apply(str)
+                    })
+                    colorscale = dict(
+                        color_discrete_sequence=getattr(
+                            px.colors.qualitative,
+                            self.params[f"{col_kw}.scale"]
+                        )
+                    )
+                else:
+                    colorscale = dict(
+                        color_continuous_scale=self.params[f"{col_kw}.scale"]
+                    )
+            else:
+                colorscale = {}
+
+        return data, colorscale
 
 
 class PlotlyScatter(Plotly):
@@ -24,7 +60,7 @@ class PlotlyScatter(Plotly):
                 "color": {
                     "label": "Color",
                     "optional": True,
-                    "continuous_scale": True
+                    "colorscale": True
                 },
             },
             "query": True,
@@ -47,7 +83,7 @@ class PlotlyScatter(Plotly):
 
     def display(self, container: DeltaGenerator):
 
-        data: pd.DataFrame = self.params["data.dataframe"]
+        data, colorscale = self.fetch_dataframe("data")
 
         fig = px.scatter(
             data.reset_index(),
@@ -57,14 +93,14 @@ class PlotlyScatter(Plotly):
             log_x=self.params["scale_options.log_x"],
             log_y=self.params["scale_options.log_y"],
             color="color" if self.params["data.color.enabled"] else None,
-            color_continuous_scale=self.params["data.color.continuous_scale"],
             size="size" if self.params["data.size.enabled"] else None,
             labels=dict(
                 x=self.params["data.x.label"],
                 y=self.params["data.y.label"],
                 color=self.params["data.color.label"],
                 size=self.params["data.size.label"]
-            )
+            ),
+            **colorscale
         )
 
         container.plotly_chart(fig)
@@ -86,7 +122,7 @@ class PlotlyScatter3D(Plotly):
                 "color": {
                     "label": "Color",
                     "optional": True,
-                    "continuous_scale": True
+                    "colorscale": True
                 },
             },
             "query": True,
@@ -113,7 +149,7 @@ class PlotlyScatter3D(Plotly):
 
     def display(self, container: DeltaGenerator):
 
-        data: pd.DataFrame = self.params["data.dataframe"]
+        data, colorscale = self.fetch_dataframe("data")
 
         fig = px.scatter_3d(
             data.reset_index(),
@@ -125,7 +161,6 @@ class PlotlyScatter3D(Plotly):
             log_y=self.params["scale_options.log_y"],
             log_z=self.params["scale_options.log_z"],
             color="color" if self.params["data.color.enabled"] else None,
-            color_continuous_scale=self.params["data.color.continuous_scale"],
             size="size" if self.params["data.size.enabled"] else None,
             labels=dict(
                 x=self.params["data.x.label"],
@@ -133,7 +168,8 @@ class PlotlyScatter3D(Plotly):
                 z=self.params["data.z.label"],
                 color=self.params["data.color.label"],
                 size=self.params["data.size.label"]
-            )
+            ),
+            **colorscale
         )
 
         container.plotly_chart(fig)
@@ -154,7 +190,7 @@ class PlotlyLine(Plotly):
                 "color": {
                     "label": "Color",
                     "optional": True,
-                    "discrete_sequence": True
+                    "colorscale": True
                 },
             },
             "query": True,
@@ -179,7 +215,7 @@ class PlotlyLine(Plotly):
         self,
         container: DeltaGenerator
     ):
-        data: pd.DataFrame = self.params["data.dataframe"]
+        data, colorscale = self.fetch_dataframe("data")
         data.sort_values("sort_by", inplace=True)
 
         fig = px.line(
@@ -187,14 +223,14 @@ class PlotlyLine(Plotly):
             x="x",
             y="y",
             color="color" if self.params["data.color.enabled"] else None,
-            color_discrete_sequence=getattr(px.colors.qualitative, self.params["data.color.discrete_sequence"]),
             log_x=self.params["scale_options.log_x"],
             log_y=self.params["scale_options.log_y"],
             labels=dict(
                 x=self.params["data.x.label"],
                 y=self.params["data.y.label"],
                 color=self.params["data.color.label"]
-            )
+            ),
+            **colorscale
         )
 
         container.plotly_chart(fig)
@@ -214,7 +250,7 @@ class PlotlyBox(Plotly):
                 "color": {
                     "label": "Color",
                     "optional": True,
-                    "discrete_sequence": True
+                    "colorscale": True
                 },
             },
             "query": True,
@@ -233,7 +269,7 @@ class PlotlyBox(Plotly):
 
     def display(self, container: DeltaGenerator):
 
-        data: pd.DataFrame = self.params["data.dataframe"]
+        data, colorscale = self.fetch_dataframe("data")
 
         fig = px.box(
             data,
@@ -241,12 +277,12 @@ class PlotlyBox(Plotly):
             y="y",
             log_y=self.params["scale_options.log_y"],
             color="color" if self.params["data.color.enabled"] else None,
-            color_discrete_sequence=getattr(px.colors.qualitative, self.params["data.color.discrete_sequence"]),
             labels=dict(
                 x=self.params["data.x.label"],
                 y=self.params["data.y.label"],
                 color=self.params["data.color.label"]
-            )
+            ),
+            **colorscale
         )
 
         container.plotly_chart(fig)

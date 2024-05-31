@@ -1,10 +1,10 @@
+from typing import Union
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 import pandas as pd
 import plotly.express as px
+from plotly import io
 import streamlit as st
-from streamlit.delta_generator import DeltaGenerator
-from mudata_explorer import app
 from mudata_explorer.base.process import Process
 
 
@@ -13,91 +13,63 @@ class RunKmeans(Process):
     type = "kmeans"
     name = "K-Means"
     desc = "K-Means Clustering"
-    categories = ["Clustering"]
+    category = "Clustering"
+    output_type = pd.Series
+    schema = {
+        "data": {
+            "type": "dataframe",
+            "select_columns": True,
+            "query": "",
+        },
+        "k": {
+            "type": "integer",
+            "min_value": 2,
+            "default": 5,
+            "label": "Number of Clusters (K)",
+            "help": """
+            Number of clusters to group samples into
+            """
+        },
+        "min_k": {
+            "type": "integer",
+            "min_value": 2,
+            "default": 2,
+            "label": "Evaluate Values of K: Lower Bound",
+            "help": """
+            Generate a plot showing the silhouette score for a range of K
+            """
+        },
+        "max_k": {
+            "type": "integer",
+            "min_value": 2,
+            "default": 10,
+            "label": "Evaluate Values of K: Upper Bound",
+            "help": """
+            Generate a plot showing the silhouette score for a range of K
+            """
+        }
+    }
 
-    def run(self, container: DeltaGenerator):
+    def execute(self) -> Union[pd.Series, pd.DataFrame]:
 
-        inputs = self.prompt_input_df(container)
-        if inputs is None:
-            return
-        mdata, modality, axis, df, columns, use_zscore = inputs
+        msg = "Selected value of K must fall between the lower and upper bound"
+        assert self.params["k"] >= self.params["min_k"], msg
+        assert self.params["k"] <= self.params["max_k"], msg
 
-        if container.checkbox(
-            "Preview Clusters - Silhouette Scores",
-            help="Evaluate a range of values for K using the silhouette score"
-        ):
-            # Try a number of different values for k
-            self.show_silhouette_scores(df, container)
-
-        # Prompt for the value of K to use
-        k = container.number_input(
-            "Number of Clusters (K)",
-            min_value=2,
-            value=5,
-            step=1,
-            help="Number of clusters to group samples into"
-        )
-
-        # Set the name of the obsm slot to use for the UMAP coordinates
-        dest_key = container.text_input(
-            "Destination Key",
-            help="The name of the column which will be used for the results.",
-            value="cluster"
-        )
-
-        # If the user clicks a button
-        if container.button("Run K-Means Clustering"):
-
-            # Run KMeans
-            clusters = run_clustering(df, n_clusters=k)
-
-            params = dict(
-                dest_key=dest_key,
-                modality=modality,
-                axis=axis,
-                columns=columns,
-                use_zscore=use_zscore,
-                k=k
-            )
-
-            # Save the results to the MuData object
-            app.save_annot(
-                mdata,
-                modality,
-                axis,
-                dest_key,
-                clusters,
-                params,
-                self.type
-            )
-
-        # Report to the user if data already exists in the destination key
-        app.show_provenance(mdata, modality, axis, dest_key, container)
-
-    def show_silhouette_scores(
-        self,
-        df: pd.DataFrame,
-        container: DeltaGenerator
-    ):
-        min_k = container.number_input(
-            "Min: K",
-            min_value=2,
-            value=2,
-            step=1,
-            help="Smallest value of K used for evaluation"
-        )
-        max_k = container.number_input(
-            "Min: K",
-            min_value=2,
-            value=10,
-            step=1,
-            help="Largest value of K used for evaluation"
-        )
+        df: pd.DataFrame = self.params["data.dataframe"].dropna()
+        msg = "Null values in all rows - remove invalid columns"
+        assert df.shape[0] > 0, msg
 
         # Cluster the data
         clusters = {
-            n: run_clustering(df, n_clusters=n)
-            for n in range(min_k, max_k)
+            n: run_clustering(
+                df,
+                n_clusters=n
+            )
+            for n in range(
+                self.params["min_k"],
+                self.params["max_k"]
+            )
             if n < df.shape[0]
         }
 
@@ -117,7 +89,13 @@ class RunKmeans(Process):
             },
             title="Evaluate Clustering Performance"
         )
-        container.plotly_chart(fig)
+        fig.add_vline(x=self.params["k"], line_dash="dash", line_color="grey")
+
+        # Save the figure
+        self.figures = [io.to_json(fig, validate=False)]
+
+        # Return the clusters for the selected value of K
+        return clusters[self.params["k"]]
 
 
 @st.cache_data
@@ -127,9 +105,6 @@ def run_clustering(df: pd.DataFrame, **kwargs):
         .fit_predict(df.values)
     )
     return pd.Series(
-        clusters,
-        index=df.index,
-        name="cluster"
-    ).apply(
-        str
+        list(map(str, clusters)),
+        index=df.index
     )

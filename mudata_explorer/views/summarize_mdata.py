@@ -7,7 +7,7 @@ class SummarizeMuData(View):
     type = "summarize-mudata"
     name = "Summarize MuData"
     desc = "Print a short description of the data available."
-    categories = ["Summary"]
+    category = "Summary"
     defaults = {}
 
     def display(self, container: DeltaGenerator):

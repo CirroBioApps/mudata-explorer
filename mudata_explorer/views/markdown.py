@@ -7,16 +7,17 @@ class Markdown(View):
     type = "markdown"
     name = "Markdown Text"
     desc = "Write any text using markdown syntax."
-    categories = ["Narrative"]
+    category = "Narrative"
     schema = {
         "text": {
             "type": "string",
             "label": "Text",
-            "value": "",
+            "default": "",
             "help": "Use markdown syntax to write formatted text.",
             "multiline": True,
         }
     }
+    use_orientation = False
 
     def display(self, container: DeltaGenerator):
 
