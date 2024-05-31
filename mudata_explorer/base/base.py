@@ -75,7 +75,7 @@ class MuDataAppHelpers:
                     )
                 # Add any columns specified in the schema
                 for col_kw, col_elem in elem.get("columns", {}).items():
-                    for kw in ["modality", "table", "cname", "label"]:
+                    for kw in ["table", "cname", "label"]:
                         yield (
                             join_kws(prefix, key, col_kw, kw),
                             col_elem.get(kw, None)
@@ -100,7 +100,6 @@ class MuDataAppHelpers:
                 # If the user is allowed to filter the data
                 if elem.get("query", True):
                     for attr in [
-                        "modality",
                         "table",
                         "cname",
                         "expr",
@@ -481,22 +480,22 @@ class MuDataAppHelpers:
 
         # Set the default values
 
-        # Modality selection
-        all_modalities = app.list_modalities()
-        mod_kw = join_kws(prefix, key, col_kw, "modality")
-        if self.params.get(mod_kw) is None:
-            self.update_view_param(
-                mod_kw,
-                all_modalities[0]
-            )
+        # Get the list of tables available for this orientation
+        all_tables = app.tree_tables(self.orientation)
 
         # Table selection
         table_kw = join_kws(prefix, key, col_kw, "table")
-        if self.params.get(table_kw) is None:
+        if self.params.get(table_kw) not in all_tables:
             self.update_view_param(
                 table_kw,
-                "data"
+                app.tree_tables(self.orientation)[0]
             )
+
+        # Get all of the columns for the selected table
+        all_cnames = app.list_cnames(
+            self.params[table_kw],
+            orientation=self.orientation
+        )
 
         # Column label selection
         label_kw = join_kws(prefix, key, col_kw, "label")
@@ -508,13 +507,8 @@ class MuDataAppHelpers:
 
         # Column name selection
         cname_kw = join_kws(prefix, key, col_kw, "cname")
-        if self.params.get(cname_kw) is None:
-            cname_val = app.list_cnames(
-                self.params[mod_kw],
-                self.params[table_kw],
-                orientation=self.orientation
-            )[0]
-
+        if self.params.get(cname_kw) not in all_cnames:
+            cname_val = all_cnames[0]
             self.update_view_param(cname_kw, cname_val)
             self.update_view_param(label_kw, cname_val)
 
@@ -535,38 +529,19 @@ class MuDataAppHelpers:
             # If the column is enabled
             if self.params.get(enabled_kw, True):
 
-                # Make four columns for:
-                #   modality, table, column name, and label
-                cols = container.columns([1, 1, 1, 1])
-
-                # Select the modality
-                cols[0].selectbox(
-                    "Modality",
-                    all_modalities,
-                    **self.input_selectbox_kwargs(mod_kw, all_modalities)
-                )
-
-                # Get the list of tables available for this modality
-                all_tables = app.list_tables(
-                    self.params[mod_kw],
-                    self.orientation
-                )
+                # Make three columns for:
+                #   table, column name, and label
+                cols = container.columns([1, 1, 1])
 
                 # Select the table of interest
-                cols[1].selectbox(
+                cols[0].selectbox(
                     "Table",
                     all_tables,
                     **self.input_selectbox_kwargs(table_kw, all_tables)
                 )
 
-                # Get the list of possible columns
-                all_cnames = app.list_cnames(
-                    self.params[mod_kw],
-                    self.params[table_kw]
-                )
-
                 # Select the column name
-                cols[2].selectbox(
+                cols[1].selectbox(
                     "Column",
                     all_cnames,
                     **self.input_selectbox_kwargs(
@@ -577,7 +552,7 @@ class MuDataAppHelpers:
                 )
 
                 # Input the column label
-                cols[3].text_input(
+                cols[2].text_input(
                     "Label",
                     **self.input_value_kwargs(label_kw)
                 )
@@ -638,7 +613,7 @@ class MuDataAppHelpers:
                 orientation=self.orientation,
                 **{
                     kw: self.param(key, col_kw, kw)
-                    for kw in ["modality", "table", "cname"]
+                    for kw in ["table", "cname"]
                 }
             )
             for col_kw, col_elem in columns.items()
@@ -653,33 +628,30 @@ class MuDataAppHelpers:
 
         # Set the default values
 
-        # Modality selection
-        all_modalities = app.list_modalities()
-        mod_kw = join_kws(prefix, key, "query", "modality")
-        if self.params.get(mod_kw) is None:
-            self.update_view_param(
-                mod_kw,
-                all_modalities[0]
-            )
+        # Get the list of tables available for all modalities
+        all_tables = app.tree_tables(self.orientation)
 
         # Table selection
         table_kw = join_kws(prefix, key, "query", "table")
-        if self.params.get(table_kw) is None:
+        if self.params.get(table_kw) not in all_tables:
             self.update_view_param(
                 table_kw,
-                "data"
+                all_tables[0]
             )
+
+        # Get the list of possible columns
+        all_cnames = app.list_cnames(
+            self.params[table_kw],
+            orientation=self.orientation
+        )
 
         # Column name selection
         cname_kw = join_kws(prefix, key, "query", "cname")
-        if self.params.get(cname_kw) is None:
+        if self.params.get(cname_kw) not in all_cnames:
 
             self.update_view_param(
                 cname_kw,
-                app.list_cnames(
-                    self.params[mod_kw],
-                    self.params[table_kw]
-                )[0]
+                all_cnames[0]
             )
 
         # Boolean operator selection
@@ -703,24 +675,11 @@ class MuDataAppHelpers:
             # Print the column name
             container.write("#### Filter samples")
 
-            # Make three columns for the modality, table, and column name
-            cols = container.columns([1, 1, 1, 1, 1])
-
-            # Select the modality
-            cols[0].selectbox(
-                "Modality",
-                all_modalities,
-                **self.input_selectbox_kwargs(mod_kw, all_modalities)
-            )
-
-            # Get the list of tables available for this modality
-            all_tables = app.list_tables(
-                self.params[mod_kw],
-                self.orientation
-            )
+            # Make three columns for the table, and column name
+            cols = container.columns([1, 1, 1, 1])
 
             # Select the table of interest
-            cols[1].selectbox(
+            cols[0].selectbox(
                 "Table",
                 all_tables,
                 **self.input_selectbox_kwargs(table_kw, all_tables)
@@ -728,13 +687,12 @@ class MuDataAppHelpers:
 
             # Get the list of possible columns
             all_cnames = app.list_cnames(
-                self.params[mod_kw],
                 self.params[table_kw],
                 orientation=self.orientation
             )
 
             # Select the column name
-            cols[2].selectbox(
+            cols[1].selectbox(
                 "Column",
                 all_cnames,
                 **self.input_selectbox_kwargs(
@@ -744,7 +702,7 @@ class MuDataAppHelpers:
             )
 
             # Input the boolean operator
-            cols[3].selectbox(
+            cols[2].selectbox(
                 "Operator",
                 [">=", "<=", "==", "!=", ">", "<"],
                 **self.input_selectbox_kwargs(
@@ -761,7 +719,7 @@ class MuDataAppHelpers:
             )
 
             # Input the boolean value
-            cols[4].text_input(
+            cols[3].text_input(
                 "Value",
                 help="Enter a value to filter samples on.",
                 **self.input_value_kwargs(value_kw)
@@ -769,7 +727,6 @@ class MuDataAppHelpers:
 
         # Get the values for the query
         query = {
-            "modality": self.param(key, "query", "modality"),
             "table": self.param(key, "query", "table"),
             "cname": self.param(key, "query", "cname"),
             "expr": self.param(key, "query", "expr"),
@@ -781,6 +738,13 @@ class MuDataAppHelpers:
             if self.params_editable:
                 container.write("Provide a value to filter samples.")
             return
+
+        if query["table"] == "Observation Metadata":
+            query["table"] = "obs"
+            query["modality"] = None
+
+        else:
+            query["modality"], query["table"] = query["table"].split(".")
 
         # Get the table
         table = app.get_dataframe_table(

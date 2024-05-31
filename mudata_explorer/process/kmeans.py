@@ -58,22 +58,26 @@ class RunKmeans(Process):
         assert self.params["k"] >= self.params["min_k"], msg
         assert self.params["k"] <= self.params["max_k"], msg
 
+        df: pd.DataFrame = self.params["data.dataframe"].dropna()
+        msg = "Null values in all rows - remove invalid columns"
+        assert df.shape[0] > 0, msg
+
         # Cluster the data
         clusters = {
             n: run_clustering(
-                self.params["data.dataframe"],
+                df,
                 n_clusters=n
             )
             for n in range(
                 self.params["min_k"],
                 self.params["max_k"]
             )
-            if n < self.params["data.dataframe"].shape[0]
+            if n < df.shape[0]
         }
 
         # Compute silhouette scores for the clusters
         silhouette_scores = {
-            n: silhouette_score(self.params["data.dataframe"], clust)
+            n: silhouette_score(df, clust)
             for n, clust in clusters.items()
         }
 

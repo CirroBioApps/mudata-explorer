@@ -502,7 +502,7 @@ def list_tables(modality: str, orientation: str):
     return tables
 
 
-def list_cnames(modality: str, table: str, orientation="observations"):
+def list_cnames(table: str, orientation="observations"):
 
     msg = f"Unexpected orientation: {orientation}"
     assert orientation in ["observations", "variables"], msg
@@ -511,6 +511,13 @@ def list_cnames(modality: str, table: str, orientation="observations"):
         return []
 
     mdata = get_mdata()
+
+    if table == "Observation Metadata":
+        assert orientation == "observations"
+        return list(mdata.obs.columns)
+
+    # Otherwise, parse the modality from the name
+    modality, table = table.split(".", 1)
     adata: ad.AnnData = mdata.mod[modality]
 
     if table == 'metadata':
@@ -633,10 +640,15 @@ def join_dataframe_tables(
 
 def get_dataframe_column(
     orientation: str,
-    modality: str,
     table: str,
     cname: str
 ):
+    if table == "Observation Metadata":
+        modality = None
+        table = "metadata"
+    else:
+        assert "." in table, table
+        modality, table = table.split(".", 1)
 
     # Parse the slot, attr, and subattr from the table name
     # Get the table
@@ -739,7 +751,7 @@ def show_provenance(loc: MuDataSlice, container: DeltaGenerator):
             if kw != "figures"
         })
         if isinstance(prov.get("figures"), list):
-            if len(isinstance(prov.get("figures"), list)) > 0:
+            if len(prov.get("figures")) > 0:
                 container.write("Supporting Figures")
             for fig_json in prov["figures"]:
                 fig = io.from_json(fig_json)

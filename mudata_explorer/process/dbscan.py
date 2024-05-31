@@ -64,6 +64,10 @@ class RunDBSCAN(Process):
 
     def execute(self) -> Union[pd.Series, pd.DataFrame]:
 
+        df: pd.DataFrame = self.params["data.dataframe"].dropna()
+        msg = "Null values in all rows - remove invalid columns"
+        assert df.shape[0] > 0, msg
+
         clusters = (
             DBSCAN(
                 eps=self.params["eps"],
@@ -71,10 +75,10 @@ class RunDBSCAN(Process):
                 metric=self.params["metric"]
             )
             .fit_predict(
-                self.params["data.dataframe"].values
+                df.values
             )
         )
         return pd.Series(
             list(map(str, clusters)),
-            index=self.params["data.dataframe"].index
+            index=df.index
         )
