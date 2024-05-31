@@ -83,15 +83,17 @@ class MuDataAppHelpers:
                             join_kws(prefix, key, col_kw, "enabled"),
                             True
                         )
-                    if col_elem.get("continuous_scale", False):
+                    if col_elem.get("colorscale", False):
+                        # Use a flag to indicate whether the values
+                        # in the column are categorical
                         yield (
-                            join_kws(prefix, key, col_kw, "continuous_scale"),
-                            "Viridis"
+                            join_kws(prefix, key, col_kw, "is_categorical"),
+                            False
                         )
-                    if col_elem.get("discrete_sequence", False):
+                        # Use a flag for the color scale to use
                         yield (
-                            join_kws(prefix, key, col_kw, "discrete_sequence"),
-                            "Plotly"
+                            join_kws(prefix, key, col_kw, "scale"),
+                            "Viridis"
                         )
                 # If the user is allowed to filter the data
                 if elem.get("query", True):
@@ -132,6 +134,9 @@ class MuDataAppHelpers:
 
     def input_selectbox_kwargs(self, kw, options: list, copy_to=None):
         """Populate the selectbox element with default kwargs."""
+
+        assert len(options) > 0, f"Empty options list for {kw}"
+
         if self.params[kw] not in options:
             index = 0
         else:
@@ -184,7 +189,11 @@ class MuDataAppHelpers:
         # By default, params are complete until proven otherwise
         self.params_complete = True
 
-        container.write("##### Inputs")
+        # Get the global settings
+        settings = app.get_settings()
+
+        if settings["editable"]:
+            container.write("##### Inputs")
 
         if self.use_orientation:
             # 'orientation' is a special-case parameter that is used to
@@ -403,7 +412,9 @@ class MuDataAppHelpers:
         if elem.get("query", True):
             filtered_obs = self.render_query(prefix, key, container)
             if filtered_obs is not None:
-                df = df.loc[filtered_obs]
+                df = df.loc[
+                    list(set(filtered_obs) & set(df.index))
+                ]
                 if settings["editable"]:
                     container.write(f"Filtered to {df.shape[0]:,} samples.")
 
@@ -570,28 +581,54 @@ class MuDataAppHelpers:
                     **self.input_value_kwargs(label_kw)
                 )
 
-                # Color options
-                if col_elem.get("continuous_scale", False):
+                # If the column is a color column
+                if col_elem.get("colorscale", False):
 
-                    container.selectbox(
-                        "Select color scale",
-                        px.colors.named_colorscales(),
-                        **self.input_selectbox_kwargs(
-                            join_kws(prefix, key, col_kw, "continuous_scale"),
-                            px.colors.named_colorscales()
-                        )
+                    # Let the user select whether the colors are categorical
+                    is_categorical_kw = join_kws(
+                        prefix,
+                        key,
+                        col_kw,
+                        "is_categorical"
                     )
 
-                if col_elem.get("discrete_sequence", False):
+                    # Select a pallete for the colors
+                    colorscale_kw = join_kws(prefix, key, col_kw, "scale")
 
-                    container.selectbox(
-                        "Select color sequence",
-                        dir(px.colors.qualitative),
-                        **self.input_selectbox_kwargs(
-                            join_kws(prefix, key, col_kw, "discrete_sequence"),
-                            dir(px.colors.qualitative)
-                        )
+                    container.checkbox(
+                        "Categorical Values",
+                        help="Color scales may either be categorical or continuous.", # noqa
+                        **self.input_value_kwargs(is_categorical_kw)
                     )
+
+                    if self.params[is_categorical_kw]:
+                        colors_qualitative = [
+                            cname for cname in dir(px.colors.qualitative)
+                            if (
+                                not cname.startswith("_")
+                                and cname != "swatches"
+                            )
+                        ]
+
+                        container.selectbox(
+                            "Select color scale",
+                            colors_qualitative,
+                            **self.input_selectbox_kwargs(
+                                colorscale_kw,
+                                colors_qualitative
+                            )
+                        )
+
+                    else:
+
+                        container.selectbox(
+                            "Select color scale",
+                            px.colors.named_colorscales(),
+                            **self.input_selectbox_kwargs(
+                                colorscale_kw,
+                                px.colors.named_colorscales()
+                            )
+                        )
 
     def build_dataframe(self, key: str, columns: dict):
         # Get the information for each column
@@ -694,7 +731,8 @@ class MuDataAppHelpers:
             # Get the list of possible columns
             all_cnames = app.list_cnames(
                 self.params[mod_kw],
-                self.params[table_kw]
+                self.params[table_kw],
+                orientation=self.orientation
             )
 
             # Select the column name
@@ -711,7 +749,17 @@ class MuDataAppHelpers:
             cols[3].selectbox(
                 "Operator",
                 [">=", "<=", "==", "!=", ">", "<"],
-                **self.input_selectbox_kwargs(expr_kw, [">=", "<=", "==", "!=", ">", "<"])
+                **self.input_selectbox_kwargs(
+                    expr_kw,
+                    [
+                        ">=",
+                        "<=",
+                        "==",
+                        "!=",
+                        ">",
+                        "<"
+                    ]
+                )
             )
 
             # Input the boolean value
@@ -739,16 +787,20 @@ class MuDataAppHelpers:
         # Get the table
         table = app.get_dataframe_table(
             query["modality"],
-            query["table"]
+            query["table"],
+            self.orientation
         )
         if table is None:
             if settings["editable"]:
                 container.write("No data available for filtering.")
             return
 
+        msg = f"Column {query['cname']} not found in table."
+        assert query['cname'] in table.columns, msg
+
         # Apply the filter
         try:
-            table = table.query(f"{query['cname']} {query['expr']} {query['value']}")
+            table = table.query("{cname} {expr} {value}".format(**query))
         except Exception as e:
             container.write("Error while filtering")
             container.exception(e)

@@ -88,8 +88,8 @@ def display_table(container: DeltaGenerator):
     )
 
 
-if __name__ == "__main__":
-    app.setup_pages()
+def run():
+    app.setup_sidebar()
 
     st.write("#### Summarize")
 

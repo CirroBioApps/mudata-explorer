@@ -87,7 +87,7 @@ class RunKmeans(Process):
             },
             title="Evaluate Clustering Performance"
         )
-        fig.add_vline(x=self.params["k"])
+        fig.add_vline(x=self.params["k"], line_dash="dash", line_color="grey")
 
         # Save the figure
         self.figures = [io.to_json(fig, validate=False)]

@@ -9,32 +9,67 @@ from tempfile import NamedTemporaryFile
 from typing import Any, List, Optional, Union, Dict
 from mudata_explorer.helpers import get_view_by_type
 from mudata_explorer.helpers.join_kws import join_kws
-from mudata_explorer.helpers import mudata, plotting
+from mudata_explorer.helpers import mudata, plotting, save_load
 from mudata_explorer.base.slice import MuDataSlice
 from plotly import io
 
 
-def page_links():
-    return [
-        ("tables", "Tables"),
-        ("views", "Views"),
-        ("processes", "Process Data"),
-        ("save_load", "Save/Load"),
-        ("history", "History"),
-        ("settings", "Settings"),
-        ("about", "About")
-    ]
-
-
-def setup_pages():
-    st.set_page_config("MuData Explorer", layout="centered")
-    st.sidebar.title("MuData Explorer")
-
-    for path, label in page_links():
+def sidebar_page_links(page_links):
+    for path, label in page_links:
         st.sidebar.page_link(
             f"pages/{path}.py",
             label=label
         )
+
+
+def sidebar_edit_views():
+    if get_mdata() is None:
+        return
+
+    settings = get_settings()
+
+    settings["editable"] = st.sidebar.checkbox(
+        "Edit Figures",
+        value=settings.get("editable", True),
+        help="Display a set of menus to modify the figures.",
+        on_change=update_edit_views,
+        key="sidebar_edit_views"
+    )
+
+
+def update_edit_views():
+    flag = st.session_state["sidebar_edit_views"]
+    settings = get_settings()
+    if flag != settings["editable"]:
+        settings["editable"] = flag
+        set_settings(settings)
+
+
+def setup_sidebar(edit_views=False):
+    """
+    Setup the sidebar with links to all of the pages.
+    If edit_views is True, add a checkbox to allow the user to edit the views.
+    """
+    st.set_page_config("MuData Explorer", layout="centered")
+    # st.sidebar.title("MuData Explorer")
+
+    sidebar_page_links([
+        ("tables", "Tables"),
+        ("processes", "Analysis"),
+        ("views", "Figures"),
+        ("history", "History"),
+        # ("settings", "Settings"),
+        ("about", "About")
+    ])
+    if edit_views:
+        sidebar_edit_views()
+
+    load_cont, save_cont = st.sidebar.columns(2)
+    if has_mdata():
+        if save_cont.button("Save File", use_container_width=True):
+            save_load.download_button()
+    if load_cont.button("Load File", use_container_width=True):
+        save_load.upload_button()
 
     plotting.plot_mdata(st.sidebar)
 
@@ -43,7 +78,6 @@ def landing_shortcuts():
 
     show_shortcuts([
         ("tables", ":page_facing_up: Upload Tables (*.csv)"),
-        ("save_load", ":open_file_folder: Load Dataset (*.h5mu)"),
         ("about", ":information_source: About")
     ])
 
@@ -454,25 +488,39 @@ def list_tables(modality: str, orientation: str):
 
 def list_cnames(modality: str, table: str, orientation="observations"):
 
+    msg = f"Unexpected orientation: {orientation}"
+    assert orientation in ["observations", "variables"], msg
+
     if not has_mdata():
         return []
-        
-    if orientation == "observations":
-        attr = "columns"
-    else:
-        assert orientation == "variables"
-        attr = "index"
 
     mdata = get_mdata()
     adata: ad.AnnData = mdata.mod[modality]
+
     if table == 'metadata':
-        return list(getattr(adata.obs, attr))
+        cnames = (
+            (
+                # Note that observations metadata is on mdata.obs
+                # while variable metadata is on adata.var
+                mdata.obs
+                if orientation == "observations"
+                else adata.var
+            )
+            .columns
+        )
+
     elif table == 'data':
-        return list(getattr(adata.to_df(), attr))
+        cnames = getattr(
+            adata.to_df(),
+            "columns" if orientation == "observations" else "index"
+        )
+
     else:
         prefix, name = table.split(".", 1)
         assert hasattr(adata, prefix), f"Invalid table: {table}"
-        return list(getattr(adata, prefix)[name].columns)
+        cnames = getattr(adata, prefix)[name].columns
+
+    return list(cnames)
 
 
 def get_dataframe_table(
@@ -480,8 +528,9 @@ def get_dataframe_table(
     table: str,
     orientation: str
 ) -> pd.DataFrame:
-    
-    assert orientation in ["observations", "variables"], orientation
+
+    msg = f"Unexpected orientation: {orientation}"
+    assert orientation in ["observations", "variables"], msg
 
     # Get the complete set of data
     mdata = get_mdata()
@@ -494,7 +543,7 @@ def get_dataframe_table(
 
     # Get the table
     if table == "metadata":
-        table = adata.obs if orientation == "observations" else adata.var
+        table = mdata.obs if orientation == "observations" else adata.var
     elif table == "data":
         table = adata.to_df()
         if orientation == "variables":
@@ -534,7 +583,6 @@ def get_dataframe_column(
 
     # Define the slice of the data
     slice = MuDataSlice(
-        get_mdata(),
         modality=modality,
         orientation=orientation[:3],
         slot=slot,
@@ -543,7 +591,7 @@ def get_dataframe_column(
     )
 
     # Return the data
-    return slice.dataframe()[cname]
+    return slice.dataframe(get_mdata())
 
 
 def get_dat_hash():
@@ -616,8 +664,9 @@ def show_provenance(loc: MuDataSlice, container: DeltaGenerator):
             if kw != "figures"
         })
         if isinstance(prov.get("figures"), list):
+            if len(isinstance(prov.get("figures"), list)) > 0:
+                container.write("Supporting Figures")
             for fig_json in prov["figures"]:
-                print("here1")
                 fig = io.from_json(fig_json)
                 container.plotly_chart(fig)
         container.write(

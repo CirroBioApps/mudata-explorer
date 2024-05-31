@@ -1,20 +1,22 @@
 #!/usr/bin/env streamlit run
 
 from mudata_explorer import app
+from mudata_explorer import pages
 import streamlit as st
 
-app.setup_pages()
-st.write("""
-### MuData Explorer
+if __name__ == "__main__":
 
-Welcome to the MuData Explorer! This app is designed to help you visualize
-and interact with your data.
+    # If no data has been uploaded
+    if app.get_mdata() is None:
 
-- **Upload Tables**: Add data to the app by uploading CSV files.
-- **Run Analysis**: Apply statistical analyses and save the results.
-- **View Data**: Explore your data with tables and plots.
-- **Save / Load Dataset**: Download a snapshot of your dataset to share with others.
+        # Let the user upload some data to get started
+        pages.tables()
 
-""")
+    # If there is data uploaded already
+    else:
 
-app.landing_shortcuts()
+        # If there are figures to show
+        if app.get_views() is not None:
+
+            # Show the views
+            pages.views()
