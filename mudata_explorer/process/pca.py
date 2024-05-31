@@ -11,7 +11,7 @@ class RunPCA(Process):
     type = "pca"
     name = "PCA"
     desc = "Principle Coordinates Analysis (PCA)"
-    categories = ["Dimensionality Reduction"]
+    category = "Dimensionality Reduction"
     output_type = pd.DataFrame
     schema = {
         "data": {

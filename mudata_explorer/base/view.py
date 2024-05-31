@@ -6,17 +6,10 @@ from streamlit.delta_generator import DeltaGenerator
 
 class View(MuDataAppHelpers):
 
-    ix: int
-    type: str
     editable: bool
-    name: str
-    desc: str
-    categories: List[str]
-    params: dict = {}
     defaults: dict = {}
     view_container: DeltaGenerator
     inputs_container: DeltaGenerator
-    schema: dict = {}
 
     def __init__(
         self,
@@ -51,7 +44,9 @@ class View(MuDataAppHelpers):
             self.inputs_container = container.expander("Edit Display")
 
         # Get the parameters from the user
-        self.get_data(self.inputs_container)
+        self.get_data(
+            self.inputs_container if self.editable else self.view_container
+        )
 
         # Now make the display, catching any errors
         try:

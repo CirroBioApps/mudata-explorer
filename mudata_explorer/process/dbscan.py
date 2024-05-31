@@ -9,7 +9,7 @@ class RunDBSCAN(Process):
     type = "dbscan"
     name = "DBSCAN"
     desc = "DBSCAN Clustering"
-    categories = ["Clustering"]
+    category = "Clustering"
     output_type = pd.Series
     schema = {
         "data": {

@@ -15,7 +15,7 @@ class RunKmeans(Process):
     type = "kmeans"
     name = "K-Means"
     desc = "K-Means Clustering"
-    categories = ["Clustering"]
+    category = "Clustering"
     output_type = pd.Series
     schema = {
         "data": {

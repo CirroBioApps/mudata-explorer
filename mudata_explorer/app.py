@@ -7,7 +7,7 @@ import pandas as pd
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 from tempfile import NamedTemporaryFile
-from typing import Any, List, Optional, Union, Dict
+from typing import Any, List, Optional, Tuple, Union, Dict
 from mudata_explorer.helpers import get_view_by_type
 from mudata_explorer.helpers.join_kws import join_kws
 from mudata_explorer.helpers import mudata, plotting, save_load
@@ -765,3 +765,15 @@ def show_provenance(loc: MuDataSlice, container: DeltaGenerator):
         container.write(
             f"> 'Run' will overwrite existing data in '{loc.address}'."
         )
+
+
+def get_supp_figs() -> List[Tuple[str, dict]]:
+    """Return the list of figures which are stored in the provenance."""
+
+    return [
+        f"{loc}:{ix}"
+        for loc, prov in get_provenance().items()
+        if prov.get("figures") is not None
+        for ix, fig in enumerate(prov["figures"])
+        if fig is not None
+    ]

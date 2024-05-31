@@ -7,8 +7,8 @@ for view in all_views:
         view.type,
         view.desc,
         (
-            "Categorie(s): " + ", ".join(view.categories)
-            if view.categories
+            f"Category: {view.category}"
+            if view.category is not None
             else "No categories."
         )
     ]))

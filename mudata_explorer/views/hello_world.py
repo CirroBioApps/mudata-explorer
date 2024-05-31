@@ -7,7 +7,7 @@ class HelloWorld(View):
     type = "hello-world"
     name = "Hello World"
     desc = "Basic hello world view."
-    categories = ["Testing"]
+    category = "Testing"
     defaults = {"name": "World"}
 
     def display(self, container: DeltaGenerator):

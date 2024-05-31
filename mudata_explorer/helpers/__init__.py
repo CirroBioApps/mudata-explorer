@@ -1,6 +1,7 @@
 from typing import List
 from mudata_explorer import views
 from mudata_explorer import process
+from mudata_explorer.base.base import MuDataAppHelpers
 from mudata_explorer.base.view import View
 from mudata_explorer.base.process import Process
 from mudata_explorer.helpers.read_table import read_table # noqa
@@ -49,19 +50,21 @@ def make_process(type: str, **kwargs) -> Process:
 def asset_categories(list_of_assets):
 
     all_categories = list(set([
-        category
+        asset.category
         for asset in list_of_assets
-        for category in asset.categories
     ]))
     all_categories.sort()
     return all_categories
 
 
-def filter_by_category(list_of_assets, category):
+def filter_by_category(
+    list_of_assets: List[MuDataAppHelpers],
+    category: str
+):
     return [
         asset
         for asset in list_of_assets
-        if category in asset.categories
+        if category == asset.category
     ]
 
 

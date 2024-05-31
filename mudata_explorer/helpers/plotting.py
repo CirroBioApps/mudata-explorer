@@ -155,10 +155,11 @@ def _add_box(
             fillcolor="rgba(173, 216, 230, 0.5)"  # Light blue color
         )
     )
+
     fig.add_annotation(
         x=x + (width / 2),
         y=y + (height / 2),
-        text=text,
+        text=label.replace(" ", "<br>"),
         textangle=textangle,
         showarrow=False
     )

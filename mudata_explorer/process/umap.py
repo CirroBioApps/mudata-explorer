@@ -11,7 +11,7 @@ class UMAP(Process):
     type = "umap"
     name = "UMAP"
     desc = "Uniform Manifold Approximation and Projection (UMAP)"
-    categories = ["Dimensionality Reduction"]
+    category = "Dimensionality Reduction"
     output_type = pd.DataFrame
     schema = {
         "data": {

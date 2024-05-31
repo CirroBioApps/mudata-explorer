@@ -6,7 +6,7 @@ from streamlit.delta_generator import DeltaGenerator
 
 class Plotly(View):
 
-    categories = ["Plotting"]
+    category = "Plotting"
 
     def fetch_dataframe(self, table_kw):
         """

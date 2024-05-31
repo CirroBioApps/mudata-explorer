@@ -8,11 +8,6 @@ from streamlit.delta_generator import DeltaGenerator
 
 class Process(MuDataAppHelpers):
 
-    type: str
-    name: str
-    desc: str
-    categories: List[str]
-    schema: dict
     ix = -1
     output_type: Union[pd.Series, pd.DataFrame]
     figures: Optional[List[dict]] = None
@@ -36,6 +31,9 @@ class Process(MuDataAppHelpers):
         # Look through the tables which were selected by the user
         # in order to find the modalities used for inputs
         output_modalities = self._find_modalities()
+
+        if len(output_modalities) == 0:
+            return []
 
         # If the orientation is to the observations
         if self.orientation == "observations":

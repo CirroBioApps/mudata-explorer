@@ -8,8 +8,14 @@ import streamlit as st
 
 
 class MuDataAppHelpers:
+
+    ix: int
     params: dict = {}
     schema: dict
+    type: str
+    name: str
+    desc: str
+    category: str
     orientation_schema: dict = {
         "orientation": {
             "type": "string",
@@ -52,7 +58,8 @@ class MuDataAppHelpers:
                 "string",
                 "float",
                 "boolean",
-                "integer"
+                "integer",
+                "supporting_figure"
             ]:
                 yield (
                     join_kws(prefix, key),
@@ -327,6 +334,28 @@ class MuDataAppHelpers:
                         help=elem.get("help"),
                         **self.input_value_kwargs(prefix_key)
                     )
+
+            elif elem["type"] == "supporting_figure":
+
+                if self.params_editable:
+                    # Get the list of all supporting figures
+                    all_figures = app.get_supp_figs()
+
+                    if len(all_figures) == 0:
+                        container.write("No supporting figures available.")
+                        self.params_complete = False
+
+                    else:
+                        # Let the user select a supporting figure
+                        self.params[prefix_key] = container.selectbox(
+                            key if elem.get("label") is None else elem["label"],
+                            all_figures,
+                            help=elem.get("help"),
+                            **self.input_selectbox_kwargs(
+                                prefix_key,
+                                all_figures
+                            )
+                        )
 
             else:
                 raise Exception(f"Unsupported type: {elem['type']}")

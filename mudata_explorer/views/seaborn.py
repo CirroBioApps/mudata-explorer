@@ -7,7 +7,7 @@ from mudata_explorer import app
 
 class Seaborn(View):
 
-    categories = ["Plotting"]
+    category = "Plotting"
 
 
 class Clustermap(Seaborn):
