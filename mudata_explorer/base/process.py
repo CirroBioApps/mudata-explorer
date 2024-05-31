@@ -28,6 +28,8 @@ class Process(MuDataAppHelpers):
             kw: params.get(kw, val)
             for kw, val in self.get_schema_defaults(self.schema)
         }
+        # Params are always editable for a new process
+        self.params_editable = True
 
     def run(self, container: DeltaGenerator):
 

@@ -250,7 +250,7 @@ def add_modality_modal():
     )
 
     # Find the number of observations which overlap with the existing .obs
-    if app.has_mdata():
+    if new_df is not None and app.has_mdata():
         obs = app.get_mdata().obs
         overlap = set(obs.index).intersection(set(new_df.index))
         if len(overlap) > 0:

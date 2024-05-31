@@ -37,6 +37,10 @@ class View(MuDataAppHelpers):
             for kw, val in self.get_schema_defaults(self.schema)
         }
 
+        # Whether the params are editable is driven by the settings
+        settings = app.get_settings() if app.has_mdata() else {}
+        self.params_editable = settings.get("editable", True)
+
     def attach(self, container: DeltaGenerator):
 
         # Set up a container for the view

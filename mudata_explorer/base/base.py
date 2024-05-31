@@ -22,6 +22,8 @@ class MuDataAppHelpers:
     use_orientation: bool = True
     # Flag used to indicate whether all parameters have been provided
     params_complete: bool
+    # Flag used to indicate whether the parameters are editable
+    params_editable: bool
 
     def param(self, *kws, default=None):
         return self.params.get(join_kws(*kws), default)
@@ -189,10 +191,7 @@ class MuDataAppHelpers:
         # By default, params are complete until proven otherwise
         self.params_complete = True
 
-        # Get the global settings
-        settings = app.get_settings()
-
-        if settings["editable"]:
+        if self.params_editable:
             container.write("##### Inputs")
 
         if self.use_orientation:
@@ -214,8 +213,6 @@ class MuDataAppHelpers:
         schema: Dict[str, dict],
         prefix: str = None
     ):
-        # Get the global settings
-        settings = app.get_settings()
 
         # Iterate over the form defined for this view
         for key, elem in schema.items():
@@ -228,7 +225,7 @@ class MuDataAppHelpers:
 
             elif elem["type"] == "object":
 
-                if "label" in elem and settings["editable"]:
+                if "label" in elem and self.params_editable:
                     container.write(f"#### {elem['label']}")
 
                 self.render_form(
@@ -239,7 +236,7 @@ class MuDataAppHelpers:
 
             elif elem["type"] == "string":
 
-                if settings["editable"]:
+                if self.params_editable:
                     if elem.get("enum") is not None:
                         self.params[prefix_key] = container.selectbox(
                             (
@@ -282,7 +279,7 @@ class MuDataAppHelpers:
 
             elif elem["type"] == "float":
 
-                if settings["editable"]:
+                if self.params_editable:
                     self.params[prefix_key] = container.number_input(
                         key if elem.get("label") is None else elem["label"],
                         help=elem.get("help"),
@@ -310,7 +307,7 @@ class MuDataAppHelpers:
                     # Update the value
                     self.update_view_param(prefix_key, int(val))
 
-                if settings["editable"]:
+                if self.params_editable:
                     self.params[prefix_key] = container.number_input(
                         key if elem.get("label") is None else elem["label"],
                         help=elem.get("help"),
@@ -325,7 +322,7 @@ class MuDataAppHelpers:
 
             elif elem["type"] == "boolean":
 
-                if settings["editable"]:
+                if self.params_editable:
                     self.params[prefix_key] = container.checkbox(
                         key if elem.get("label") is None else elem["label"],
                         help=elem.get("help"),
@@ -342,8 +339,6 @@ class MuDataAppHelpers:
         elem: dict,
         container: DeltaGenerator
     ):
-        # Get the global settings
-        settings = app.get_settings()
 
         if not app.has_mdata():
             container.write("No MuData object available.")
@@ -378,7 +373,7 @@ class MuDataAppHelpers:
             tables_kw = join_kws(prefix, key, "tables")
 
             # Let the user select one or more tables
-            if settings["editable"]:
+            if self.params_editable:
 
                 all_tables = app.tree_tables(self.orientation)
                 container.multiselect(
@@ -415,7 +410,7 @@ class MuDataAppHelpers:
                 df = df.loc[
                     list(set(filtered_obs) & set(df.index))
                 ]
-                if settings["editable"]:
+                if self.params_editable:
                     container.write(f"Filtered to {df.shape[0]:,} samples.")
 
         # If the user has the option to select specific columns
@@ -437,7 +432,7 @@ class MuDataAppHelpers:
                 self.update_view_param(selected_columns_kw, selected_columns)
 
             # Let the user select the columns to use
-            if settings["editable"]:
+            if self.params_editable:
                 # Check to see if the user wants to select all of the columns
                 if container.checkbox(
                     "Use all columns",
@@ -460,7 +455,7 @@ class MuDataAppHelpers:
             if len(selected_columns) > 0:
                 df = df[selected_columns].dropna()
 
-        if settings["editable"] and df.shape[0] == 0:
+        if self.params_editable and df.shape[0] == 0:
             container.write("No data available.")
             return
 
@@ -475,8 +470,6 @@ class MuDataAppHelpers:
         container: DeltaGenerator
     ):
 
-        # Get the global settings
-        settings = app.get_settings()
 
         # Set the default values
 
@@ -518,7 +511,7 @@ class MuDataAppHelpers:
             self.update_view_param(label_kw, cname_val)
 
         # If the views are editable
-        if settings["editable"]:
+        if self.params_editable:
 
             # Print the column name
             container.write(f"#### {col_elem.get('label', col_kw)}")
@@ -650,8 +643,6 @@ class MuDataAppHelpers:
 
     def render_query(self, prefix: str, key: str, container: DeltaGenerator):
 
-        # Get the global settings
-        settings = app.get_settings()
 
         # Set the default values
 
@@ -700,7 +691,7 @@ class MuDataAppHelpers:
             self.update_view_param(value_kw, "")
 
         # If the views are editable
-        if settings["editable"]:
+        if self.params_editable:
 
             # Print the column name
             container.write("#### Filter samples")
@@ -780,7 +771,7 @@ class MuDataAppHelpers:
 
         # If no value is provided
         if query['value'] is None or len(query['value']) == 0:
-            if settings["editable"]:
+            if self.params_editable:
                 container.write("Provide a value to filter samples.")
             return
 
@@ -791,7 +782,7 @@ class MuDataAppHelpers:
             self.orientation
         )
         if table is None:
-            if settings["editable"]:
+            if self.params_editable:
                 container.write("No data available for filtering.")
             return
 

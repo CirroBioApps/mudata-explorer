@@ -2,7 +2,6 @@
 
 from mudata_explorer import app
 from mudata_explorer import pages
-import streamlit as st
 
 if __name__ == "__main__":
 
