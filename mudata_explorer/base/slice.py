@@ -201,6 +201,14 @@ class MuDataSlice:
             if isinstance(dat, pd.DataFrame):
                 # No subattribute is defined
                 assert self.subattr is None
+
+                # Align the axis to the modality
+                index = getattr(
+                    mdata.mod[self.modality],
+                    f"{self.orientation}_names"
+                )
+                dat = dat.reindex(index=index)
+                print(dat)
                 getattr(mdata.mod[self.modality], self.slot)[self.attr] = dat
             # If writing a Series
             else:

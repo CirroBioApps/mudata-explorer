@@ -1,8 +1,5 @@
 from sklearn.decomposition import PCA
 import pandas as pd
-import streamlit as st
-from streamlit.delta_generator import DeltaGenerator
-from mudata_explorer import app
 from mudata_explorer.base.process import Process
 
 

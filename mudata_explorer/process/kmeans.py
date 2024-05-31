@@ -5,8 +5,6 @@ import pandas as pd
 import plotly.express as px
 from plotly import io
 import streamlit as st
-from streamlit.delta_generator import DeltaGenerator
-from mudata_explorer import app
 from mudata_explorer.base.process import Process
 
 

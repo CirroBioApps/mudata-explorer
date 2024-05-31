@@ -3,6 +3,7 @@ import anndata as ad
 import hashlib
 import json
 import muon as mu
+import numpy as np
 import pandas as pd
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
@@ -217,9 +218,27 @@ def setup_mdata():
     set_mdata(mdata)
 
 
+def jsonify(dat):
+    if isinstance(dat, (list, np.ndarray)):
+        return [jsonify(val) for val in dat]
+    elif isinstance(dat, dict):
+        return {kw: jsonify(val) for kw, val in dat.items()}
+    else:
+        return dat
+
+
 def validate_json(dat):
     """Validate that an object can be serialized to JSON"""
-    return json.loads(json.dumps(dat, sort_keys=True))
+    try:
+        return json.loads(
+            json.dumps(
+                jsonify(dat),
+                sort_keys=True
+            )
+        )
+    except Exception as e:
+        print(dat)
+        raise ValueError(f"Could not serialize object to JSON: {e}")
 
 
 def get_process() -> dict:

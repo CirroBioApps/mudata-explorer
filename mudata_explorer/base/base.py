@@ -65,6 +65,11 @@ class MuDataAppHelpers:
                     join_kws(prefix, key),
                     elem.get("default", None)
                 )
+                if elem.get("optional", False):
+                    yield (
+                        join_kws(prefix, key, "enabled"),
+                        True
+                    )
 
             elif elem["type"] == "dataframe":
                 # If column selection is not enabled,
