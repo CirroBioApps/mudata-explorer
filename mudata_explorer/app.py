@@ -1,3 +1,4 @@
+from collections import defaultdict
 import anndata as ad
 import hashlib
 import json
@@ -461,11 +462,24 @@ def list_modalities():
 
 def tree_tables(orientation) -> List[str]:
     """Return a list of all tables in the MuData object."""
-    return [
-        join_kws(modality, table)
-        for modality in list_modalities()
-        for table in list_tables(modality, orientation)
-    ]
+
+    tables = []
+
+    if has_mdata():
+
+        # If the orientation is to observations, and there is observation metadata
+        if orientation == "observations":
+            if get_mdata().obs.shape[1] > 0:
+                tables.append("Observation Metadata")
+
+        # Add tables for each modality
+        tables.extend([
+            join_kws(modality, table)
+            for modality in list_modalities()
+            for table in list_tables(modality, orientation)
+        ])
+
+    return tables
 
 
 def list_tables(modality: str, orientation: str):
@@ -474,12 +488,14 @@ def list_tables(modality: str, orientation: str):
     assert orientation in ["observations", "variables"], orientation
     mdata = get_mdata()
     adata: ad.AnnData = mdata.mod[modality]
-    tables = ["metadata", "data"]
+    tables = ["data"]
     if orientation == "observations":
         for attr in ["obsm", "obsp"]:
             for slot in getattr(adata, attr).keys():
                 tables.append(f"{attr}.{slot}")
     else:
+        if adata.var.shape[1] > 0:
+            tables.append("metadata")
         for attr in ["varm", "varp"]:
             for slot in getattr(adata, attr).keys():
                 tables.append(f"{attr}.{slot}")
@@ -535,6 +551,10 @@ def get_dataframe_table(
     # Get the complete set of data
     mdata = get_mdata()
 
+    # Special case for observation metadata
+    if orientation == "observations" and table == "metadata":
+        return mdata.obs
+
     if modality not in mdata.mod:
         return None
 
@@ -554,6 +574,61 @@ def get_dataframe_table(
         table = getattr(adata, attr)[kw]
 
     return table
+
+
+def join_dataframe_tables(
+    tables: List[str],
+    orientation: str
+) -> pd.DataFrame:
+    """
+    Tables from the same modality:
+        Joined along the index (if the orientation is to observations)
+        Joined along the columns (if the orientation is to variables)
+    Tables from different modalities:
+        Joined along the columns (if the orientation is to observations)
+        Joined along the index (if the orientation is to variables)
+
+    """
+
+    assert orientation in ["observations", "variables"]
+
+    # Keep track of which tables are from the same modality
+    modality_tables = defaultdict(list)
+
+    for table in tables:
+        if table == "Observation Metadata":
+            assert orientation == "observations"
+            modality = 'None'
+            df = get_dataframe_table(None, "metadata", orientation)
+        else:
+            modality, attr = table.split(".", 1)
+            df = get_dataframe_table(modality, attr, orientation)
+
+        assert df is not None, f"Could not find table: {table}"
+        modality_tables[modality].append(df)
+
+    # Join within each modality
+    modalities = {
+        modality: (
+            pd.concat(tables, axis=orientation != "observations")
+            if len(tables) > 1 else tables[0]
+        )
+        for modality, tables in modality_tables.items()
+    }
+
+    # Join across different modalities
+    if len(modalities) > 1:
+        df = pd.concat(
+            modalities.values(),
+            axis=orientation == "observations"
+        )
+    else:
+        df: pd.DataFrame = list(modalities.values())[0]
+
+    # Drop any rows or columns which are missing in their entirety
+    df = df.dropna(axis=0, how="all").dropna(axis=1, how="all")
+
+    return df
 
 
 def get_dataframe_column(

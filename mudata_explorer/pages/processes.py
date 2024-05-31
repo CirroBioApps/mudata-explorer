@@ -97,19 +97,16 @@ def run():
         **update_process_kwargs("dest_key")
     )
 
+    # Get the output locations
+    output_locs = process.get_output_locs(dest_key)
+
     # If no data has been selected
-    if len(process.output_modalities) == 0:
+    if len(output_locs) == 0:
         container.write("Please select input data")
         return
 
     # For each of the destination modalities
-    for dest_modality in process.output_modalities:
-
-        # Define the location where the output will be written
-        loc = process.locate_results(
-            dest_modality,
-            dest_key
-        )
+    for loc in output_locs:
 
         # Report to the user if data already exists in the destination key
         app.show_provenance(loc, container)
@@ -120,7 +117,6 @@ def run():
         return
 
     if container.button("Generate Results"):
-
         try:
             # Generate the results
             res = process.execute()
@@ -129,10 +125,12 @@ def run():
             assert isinstance(res, process.output_type), type(res)
 
             # Save the results
-            process.save_results(loc, res)
+            for loc in output_locs:
+                process.save_results(loc, res)
+
+            st.rerun()
 
         except Exception as e:
             # Log the full traceback of the exception
             container.exception(e)
 
-        st.rerun()

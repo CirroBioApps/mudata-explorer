@@ -1,6 +1,6 @@
 from mudata_explorer import app
 from mudata_explorer.helpers.join_kws import join_kws
-from typing import Dict, Union
+from typing import Dict, List, Union
 import pandas as pd
 import plotly.express as px
 from streamlit.delta_generator import DeltaGenerator
@@ -372,10 +372,26 @@ class MuDataAppHelpers:
 
             tables_kw = join_kws(prefix, key, "tables")
 
+            all_tables = app.tree_tables(self.orientation)
+
+            # If any invalid tables were selected
+            if any([
+                table not in all_tables
+                for table in self.params.get(tables_kw, [])
+            ]):
+                # Remove any invalid tables
+                self.update_view_param(
+                    tables_kw,
+                    [
+                        table
+                        for table in self.params.get(tables_kw, [])
+                        if table in all_tables
+                    ]
+                )
+
             # Let the user select one or more tables
             if self.params_editable:
 
-                all_tables = app.tree_tables(self.orientation)
                 container.multiselect(
                     "Select table(s)",
                     all_tables,
@@ -386,22 +402,15 @@ class MuDataAppHelpers:
                 )
 
             # Make a DataFrame with the selected table(s)
-            selected_tables = self.params.get(tables_kw, [])
+            selected_tables: List[str] = self.params.get(tables_kw, [])
             if len(selected_tables) == 0:
                 container.write("No tables selected.")
                 self.params_complete = False
                 return
-            else:
-                df = pd.concat(
-                    [
-                        app.get_dataframe_table(
-                            *table_path.split(".", 1),
-                            self.orientation
-                        )
-                        for table_path in self.params.get(tables_kw, [])
-                    ],
-                    axis=1
-                )
+
+            df = app.join_dataframe_tables(selected_tables, self.orientation)
+
+            df.to_csv("test_data.csv")
 
         # Let the user optionally filter rows
         if elem.get("query", True):
@@ -469,7 +478,6 @@ class MuDataAppHelpers:
         col_elem: dict,
         container: DeltaGenerator
     ):
-
 
         # Set the default values
 
@@ -642,7 +650,6 @@ class MuDataAppHelpers:
         }).dropna()
 
     def render_query(self, prefix: str, key: str, container: DeltaGenerator):
-
 
         # Set the default values
 

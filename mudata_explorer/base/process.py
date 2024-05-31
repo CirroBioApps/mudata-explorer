@@ -1,10 +1,8 @@
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Union
 import pandas as pd
-import muon as mu
 from mudata_explorer import app
 from mudata_explorer.base.base import MuDataAppHelpers
 from mudata_explorer.base.slice import MuDataSlice
-from scipy.stats import zscore
 from streamlit.delta_generator import DeltaGenerator
 
 
@@ -17,7 +15,6 @@ class Process(MuDataAppHelpers):
     schema: dict
     ix = -1
     output_type: Union[pd.Series, pd.DataFrame]
-    output_modalities: List[str]
     figures: Optional[List[dict]] = None
 
     def __init__(
@@ -31,41 +28,71 @@ class Process(MuDataAppHelpers):
         # Params are always editable for a new process
         self.params_editable = True
 
+    def get_output_locs(self, dest_key) -> List[MuDataSlice]:
+        """
+        Return the list of output locations for this process.
+        """
+
+        # Look through the tables which were selected by the user
+        # in order to find the modalities used for inputs
+        output_modalities = self._find_modalities()
+
+        # If the orientation is to the observations
+        if self.orientation == "observations":
+
+            # If the output is a Series (a single column)
+            if self.output_type == pd.Series:
+
+                # Write results to the mdata.obs slot
+                return [
+                    MuDataSlice(
+                        orientation="obs",
+                        modality=None,
+                        slot="obs",
+                        attr=dest_key
+                    )
+                ]
+
+            # If the output is a DataFrame
+            else:
+
+                # Write results to the .obsm slot of the
+                # first modality used in the process
+                return [
+                    MuDataSlice(
+                        orientation="obs",
+                        modality=output_modalities[0],
+                        slot="obsm",
+                        attr=dest_key
+                    )
+                ]
+        # If the orientation is to variables
+        else:
+
+            # If the output is a Series (a single row)
+            if self.output_type == pd.Series:
+                # Save to .var
+                slot = "var"
+
+            # If the output is a DataFrame
+            else:
+                # Save to .varm
+                slot = "varm"
+
+            # Save results in all of the modalities used in the process
+            return [
+                MuDataSlice(
+                    orientation="var",
+                    modality=modality,
+                    slot=slot,
+                    attr=dest_key
+                )
+                for modality in output_modalities
+            ]
+
     def run(self, container: DeltaGenerator):
 
         pass
-
-    def get_data(self, container: DeltaGenerator):
-        """The difference between .get_data for the Process and View
-        is that the Process needs to know where to store the results."""
-
-        # Run the method of the parent class
-        super().get_data(container)
-
-        # Now figure out what the output modalities are
-
-        # If the orientation is to obs
-        if self.orientation == "observations":
-
-            # Ask the user which modality to save the outputs to
-            all_modalities = app.list_modalities()
-            dest_modality = container.selectbox(
-                "Write results to modality:",
-                all_modalities
-            )
-            self.output_modalities = [dest_modality]
-
-        # If the orientation is to var
-        else:
-
-            # Look through the tables which were selected by the user
-            self.output_modalities = self._find_modalities()
-
-        # Make sure that all of the output modalities are valid
-        assert all([
-            mod in app.list_modalities()
-            for mod in self.output_modalities
-        ]), self.output_modalities
 
     def _find_modalities(self) -> List[str]:
         """Look through all of the params and return a list of all
