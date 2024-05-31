@@ -409,8 +409,6 @@ class MuDataAppHelpers:
 
             df = app.join_dataframe_tables(selected_tables, self.orientation)
 
-            df.to_csv("test_data.csv")
-
         # Let the user optionally filter rows
         if elem.get("query", True):
             filtered_obs = self.render_query(prefix, key, container)

@@ -48,10 +48,10 @@ class View(MuDataAppHelpers):
 
         if self.editable:
             # Set up an expander element for up/down/delete buttons
-            self.inputs_container = container.expander("Edit Position")
+            self.inputs_container = container.expander("Edit Display")
 
         # Get the parameters from the user
-        self.get_data(self.view_container)
+        self.get_data(self.inputs_container)
 
         # Now make the display, catching any errors
         try:

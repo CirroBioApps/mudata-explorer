@@ -30,8 +30,11 @@ def make_views(editable: bool):
 
 def edit_view(container: DeltaGenerator, ix: int, n_views: int):
 
+    # Add a horizontal line
+    container.markdown("---")
+
     # Make a set of columns
-    cols = container.columns([1, 1, 1])
+    cols = container.columns(4)
 
     # Add buttons for editing, reordering, and deleting
     if ix > 0:
@@ -49,8 +52,15 @@ def edit_view(container: DeltaGenerator, ix: int, n_views: int):
         key=f"delete-view-{ix}",
         args=(ix,)
     )
+    cols[2].button(
+        "Duplicate",
+        use_container_width=True,
+        on_click=app.duplicate_view,
+        key=f"duplicate-view-{ix}",
+        args=(ix,)
+    )
     if ix < (n_views - 1):
-        cols[2].button(
+        cols[3].button(
             "Move Down",
             use_container_width=True,
             on_click=move_down,

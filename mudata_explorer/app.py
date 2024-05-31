@@ -258,6 +258,12 @@ def delete_view(ix: int):
     set_views(views)
 
 
+def duplicate_view(ix: int):
+    views = get_views()
+    views.insert(ix, views[ix])
+    set_views(views)
+
+
 def add_view(view_type: str):
     if get_mdata() is None:
         setup_mdata()
