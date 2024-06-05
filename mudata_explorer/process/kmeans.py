@@ -14,49 +14,82 @@ class RunKmeans(Process):
     name = "K-Means"
     desc = "K-Means Clustering"
     category = "Clustering"
-    output_type = pd.Series
     schema = {
-        "data": {
-            "type": "dataframe",
-            "select_columns": True,
-            "query": "",
+        "table": {
+            "type": "object",
+            "label": "Data Table",
+            "properties": {
+                "data": {
+                    "type": "dataframe",
+                    "select_columns": True,
+                    "query": "",
+                }
+            }
         },
-        "k": {
-            "type": "integer",
-            "min_value": 2,
-            "default": 5,
-            "label": "Number of Clusters (K)",
-            "help": """
-            Number of clusters to group samples into
-            """
+        "clustering": {
+            "type": "object",
+            "label": "Clustering Parameters",
+            "properties": {
+                "k": {
+                    "type": "integer",
+                    "min_value": 2,
+                    "default": 5,
+                    "label": "Number of Clusters (K)",
+                    "help": """
+                    Number of clusters to group samples into
+                    """
+                },
+                "min_k": {
+                    "type": "integer",
+                    "min_value": 2,
+                    "default": 2,
+                    "label": "Evaluate Values of K: Lower Bound"
+                },
+                "max_k": {
+                    "type": "integer",
+                    "min_value": 2,
+                    "default": 10,
+                    "label": "Evaluate Values of K: Upper Bound"
+                }
+            }
         },
-        "min_k": {
-            "type": "integer",
-            "min_value": 2,
-            "default": 2,
-            "label": "Evaluate Values of K: Lower Bound",
-            "help": """
-            Generate a plot showing the silhouette score for a range of K
-            """
-        },
-        "max_k": {
-            "type": "integer",
-            "min_value": 2,
-            "default": 10,
-            "label": "Evaluate Values of K: Upper Bound",
-            "help": """
-            Generate a plot showing the silhouette score for a range of K
-            """
+        "outputs": {
+            "type": "object",
+            "label": "Outputs",
+            "properties": {
+                "dest_key": {
+                    "type": "string",
+                    "default": "kmeans",
+                    "label": "Label to use for results",
+                    "help": """
+                    Key to use when saving the output to the container
+                    """
+                }
+            }
+        }
+    }
+    outputs = {
+        "res": {
+            "type": pd.Series,
+            "label": "Clusters",
+            "desc": "Cluster assignments for each element",
+            "modality": "table.data.tables",
+            "axis": "table.data.axis",
+            "attr": "outputs.dest_key"
         }
     }
 
     def execute(self) -> Union[pd.Series, pd.DataFrame]:
 
-        msg = "Selected value of K must fall between the lower and upper bound"
-        assert self.params["k"] >= self.params["min_k"], msg
-        assert self.params["k"] <= self.params["max_k"], msg
+        k = self.params["clustering.k"]
+        min_k = self.params["clustering.min_k"]
+        max_k = self.params["clustering.max_k"]
 
-        df: pd.DataFrame = self.params["data.dataframe"].dropna()
+        msg = "Selected value of K must fall between the lower and upper bound"
+        assert k >= min_k, msg
+        assert k <= max_k, msg
+
+        df: pd.DataFrame = self.params["table.data.dataframe"].dropna()
         msg = "Null values in all rows - remove invalid columns"
         assert df.shape[0] > 0, msg
 
@@ -66,10 +99,7 @@ class RunKmeans(Process):
                 df,
                 n_clusters=n
             )
-            for n in range(
-                self.params["min_k"],
-                self.params["max_k"]
-            )
+            for n in range(min_k, max_k)
             if n < df.shape[0]
         }
 
@@ -89,13 +119,14 @@ class RunKmeans(Process):
             },
             title="Evaluate Clustering Performance"
         )
-        fig.add_vline(x=self.params["k"], line_dash="dash", line_color="grey")
+        fig.add_vline(x=k, line_dash="dash", line_color="grey")
 
-        # Save the figure
-        self.figures = [io.to_json(fig, validate=False)]
-
-        # Return the clusters for the selected value of K
-        return clusters[self.params["k"]]
+        # Save the results and the figure
+        self.save_results(
+            "res",
+            clusters[k],
+            figures=[io.to_json(fig, validate=False)]
+        )
 
 
 @st.cache_data

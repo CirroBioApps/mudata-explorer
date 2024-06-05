@@ -1,6 +1,6 @@
 from mudata_explorer import app
 from mudata_explorer.helpers.join_kws import join_kws
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 import pandas as pd
 import plotly.express as px
 from streamlit.delta_generator import DeltaGenerator
@@ -16,16 +16,6 @@ class MuDataAppHelpers:
     name: str
     desc: str
     category: str
-    orientation_schema: dict = {
-        "orientation": {
-            "type": "string",
-            "enum": ["observations", "variables"],
-            "default": "observations",
-            "label": "Orientation - Analyze Data in Terms Of:",
-            "help": "Select whether to use observations or variables."
-        }
-    }
-    use_orientation: bool = True
     # Flag used to indicate whether all parameters have been provided
     params_complete: bool
     # Flag used to indicate whether the parameters are editable
@@ -34,15 +24,8 @@ class MuDataAppHelpers:
     def param(self, *kws, default=None):
         return self.params.get(join_kws(*kws), default)
 
-    @property
-    def orientation(self):
-        return self.params.get("orientation")
-
     def get_schema_defaults(self, schema: dict, prefix=None):
         """Yield the default values for each item in the schema."""
-
-        # Orientation is an essential parameter
-        yield "orientation", self.orientation_schema["orientation"]["default"]
 
         for key, elem in schema.items():
             assert isinstance(elem, dict), f"Expected dict, got {type(elem)}"
@@ -72,6 +55,11 @@ class MuDataAppHelpers:
                     )
 
             elif elem["type"] == "dataframe":
+                # Each dataframe may be oriented to the obs or var
+                yield (
+                    join_kws(prefix, key, "axis"),
+                    elem.get("axis", 0)
+                )
                 # If column selection is not enabled,
                 # the user will select >= 1 tables
                 if len(elem.get("columns", {})) == 0:
@@ -145,10 +133,25 @@ class MuDataAppHelpers:
         # Also update the params object
         self.params[kw] = value
 
-    def input_selectbox_kwargs(self, kw, options: list, copy_to=None):
-        """Populate the selectbox element with default kwargs."""
+    def input_selectbox_kwargs(
+        self,
+        kw,
+        options: list,
+        names: Optional[list] = None,
+        copy_to=None
+    ):
+        """
+        Populate the selectbox element with default kwargs.
+        If names is provided, transform the selected option
+        into the value in the same index position.
+        """
 
         assert len(options) > 0, f"Empty options list for {kw}"
+
+        if names is not None:
+            assert len(options) == len(names), f"Length mismatch for {kw}"
+            # Make a dict mapping each name to the values
+            names = dict(zip(names, options))
 
         if self.params[kw] not in options:
             index = 0
@@ -163,7 +166,10 @@ class MuDataAppHelpers:
             key=self.param_key(kw),
             on_change=self.input_value_change,
             args=(kw,),
-            kwargs=dict(copy_to=copy_to)
+            kwargs=dict(
+                copy_to=copy_to,
+                names=names
+            )
         )
 
     def input_multiselect_kwargs(self, kw, options, copy_to=None):
@@ -182,9 +188,18 @@ class MuDataAppHelpers:
             kwargs=dict(copy_to=copy_to)
         )
 
-    def input_value_change(self, kw, copy_to=None):
+    def input_value_change(self, kw, names=None, copy_to=None):
         # Get the value provided by the user
         value = st.session_state[self.param_key(kw)]
+
+        # If a name mapping was provided
+        if names is not None:
+
+            # The provided value must be a key in the mapping
+            assert value in names, f"Invalid value for {kw} ({value})"
+
+            # Update the value to the mapped value
+            value = names[value]
 
         # If this is different than the params
         if value != self.params[kw]:
@@ -204,16 +219,6 @@ class MuDataAppHelpers:
 
         if self.params_editable:
             container.write("##### Inputs")
-
-        if self.use_orientation:
-            # 'orientation' is a special-case parameter that is used to
-            # determine whether the user is selecting observations or variables
-            msg = "The 'orientation' parameter is reserved."
-            assert "orientation" not in self.schema.keys(), msg
-            self.render_form(
-                container,
-                self.orientation_schema
-            )
 
         # Parse the form schema of the object
         self.render_form(container, self.schema)
@@ -237,7 +242,7 @@ class MuDataAppHelpers:
             elif elem["type"] == "object":
 
                 if "label" in elem and self.params_editable:
-                    container.write(f"#### {elem['label']}")
+                    container.write(f"**{elem.get('label', prefix_key)}**")
 
                 self.render_form(
                     container,
@@ -353,7 +358,10 @@ class MuDataAppHelpers:
                     else:
                         # Let the user select a supporting figure
                         self.params[prefix_key] = container.selectbox(
-                            key if elem.get("label") is None else elem["label"],
+                            (
+                                key if elem.get("label") is None
+                                else elem["label"]
+                            ),
                             all_figures,
                             help=elem.get("help"),
                             **self.input_selectbox_kwargs(
@@ -378,6 +386,23 @@ class MuDataAppHelpers:
             self.params_complete = False
             return
 
+        # Get the orientation (axis) of the data
+        axis_kw = join_kws(prefix, key, "axis")
+
+        # Let the user select the orientation to use
+        if self.params_editable:
+            container.selectbox(
+                "Select orientation",
+                ["Observations", "Variables"],
+                **self.input_selectbox_kwargs(
+                    axis_kw,
+                    [0, 1],
+                    ["Observations", "Variables"]
+                )
+            )
+        axis = self.params[axis_kw]
+        assert axis in [0, 1], f"Invalid axis: {axis}"
+
         # The user can either:
         # 1. Select columns to use
         # 2. Select 1 or more tables in their entirety
@@ -395,17 +420,22 @@ class MuDataAppHelpers:
                     key,
                     col_kw,
                     col_elem,
+                    axis,
                     container
                 )
 
-            df = self.build_dataframe(join_kws(prefix, key), elem["columns"])
+            df = self.build_dataframe(
+                join_kws(prefix, key),
+                elem["columns"],
+                axis
+            )
 
         # If 'columns' was not specified
         else:
 
             tables_kw = join_kws(prefix, key, "tables")
 
-            all_tables = app.tree_tables(self.orientation)
+            all_tables = app.tree_tables(self.params[axis_kw])
 
             # If any invalid tables were selected
             if any([
@@ -441,11 +471,11 @@ class MuDataAppHelpers:
                 self.params_complete = False
                 return
 
-            df = app.join_dataframe_tables(selected_tables, self.orientation)
+            df = app.join_dataframe_tables(selected_tables, axis)
 
         # Let the user optionally filter rows
         if elem.get("query", True):
-            filtered_obs = self.render_query(prefix, key, container)
+            filtered_obs = self.render_query(prefix, key, axis, container)
             if filtered_obs is not None:
                 df = df.loc[
                     list(set(filtered_obs) & set(df.index))
@@ -500,6 +530,10 @@ class MuDataAppHelpers:
             return
 
         self.params[join_kws(prefix, key, "dataframe")] = df
+        if self.params_editable:
+            container.write(
+                "Selected {:,} rows and {:,} columns.".format(*df.shape)
+            )
 
     def render_dataframe_column(
         self,
@@ -507,26 +541,27 @@ class MuDataAppHelpers:
         key: str,
         col_kw: str,
         col_elem: dict,
+        axis: int,
         container: DeltaGenerator
     ):
 
         # Set the default values
 
         # Get the list of tables available for this orientation
-        all_tables = app.tree_tables(self.orientation)
+        all_tables = app.tree_tables(axis)
 
         # Table selection
         table_kw = join_kws(prefix, key, col_kw, "table")
         if self.params.get(table_kw) not in all_tables:
             self.update_view_param(
                 table_kw,
-                app.tree_tables(self.orientation)[0]
+                app.tree_tables(axis)[0]
             )
 
         # Get all of the columns for the selected table
         all_cnames = app.list_cnames(
             self.params[table_kw],
-            orientation=self.orientation
+            axis=axis
         )
 
         # Column label selection
@@ -548,7 +583,7 @@ class MuDataAppHelpers:
         if self.params_editable:
 
             # Print the column name
-            container.write(f"#### {col_elem.get('label', col_kw)}")
+            container.write(f"**{col_elem.get('label', col_kw)}**")
 
             # Optional column selection
             enabled_kw = join_kws(prefix, key, col_kw, "enabled")
@@ -638,11 +673,11 @@ class MuDataAppHelpers:
                             )
                         )
 
-    def build_dataframe(self, key: str, columns: dict):
+    def build_dataframe(self, key: str, columns: dict, axis: int):
         # Get the information for each column
         return pd.DataFrame({
             col_kw: app.get_dataframe_column(
-                orientation=self.orientation,
+                axis=axis,
                 **{
                     kw: self.param(key, col_kw, kw)
                     for kw in ["table", "cname"]
@@ -656,12 +691,18 @@ class MuDataAppHelpers:
             )
         }).dropna()
 
-    def render_query(self, prefix: str, key: str, container: DeltaGenerator):
+    def render_query(
+        self,
+        prefix: str,
+        key: str,
+        axis: int,
+        container: DeltaGenerator
+    ):
 
         # Set the default values
 
         # Get the list of tables available for all modalities
-        all_tables = app.tree_tables(self.orientation)
+        all_tables = app.tree_tables(axis)
 
         # Table selection
         table_kw = join_kws(prefix, key, "query", "table")
@@ -674,7 +715,7 @@ class MuDataAppHelpers:
         # Get the list of possible columns
         all_cnames = app.list_cnames(
             self.params[table_kw],
-            orientation=self.orientation
+            axis=axis
         )
 
         # Column name selection
@@ -720,7 +761,7 @@ class MuDataAppHelpers:
             # Get the list of possible columns
             all_cnames = app.list_cnames(
                 self.params[table_kw],
-                orientation=self.orientation
+                axis=axis
             )
 
             # Select the column name
@@ -782,7 +823,7 @@ class MuDataAppHelpers:
         table = app.get_dataframe_table(
             query["modality"],
             query["table"],
-            self.orientation
+            axis
         )
         if table is None:
             if self.params_editable:

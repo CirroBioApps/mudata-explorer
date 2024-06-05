@@ -10,52 +10,93 @@ class UMAP(Process):
     name = "UMAP"
     desc = "Uniform Manifold Approximation and Projection (UMAP)"
     category = "Dimensionality Reduction"
-    output_type = pd.DataFrame
     schema = {
-        "data": {
-            "type": "dataframe",
-            "select_columns": True,
-            "query": "",
+        "table": {
+            "type": "object",
+            "label": "Data Table",
+            "properties": {
+                "data": {
+                    "type": "dataframe",
+                    "select_columns": True,
+                    "query": "",
+                }
+            }
         },
-        "n_neighbors": {
-            "type": "integer",
-            "min_value": 2,
-            "default": 15,
-            "label": "Number of Neighbors",
-            "help": "Number of neighbors to use in the UMAP algorithm."
+        "umap_params": {
+            "type": "object",
+            "label": "UMAP Parameters",
+            "properties": {
+                "n_neighbors": {
+                    "type": "integer",
+                    "min_value": 2,
+                    "default": 15,
+                    "label": "Number of Neighbors",
+                    "help": "Number of neighbors to use in the UMAP algorithm."
+                },
+                "min_dist": {
+                    "type": "float",
+                    "min_value": 0.,
+                    "default": 0.1,
+                    "label": "Minimum Distance",
+                    "help": "Minimum distance between points."
+                },
+                "metric": {
+                    "type": "string",
+                    "label": "UMAP: Metric",
+                    "enum": [
+                        "cosine",
+                        "euclidean",
+                        "manhattan",
+                        "correlation",
+                        "jaccard"
+                    ],
+                    "default": "correlation",
+                    "help": "The metric to use for the UMAP algorithm."
+                },
+                "n_components": {
+                    "type": "integer",
+                    "min_value": 1,
+                    "default": 2,
+                    "label": "Number of Components",
+                    "help": "Number of dimensions to reduce the data to."
+                }
+            }
         },
-        "min_dist": {
-            "type": "float",
-            "min_value": 0.,
-            "default": 0.1,
-            "label": "Minimum Distance",
-            "help": "Minimum distance between points in the UMAP algorithm."
-        },
-        "metric": {
-            "type": "string",
-            "label": "UMAP: Metric",
-            "enum": ["cosine", "euclidean", "manhattan", "correlation", "jaccard"],
-            "default": "correlation",
-            "help": "The metric to use for the UMAP algorithm."
-        },
-        "n_components": {
-            "type": "integer",
-            "min_value": 1,
-            "default": 2,
-            "label": "Number of Components",
-            "help": "Number of dimensions to reduce the data to."
+        "outputs": {
+            "type": "object",
+            "label": "Outputs",
+            "properties": {
+                "dest_key": {
+                    "type": "string",
+                    "default": "X_umap",
+                    "label": "Label to use for results",
+                    "help": """
+                    Key to use when saving the output to the container
+                    """
+                }
+            }
+        }
+    }
+    outputs = {
+        "res": {
+            "type": pd.DataFrame,
+            "label": "UMAP Coordinates",
+            "desc": "Low dimensional embedding returned by UMAP",
+            "modality": "table.data.tables",
+            "axis": "table.data.axis",
+            "attr": "outputs.dest_key"
         }
     }
 
     def execute(self) -> pd.DataFrame:
 
-        df: pd.DataFrame = self.params["data.dataframe"]
+        df: pd.DataFrame = self.params["table.data.dataframe"]
 
         # Run UMAP
-        return run_umap(
+        res = run_umap(
             df,
             **{
-                kw: self.params[kw]
+                kw: self.params[f"umap_params.{kw}"]
                 for kw in [
                     "n_neighbors",
                     "min_dist",
@@ -64,6 +105,8 @@ class UMAP(Process):
                 ]
             }
         )
+        # Save the results and the figure
+        self.save_results("res", res)
 
 
 @st.cache_data

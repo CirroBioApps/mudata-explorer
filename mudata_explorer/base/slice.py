@@ -13,8 +13,8 @@ class MuDataSlice:
     This class is used to store helper methods which work on
     a slice of a MuData object.
 
-    The "orientation" of the slice is the axis along which the
-    index is taken. If the orientation is "obs", then the index
+    The "axis" of the slice is the axis along which the
+    index is taken. If the axis is 0, then the index
     values of the DataFrame which represents the data will contain
     elements which are the observations.
 
@@ -25,7 +25,7 @@ class MuDataSlice:
 
     Example 1:
         modality:       None
-        orientation:    "obs"
+        axis:           0
         slot:           "obs"
         attr:           None
         subattr:        None
@@ -34,7 +34,7 @@ class MuDataSlice:
 
     Example 2:
         modality:       None
-        orientation:    "var"
+        axis:           1
         slot:           "obs"
         attr:           None
         subattr:        None
@@ -43,7 +43,7 @@ class MuDataSlice:
 
     Example 3:
         modality:       "rna"
-        orientation:    "obs"
+        axis:           0
         slot:           "obsm"
         attr:           "X_pca"
         subattr:        "PC1"
@@ -52,7 +52,7 @@ class MuDataSlice:
 
     """
 
-    orientation: str
+    axis: str
     modality: str
     slot: str
     attr: Optional[str]
@@ -62,23 +62,23 @@ class MuDataSlice:
     def __init__(
         self,
         slot: str,
-        orientation: str = "obs",
+        axis: int = 0,
         modality: Optional[str] = None,
         attr: Optional[Union[str, List[str]]] = None,
         subattr: Optional[Union[str, List[str]]] = None
     ):
         assert slot in self._allowed_slots, slot
         self.slot = slot
-        self.orientation = orientation
+        self.axis = axis
         self.modality = modality
         self.attr = attr
         self.subattr = subattr
 
         assert isinstance(slot, str)
-        assert orientation in ["obs", "var"], f"Unexpected: {orientation}"
+        assert axis in [0, 1], f"Unexpected: {axis}"
 
         if self.slot != "X":
-            msg = f"Cannot access slot {slot} with orientation {orientation}"
+            msg = f"Cannot access slot {slot} with axis {axis}"
             assert self.slot.startswith(self.orientation), msg
 
         if self.modality is None:
@@ -90,10 +90,14 @@ class MuDataSlice:
             self.modality = None
 
     @property
+    def orientation(self):
+        return "obs" if self.axis == 0 else "var"
+
+    @property
     def params(self):
         return dict(
             slot=self.slot,
-            orientation=self.orientation,
+            axis=self.axis,
             modality=self.modality,
             attr=self.attr,
             subattr=self.subattr
@@ -140,7 +144,7 @@ class MuDataSlice:
 
         if self.slot == "X":
             dat = dat.to_df()
-            if self.orientation == "var":
+            if self.axis:
                 dat = dat.T
         else:
             assert hasattr(dat, self.slot)
@@ -167,7 +171,7 @@ class MuDataSlice:
         # Note that this is a special case
         if self.slot == "obs":
             assert self.subattr is None
-            assert self.orientation == "obs"
+            assert self.axis == 0
 
             self._write_obs(mdata, dat)
 
@@ -177,7 +181,7 @@ class MuDataSlice:
             # The modality must be defined
             assert self.modality is not None
             assert self.subattr is None
-            assert self.orientation == "var"
+            assert self.axis == 1
 
             # Set the index to the variables
             dat = dat.reindex(mdata.mod[self.modality].var.index)
@@ -208,7 +212,6 @@ class MuDataSlice:
                     f"{self.orientation}_names"
                 )
                 dat = dat.reindex(index=index)
-                print(dat)
                 getattr(mdata.mod[self.modality], self.slot)[self.attr] = dat
             # If writing a Series
             else:

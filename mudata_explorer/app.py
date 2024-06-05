@@ -485,15 +485,24 @@ def list_modalities():
     return mods
 
 
-def tree_tables(orientation) -> List[str]:
-    """Return a list of all tables in the MuData object."""
+def _is_axis(axis: int):
+    assert axis in [0, 1], f"Unexpected axis: {axis}"
+
+
+def tree_tables(axis: int) -> List[str]:
+    """
+    Return a list of all tables in the MuData object.
+    axis = 0 for observations, 1 for variables
+    """
+    _is_axis(axis)
 
     tables = []
 
     if has_mdata():
 
-        # If the orientation is to observations, and there is observation metadata
-        if orientation == "observations":
+        # If the orientation is to observations,
+        # and there is observation metadata
+        if axis == 0:
             if get_mdata().obs.shape[1] > 0:
                 tables.append("Observation Metadata")
 
@@ -501,20 +510,20 @@ def tree_tables(orientation) -> List[str]:
         tables.extend([
             join_kws(modality, table)
             for modality in list_modalities()
-            for table in list_tables(modality, orientation)
+            for table in list_tables(modality, axis)
         ])
 
     return tables
 
 
-def list_tables(modality: str, orientation: str):
+def list_tables(modality: str, axis: int):
     if not has_mdata():
         return []
-    assert orientation in ["observations", "variables"], orientation
+    _is_axis(axis)
     mdata = get_mdata()
     adata: ad.AnnData = mdata.mod[modality]
     tables = ["data"]
-    if orientation == "observations":
+    if axis == 0:
         for attr in ["obsm", "obsp"]:
             for slot in getattr(adata, attr).keys():
                 tables.append(f"{attr}.{slot}")
@@ -527,10 +536,9 @@ def list_tables(modality: str, orientation: str):
     return tables
 
 
-def list_cnames(table: str, orientation="observations"):
+def list_cnames(table: str, axis=0):
 
-    msg = f"Unexpected orientation: {orientation}"
-    assert orientation in ["observations", "variables"], msg
+    _is_axis(axis)
 
     if not has_mdata():
         return []
@@ -538,7 +546,7 @@ def list_cnames(table: str, orientation="observations"):
     mdata = get_mdata()
 
     if table == "Observation Metadata":
-        assert orientation == "observations"
+        assert axis == 0
         return list(mdata.obs.columns)
 
     # Otherwise, parse the modality from the name
@@ -551,7 +559,7 @@ def list_cnames(table: str, orientation="observations"):
                 # Note that observations metadata is on mdata.obs
                 # while variable metadata is on adata.var
                 mdata.obs
-                if orientation == "observations"
+                if axis == 0
                 else adata.var
             )
             .columns
@@ -560,7 +568,7 @@ def list_cnames(table: str, orientation="observations"):
     elif table == 'data':
         cnames = getattr(
             adata.to_df(),
-            "columns" if orientation == "observations" else "index"
+            "columns" if axis == 0 else "index"
         )
 
     else:
@@ -574,17 +582,16 @@ def list_cnames(table: str, orientation="observations"):
 def get_dataframe_table(
     modality: str,
     table: str,
-    orientation: str
+    axis: int
 ) -> pd.DataFrame:
 
-    msg = f"Unexpected orientation: {orientation}"
-    assert orientation in ["observations", "variables"], msg
+    _is_axis(axis)
 
     # Get the complete set of data
     mdata = get_mdata()
 
     # Special case for observation metadata
-    if orientation == "observations" and table == "metadata":
+    if axis == 0 and table == "metadata":
         return mdata.obs
 
     if modality not in mdata.mod:
@@ -595,10 +602,10 @@ def get_dataframe_table(
 
     # Get the table
     if table == "metadata":
-        table = mdata.obs if orientation == "observations" else adata.var
+        table = mdata.obs if axis == 0 else adata.var
     elif table == "data":
         table = adata.to_df()
-        if orientation == "variables":
+        if axis == 1:
             table = table.T
     else:
         assert "." in table, f"Invalid table: {table}"
@@ -610,7 +617,7 @@ def get_dataframe_table(
 
 def join_dataframe_tables(
     tables: List[str],
-    orientation: str
+    axis: int
 ) -> pd.DataFrame:
     """
     Tables from the same modality:
@@ -621,20 +628,19 @@ def join_dataframe_tables(
         Joined along the index (if the orientation is to variables)
 
     """
-
-    assert orientation in ["observations", "variables"]
+    _is_axis(axis)
 
     # Keep track of which tables are from the same modality
     modality_tables = defaultdict(list)
 
     for table in tables:
         if table == "Observation Metadata":
-            assert orientation == "observations"
+            assert axis == 0
             modality = 'None'
-            df = get_dataframe_table(None, "metadata", orientation)
+            df = get_dataframe_table(None, "metadata", axis)
         else:
             modality, attr = table.split(".", 1)
-            df = get_dataframe_table(modality, attr, orientation)
+            df = get_dataframe_table(modality, attr, axis)
 
         assert df is not None, f"Could not find table: {table}"
         modality_tables[modality].append(df)
@@ -642,7 +648,7 @@ def join_dataframe_tables(
     # Join within each modality
     modalities = {
         modality: (
-            pd.concat(tables, axis=orientation != "observations")
+            pd.concat(tables, axis=axis)
             if len(tables) > 1 else tables[0]
         )
         for modality, tables in modality_tables.items()
@@ -652,7 +658,7 @@ def join_dataframe_tables(
     if len(modalities) > 1:
         df = pd.concat(
             modalities.values(),
-            axis=orientation == "observations"
+            axis=not axis
         )
     else:
         df: pd.DataFrame = list(modalities.values())[0]
@@ -664,10 +670,11 @@ def join_dataframe_tables(
 
 
 def get_dataframe_column(
-    orientation: str,
+    axis: int,
     table: str,
     cname: str
 ):
+    _is_axis(axis)
     if table == "Observation Metadata":
         modality = None
         table = "metadata"
@@ -679,7 +686,7 @@ def get_dataframe_column(
     # Get the table
     subattr = None
     if table == "metadata":
-        if orientation == "observations":
+        if axis == 0:
             slot = "obs"
         else:
             slot = "var"
@@ -696,7 +703,7 @@ def get_dataframe_column(
     # Define the slice of the data
     slice = MuDataSlice(
         modality=modality,
-        orientation=orientation[:3],
+        axis=axis,
         slot=slot,
         attr=attr,
         subattr=subattr

@@ -114,7 +114,7 @@ def show_table(
     slice = MuDataSlice(
         slot,
         modality=mod,
-        orientation="var" if slot.startswith("var") else "obs",
+        axis=slot.startswith("var"),
         attr=attr
     )
     df = slice.dataframe(app.get_mdata())

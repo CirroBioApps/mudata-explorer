@@ -90,15 +90,8 @@ def run():
     # Get the parameters from the user
     process.get_data(container)
 
-    # Get the key used for the resulting data
-    dest_key = container.text_input(
-        "Label to use for results:",
-        process_def.get("dest_key", process.type),
-        **update_process_kwargs("dest_key")
-    )
-
     # Get the output locations
-    output_locs = process.get_output_locs(dest_key)
+    output_locs = process.get_output_locs()
 
     # If no data has been selected
     if len(output_locs) == 0:
@@ -119,18 +112,9 @@ def run():
     if container.button("Generate Results"):
         try:
             # Generate the results
-            res = process.execute()
-
-            # Make sure that the results conform to the expected type
-            assert isinstance(res, process.output_type), type(res)
-
-            # Save the results
-            for loc in output_locs:
-                process.save_results(loc, res)
-
+            process.execute()
             st.rerun()
 
         except Exception as e:
             # Log the full traceback of the exception
             container.exception(e)
-
