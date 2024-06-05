@@ -47,7 +47,22 @@ def update_edit_views():
         set_settings(settings)
 
 
-def setup_sidebar(edit_views=False):
+def sidebar_load_history():
+    if get_mdata() is None:
+        return
+
+    if not has_history(exclude=['add_data', 'add_view']):
+        return
+
+    if st.sidebar.button("Rerun Analysis"):
+        save_load.load_history()
+        # st.rerun()
+
+
+def setup_sidebar(
+    edit_views=False,
+    load_history=False
+):
     """
     Setup the sidebar with links to all of the pages.
     If edit_views is True, add a checkbox to allow the user to edit the views.
@@ -65,6 +80,8 @@ def setup_sidebar(edit_views=False):
     ])
     if edit_views:
         sidebar_edit_views()
+    if load_history:
+        sidebar_load_history()
 
     load_cont, save_cont = st.sidebar.columns(2)
     if has_mdata():
@@ -348,13 +365,20 @@ def set_settings(settings: dict):
         st.experimental_rerun()
 
 
-def get_history() -> List[dict]:
+def get_history(exclude=[]) -> List[dict]:
     if not has_mdata():
         return []
     else:
-        return _json_safe(
-            get_mdata().uns.get("mudata-explorer-history", [])
-        )
+        return [
+            h for h in _json_safe(
+                get_mdata().uns.get("mudata-explorer-history", [])
+            )
+            if h.get("process") not in exclude
+        ]
+
+
+def has_history(exclude=[]) -> bool:
+    return len(get_history(exclude=exclude)) > 0
 
 
 def set_history(history: dict):

@@ -1,4 +1,5 @@
 from mudata_explorer import app
+from mudata_explorer.helpers import make_process
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 
@@ -56,4 +57,43 @@ def download_button():
         f"mudata-{hash}.h5mu",
         help="Click here to download the MuData object as a file."
     ):
+        st.rerun()
+
+
+@st.experimental_dialog("Select Previous Analysis", width="large")
+def load_history():
+    """Let the user select a previously run process to copy settings from."""
+
+    # Get the list of previous analyses
+    history = app.get_history(exclude=['add_data', 'add_view'])
+
+    if len(history) == 0:
+        st.write("No previous analyses found.")
+        return
+
+    # Instantiate a process for each one
+    options = [
+        make_process(h['process'], params=h['params'])
+        for h in history
+    ]
+
+    # Make a display name for each
+    display_names = [
+        f"{process.name} ({h['timestamp']})"
+        for process, h in zip(options, history)
+    ]
+
+    # Let the user select one of the previously-run processes
+    selected_name = st.selectbox(
+        "Select a previous analysis",
+        display_names
+    )
+    if st.button("Load settings from selected analysis"):
+        selected_ix = display_names.index(selected_name)
+        proc = options[selected_ix]
+        app.set_process(dict(
+            type=proc.type,
+            category=proc.category,
+            params=proc.params
+        ))
         st.rerun()
