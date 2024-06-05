@@ -53,11 +53,15 @@ class RunPCA(Process):
 
         # Run PCA
         pca = PCA()
-        ndim = min(df.shape[0], df.shape[1])
+
+        # Make a new dataframe with the PCA results
         res = pd.DataFrame(
             pca.fit_transform(df),
             index=df.index,
-            columns=[f"PC{i + 1}" for i in range(ndim)]
+            columns=[
+                f"PC{i + 1} ({100 * pct:.2f}%)"
+                for i, pct in enumerate(pca.explained_variance_ratio_)
+            ]
         )
 
         self.save_results("coords", res)
