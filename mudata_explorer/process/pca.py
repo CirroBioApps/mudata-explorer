@@ -12,9 +12,9 @@ class RunPCA(Process):
     schema = {
         "table": {
             "type": "object",
-            "label": "Data Table",
             "properties": {
                 "data": {
+                    "label": "Data Table",
                     "type": "dataframe",
                     "select_columns": True,
                     "query": "",
