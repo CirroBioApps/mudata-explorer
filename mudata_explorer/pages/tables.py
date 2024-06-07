@@ -70,8 +70,12 @@ def _read_table(file, container: DeltaGenerator):
         container.error("The first column must have unique values.")
         return
 
+    # Make sure that the first column is interpreted as a string
+    index_col = df.columns.values[0]
+    df = df.assign(**{index_col: df[index_col].apply(str)})
+
     # Set the first column as the index
-    df = df.set_index(df.columns[0])
+    df = df.set_index(index_col)
 
     # Return the data
     return df
@@ -120,6 +124,8 @@ def show_table(
     df = slice.dataframe(app.get_mdata())
 
     if df is None or df.shape[0] == 0:
+        if df is not None:
+            st.write(df)
         st.write("No data currently available.")
 
     else:
