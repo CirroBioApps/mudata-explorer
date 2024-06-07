@@ -1,6 +1,7 @@
 from mudata_explorer import app
 from mudata_explorer.helpers.join_kws import join_kws
-from typing import Dict, List, Optional, Union
+from mudata_explorer.base import all_transforms, get_transform
+from typing import Dict, List, Optional
 import pandas as pd
 import plotly.express as px
 from streamlit.delta_generator import DeltaGenerator
@@ -68,36 +69,6 @@ class MuDataAppHelpers:
                         elem.get("tables", [])
                     )
 
-                # Both the columns and the rows may be filtered
-                # using one or more conditions.
-                for query_kw in ["cols", "rows"]:
-
-                    # The "query_type" key is used to indicate
-                    # whether the selected values will be
-                    # removed from the DataFrame, or if they will
-                    # be the only values used.
-                    yield (
-                        join_kws(key, f"filter_{query_kw}", "query_type"), 
-                        elem.get("query_type", "remove")
-                    )
-
-                    # The "join_type" key is used to indicate
-                    # whether the various selection terms will be
-                    # joined using an "and" or an "or" operator.
-                    yield (
-                        join_kws(key, f"filter_{query_kw}", "merge_type"), 
-                        elem.get("merge_type", "and")
-                    )
-
-                    # Finally, the set of terms to filter by
-                    yield join_kws(key, f"filter_{query_kw}", "terms"), []
-
-                # If the user can filter down the columns of interest
-                if elem.get("select_columns", False):
-                    yield (
-                        join_kws(key, "selected_columns"),
-                        []
-                    )
                 # Add any columns specified in the schema
                 for col_kw, col_elem in elem.get("columns", {}).items():
                     for kw in ["table", "cname", "label"]:
@@ -122,7 +93,8 @@ class MuDataAppHelpers:
                             join_kws(key, col_kw, "scale"),
                             "Viridis"
                         )
-                # If the user is allowed to filter the data
+
+                # Filtering of the rows and columns
                 for axis_kw in ["rows_query", "cols_query"]:
                     for attr in [
                         "type",   # 'value' or 'index'
@@ -132,6 +104,12 @@ class MuDataAppHelpers:
                         "value"   # Either the value or the specific indices
                     ]:
                         yield (join_kws(key, axis_kw, "query", attr), "")
+
+                # Transforming the values
+                yield (
+                    join_kws(key, "transforms"),
+                    elem.get("transforms", [])
+                )
 
     def input_value_kwargs(self, kw, copy_to=None):
         """Each input value element will be populated with default kwargs."""
@@ -148,7 +126,10 @@ class MuDataAppHelpers:
         mdata = app.get_mdata()
 
         # Modify the value of this param for this view
-        mdata.uns["mudata-explorer-views"][self.ix]["params"][kw] = value
+        if self.ix == -1:
+            mdata.uns["mudata-explorer-process"]["params"][kw] = value
+        else:
+            mdata.uns["mudata-explorer-views"][self.ix]["params"][kw] = value
 
         # Save the MuData object
         app.set_mdata(mdata)
@@ -161,8 +142,12 @@ class MuDataAppHelpers:
         mdata = app.get_mdata()
 
         # Delete the value of this param for this view
-        if kw in mdata.uns["mudata-explorer-views"][self.ix]["params"]:
-            del mdata.uns["mudata-explorer-views"][self.ix]["params"][kw]
+        if self.ix == -1:
+            params = mdata.uns["mudata-explorer-process"]["params"]
+        else:
+            params = mdata.uns["mudata-explorer-views"][self.ix]["params"]
+        if kw in params:
+            del params[kw]
 
         # Save the MuData object
         app.set_mdata(mdata)
@@ -302,7 +287,8 @@ class MuDataAppHelpers:
                     elem["properties"],
                     prefix_key
                 )
-                container.write("---")
+                if self.params_editable:
+                    container.write("---")
 
             elif elem["type"] == "string":
 
@@ -483,27 +469,34 @@ class MuDataAppHelpers:
                 container
             )
 
-            # The user can filter the data along the columns
-            df = self.filter_dataframe_cols(key, axis, df, container)
+            if df is not None:
 
-        # The user can filter the data along the rows
-        df = self.filter_dataframe_rows(key, axis, df, container)
+                # The user can filter the data along the columns
+                df = self.filter_dataframe_cols(key, axis, df, container)
 
-        # Drop any null values
-        dropped_rows = df.shape[0] - df.dropna().shape[0]
-        df = df.dropna()
-        if dropped_rows:
-            if self.params_editable:
-                container.write(
-                    f"Removed {dropped_rows:,} rows with missing values."
-                )
+        if df is not None:
+
+            # The user can filter the data along the rows
+            df = self.filter_dataframe_rows(key, axis, df, container)
+
+            # The user can transform the values in the DataFrame
+            df = self.transform_dataframe(key, df, container)
+
+            # Drop any null values
+            dropped_rows = df.shape[0] - df.dropna().shape[0]
+            df = df.dropna()
+            if dropped_rows:
+                if self.params_editable:
+                    container.write(
+                        f"Removed {dropped_rows:,} rows with missing values."
+                    )
 
         if self.params_editable and (df is None or df.shape[0] == 0):
             container.write("No data available.")
             return
 
         self.params[join_kws(key, "dataframe")] = df
-        if self.params_editable:
+        if self.params_editable and df is not None:
             container.write(
                 "Selected {:,} rows and {:,} columns.".format(*df.shape)
             )
@@ -744,7 +737,11 @@ class MuDataAppHelpers:
         """
         Let the user select a subset of columns for analysis.
         """
-        container = parent_container.expander("Filter Columns")
+        if self.ix == -1:
+            container = parent_container.expander("Filter Columns")
+        else:
+            container = parent_container.container(border=True)
+            container.write("**Filter Columns**")
         df = self.render_query(
             join_kws(key, "cols_query"),
             0 if axis else 1,  # Filter the opposite axis
@@ -752,9 +749,8 @@ class MuDataAppHelpers:
             df,
             container
         )
-        container.write(
-            f"Number of filtered columns: {df.shape[1]:,}"
-        )
+        if self.params_editable and df is not None:
+            container.write(f"Number of filtered columns: {df.shape[1]:,}")
         return df
 
     def filter_dataframe_rows(
@@ -767,7 +763,14 @@ class MuDataAppHelpers:
         """
         Let the user select a subset of rows for analysis.
         """
-        container = parent_container.expander("Filter Rows")
+        if self.ix == -1:
+            container = parent_container.expander("Filter Rows")
+        elif self.params_editable:
+            container = parent_container.container(border=True)
+            container.write("**Filter Rows**")
+        else:
+            container = parent_container
+
         df = self.render_query(
             join_kws(key, "rows_query"),
             axis,
@@ -775,9 +778,8 @@ class MuDataAppHelpers:
             df,
             container
         )
-        container.write(
-            f"Number of filtered rows: {df.shape[0]:,}"
-        )
+        if self.params_editable and df is not None:
+            container.write(f"Number of filtered rows: {df.shape[0]:,}")
         return df
 
     def render_query(
@@ -787,7 +789,7 @@ class MuDataAppHelpers:
         filter_axis: int,
         df: pd.DataFrame,
         container: DeltaGenerator
-    ):
+    ) -> pd.DataFrame:
 
         # Set the default values
 
@@ -869,7 +871,12 @@ class MuDataAppHelpers:
 
             # First figure out whether we're selecting by value
             # or by selecting specific indices
-            names = ["Filtering by Value", "Selecting Specific Indices"]
+            names = [
+                "Filtering by Value",
+                "Selecting Specific {}".format(
+                    "Rows" if filter_axis == 0 else "Columns"
+                )
+            ]
             values = ["value", "index"]
             container.selectbox(
                 "Select by:",
@@ -935,7 +942,8 @@ class MuDataAppHelpers:
                 # Otherwise, we're selecting by index
                 else:
 
-                    # Get the index values along the axis which will be filtered
+                    # Get the index values along the axis
+                    # which will be filtered
                     value_options = (
                         df.index.values if filter_axis == 0
                         else df.columns.values
@@ -1025,7 +1033,7 @@ class MuDataAppHelpers:
         if table is None:
             if self.params_editable:
                 container.write("No data available for filtering.")
-            return
+            return df
 
         msg = f"Column {query['cname']} not found in table."
         assert query['cname'] in table.columns, msg
@@ -1053,11 +1061,15 @@ class MuDataAppHelpers:
         # Apply the filter, trying both string and numeric values
         filtered_table = None
         try:
-            filtered_table = table.query("{cname} {expr} {value}".format(**query))
+            filtered_table = table.query(
+                "{cname} {expr} {value}".format(**query)
+            )
         except:  # noqa
             pass
         try:
-            filtered_table = table.query("{cname} {expr} '{value}'".format(**query))
+            filtered_table = table.query(
+                "{cname} {expr} '{value}'".format(**query)
+            )
         except Exception as e:
             container.write("Error while filtering")
             container.exception(e)
@@ -1085,3 +1097,115 @@ class MuDataAppHelpers:
         """
         # Get the unique values
         return app.get_dataframe_column(axis, table, cname).unique()
+
+    def transform_dataframe(
+        self,
+        key: str,
+        df: pd.DataFrame,
+        parent_container: DeltaGenerator
+    ) -> pd.DataFrame:
+
+        if self.ix == -1:
+            container = parent_container.expander("Transform Values")
+        elif self.params_editable:
+            container = parent_container.container(border=True)
+            container.write("**Transform Values**")
+        else:
+            container = parent_container
+
+        # Get the list of transformations
+        transforms = self.param(key, "transforms")
+
+        if self.params_editable:
+
+            # Show each of the transformations, and also allow
+            # the user to remove those transformations
+            for ix, transform in enumerate(transforms):
+                cols = container.columns([4, 1])
+                cols[0].button(
+                    f"{ix + 1}: {get_transform(transform).name}",
+                    use_container_width=True
+                )
+                cols[1].button(
+                    "Remove",
+                    key=f"remove_transform_{ix}",
+                    on_click=self._remove_transform,
+                    args=(key, ix),
+                    use_container_width=True
+                )
+
+            # Let the user add a transformation
+            if container.button("Add Transformation"):
+                self._add_transform_popup(key)
+
+        # Run all of the transformations
+        for transform in transforms:
+            try:
+                df = get_transform(transform).run(df)
+            except Exception as e:
+                container.exception(e)
+
+        return df
+
+    def _remove_transform(self, key, ix):
+        """Remove a particular transform from the list."""
+
+        # Get the list of transformations
+        transforms: list = self.param(key, "transforms")
+
+        # Remove the element
+        transforms.pop(ix)
+
+        # Update the list of transformations
+        self.update_view_param(
+            join_kws(key, "transforms"),
+            transforms
+        )
+
+    @st.experimental_dialog("Add Transformation")
+    def _add_transform_popup(self, key):
+        st.selectbox(
+            "Select Transformation",
+            [""] + [
+                transform.name
+                for transform in all_transforms().values()
+            ],
+            index=0,
+            key=f"add_transform_{key}",
+        )
+        if st.session_state[f"add_transform_{key}"] != "":
+            if st.button("Add"):
+                self._add_transform(key)
+                st.rerun()
+
+    def _add_transform(self, key):
+        """Add a transform to the list."""
+
+        # Get the selected transform (by name)
+        selected_name = st.session_state[f"add_transform_{key}"]
+
+        # Stop if no name was selected
+        if len(selected_name) == 0:
+            return
+
+        # Get the id of that transform
+        selected_id = None
+        for transform_id, transform in all_transforms().items():
+            if transform.name == selected_name:
+                selected_id = transform_id
+                break
+
+        msg = f"Couldn't find transform: {selected_name}"
+        assert selected_id is not None, msg
+
+        # Get the list of transformations
+        transforms: list = self.param(key, "transforms")
+
+        # Add the new transform
+        transforms.append(selected_id)
+
+        # Update the list of transformations
+        self.update_view_param(
+            join_kws(key, "transforms"),
+            transforms
+        )
