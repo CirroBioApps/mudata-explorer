@@ -233,14 +233,6 @@ def show_modality(mod_name: str):
 
 @st.experimental_dialog("New Measurement Data", width="large")
 def add_modality_modal():
-    mod_name = st.text_input(
-        "Measurement Name",
-        help="Enter the name of the measurement.",
-        value="Measurement"
-    )
-    if "." in mod_name:
-        st.error("The measurement name cannot contain a period.")
-        return
 
     # Let the user upload a new version
     new_df = _get_table(
@@ -255,9 +247,18 @@ def add_modality_modal():
         overlap = set(obs.index).intersection(set(new_df.index))
         if len(overlap) > 0:
             st.write(
-                f"There are {len(overlap):,} / {new_df.shape[0]:,}" +
+                f"There are {len(overlap):,} / {new_df.shape[0]:,} " +
                 "observations which overlap with the existing data."
             )
+
+    mod_name = st.text_input(
+        "Measurement Name",
+        help="Enter the name of the measurement.",
+        value="Measurement"
+    )
+    if "." in mod_name:
+        st.error("The measurement name cannot contain a period.")
+        return
 
     if app.has_mdata() and mod_name in app.list_modalities():
         st.write("A measurement with this name already exists.")
