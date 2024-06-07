@@ -151,7 +151,7 @@ def upload_csv_modal(slice: MuDataSlice, kw: str):
     # Let the user upload a new version
     new_df = _get_table(
         st.container(),
-        "Upload New Table",
+        "Upload New Table (CSV, TSV, or XLSX)",
         keep_str=slice.slot == "obs",
         key=f"upload_{kw}"
     )
