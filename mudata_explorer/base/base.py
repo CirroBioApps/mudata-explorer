@@ -1,6 +1,7 @@
 from mudata_explorer import app
 from mudata_explorer.helpers.join_kws import join_kws
-from typing import Dict, List, Optional, Union
+from mudata_explorer.base import all_transforms, get_transform
+from typing import Dict, List, Optional
 import pandas as pd
 import plotly.express as px
 from streamlit.delta_generator import DeltaGenerator
@@ -27,15 +28,15 @@ class MuDataAppHelpers:
     def get_schema_defaults(self, schema: dict, prefix=None):
         """Yield the default values for each item in the schema."""
 
-        for key, elem in schema.items():
+        for elem_key, elem in schema.items():
             assert isinstance(elem, dict), f"Expected dict, got {type(elem)}"
             assert "type" in elem, f"Missing 'type' key in schema: {elem}"
 
+            # Join the prefix and key
+            key = join_kws(prefix, elem_key)
+
             if elem["type"] == "object":
-                yield from self.get_schema_defaults(
-                    elem["properties"],
-                    join_kws(prefix, key)
-                )
+                yield from self.get_schema_defaults(elem["properties"], key)
 
             elif elem["type"] in [
                 "string",
@@ -45,70 +46,70 @@ class MuDataAppHelpers:
                 "supporting_figure"
             ]:
                 yield (
-                    join_kws(prefix, key),
+                    key,
                     elem.get("default", None)
                 )
                 if elem.get("optional", False):
                     yield (
-                        join_kws(prefix, key, "enabled"),
+                        join_kws(key, "enabled"),
                         True
                     )
 
             elif elem["type"] == "dataframe":
                 # Each dataframe may be oriented to the obs or var
                 yield (
-                    join_kws(prefix, key, "axis"),
+                    join_kws(key, "axis"),
                     elem.get("axis", 0)
                 )
                 # If column selection is not enabled,
                 # the user will select >= 1 tables
                 if len(elem.get("columns", {})) == 0:
                     yield (
-                        join_kws(prefix, key, "tables"),
+                        join_kws(key, "tables"),
                         elem.get("tables", [])
                     )
-                # If the user can filter down the columns of interest
-                if elem.get("select_columns", False):
-                    yield (
-                        join_kws(prefix, key, "selected_columns"),
-                        []
-                    )
+
                 # Add any columns specified in the schema
                 for col_kw, col_elem in elem.get("columns", {}).items():
                     for kw in ["table", "cname", "label"]:
                         yield (
-                            join_kws(prefix, key, col_kw, kw),
+                            join_kws(key, col_kw, kw),
                             col_elem.get(kw, None)
                         )
                     if col_elem.get("optional", False):
                         yield (
-                            join_kws(prefix, key, col_kw, "enabled"),
+                            join_kws(key, col_kw, "enabled"),
                             True
                         )
                     if col_elem.get("colorscale", False):
                         # Use a flag to indicate whether the values
                         # in the column are categorical
                         yield (
-                            join_kws(prefix, key, col_kw, "is_categorical"),
+                            join_kws(key, col_kw, "is_categorical"),
                             False
                         )
                         # Use a flag for the color scale to use
                         yield (
-                            join_kws(prefix, key, col_kw, "scale"),
+                            join_kws(key, col_kw, "scale"),
                             "Viridis"
                         )
-                # If the user is allowed to filter the data
-                if elem.get("query", True):
+
+                # Filtering of the rows and columns
+                for axis_kw in ["rows_query", "cols_query"]:
                     for attr in [
-                        "table",
-                        "cname",
-                        "expr",
-                        "value"
+                        "type",   # 'value' or 'index'
+                        "table",  # Name of the table for value filtering
+                        "cname",  # Name of the column for value filtering
+                        "expr",   # Type of comparison ('in', 'not in', '==', '!=', '>', '<', '>=', '<=') # noqa
+                        "value"   # Either the value or the specific indices
                     ]:
-                        yield (
-                            join_kws(prefix, key, "query", attr),
-                            ""
-                        )
+                        yield (join_kws(key, axis_kw, "query", attr), "")
+
+                # Transforming the values
+                yield (
+                    join_kws(key, "transforms"),
+                    elem.get("transforms", [])
+                )
 
     def input_value_kwargs(self, kw, copy_to=None):
         """Each input value element will be populated with default kwargs."""
@@ -125,7 +126,10 @@ class MuDataAppHelpers:
         mdata = app.get_mdata()
 
         # Modify the value of this param for this view
-        mdata.uns["mudata-explorer-views"][self.ix]["params"][kw] = value
+        if self.ix == -1:
+            mdata.uns["mudata-explorer-process"]["params"][kw] = value
+        else:
+            mdata.uns["mudata-explorer-views"][self.ix]["params"][kw] = value
 
         # Save the MuData object
         app.set_mdata(mdata)
@@ -133,12 +137,32 @@ class MuDataAppHelpers:
         # Also update the params object
         self.params[kw] = value
 
+    def delete_view_param(self, kw):
+        # Get the MuData object
+        mdata = app.get_mdata()
+
+        # Delete the value of this param for this view
+        if self.ix == -1:
+            params = mdata.uns["mudata-explorer-process"]["params"]
+        else:
+            params = mdata.uns["mudata-explorer-views"][self.ix]["params"]
+        if kw in params:
+            del params[kw]
+
+        # Save the MuData object
+        app.set_mdata(mdata)
+
+        # Also update the params object
+        if kw in self.params:
+            del self.params[kw]
+
     def input_selectbox_kwargs(
         self,
         kw,
         options: list,
         names: Optional[list] = None,
-        copy_to=None
+        copy_to=None,
+        invalidate=[]
     ):
         """
         Populate the selectbox element with default kwargs.
@@ -168,7 +192,8 @@ class MuDataAppHelpers:
             args=(kw,),
             kwargs=dict(
                 copy_to=copy_to,
-                names=names
+                names=names,
+                invalidate=invalidate
             )
         )
 
@@ -188,7 +213,13 @@ class MuDataAppHelpers:
             kwargs=dict(copy_to=copy_to)
         )
 
-    def input_value_change(self, kw, names=None, copy_to=None):
+    def input_value_change(
+        self,
+        kw,
+        names=None,
+        copy_to=None,
+        invalidate=[]
+    ):
         # Get the value provided by the user
         value = st.session_state[self.param_key(kw)]
 
@@ -211,6 +242,9 @@ class MuDataAppHelpers:
             if copy_to is not None:
                 # Modify that value as well
                 self.update_view_param(copy_to, value)
+
+            for kw in invalidate:
+                self.delete_view_param(kw)
 
     def get_data(self, container: DeltaGenerator):
 
@@ -237,7 +271,11 @@ class MuDataAppHelpers:
 
             if elem["type"] == "dataframe":
 
-                self.render_dataframe(prefix, key, elem, container)
+                self.render_dataframe(
+                    prefix_key,
+                    elem,
+                    container.container(border=True)
+                )
 
             elif elem["type"] == "object":
 
@@ -249,6 +287,8 @@ class MuDataAppHelpers:
                     elem["properties"],
                     prefix_key
                 )
+                if self.params_editable:
+                    container.write("---")
 
             elif elem["type"] == "string":
 
@@ -375,11 +415,13 @@ class MuDataAppHelpers:
 
     def render_dataframe(
         self,
-        prefix: Union[None, str],
         key: str,
         elem: dict,
         container: DeltaGenerator
     ):
+
+        if "label" in elem and self.params_editable:
+            container.write(f"**{elem.get('label')}**")
 
         if not app.has_mdata():
             container.write("No MuData object available.")
@@ -387,7 +429,7 @@ class MuDataAppHelpers:
             return
 
         # Get the orientation (axis) of the data
-        axis_kw = join_kws(prefix, key, "axis")
+        axis_kw = join_kws(key, "axis")
 
         # Let the user select the orientation to use
         if self.params_editable:
@@ -403,141 +445,89 @@ class MuDataAppHelpers:
         axis = self.params[axis_kw]
         assert axis in [0, 1], f"Invalid axis: {axis}"
 
-        # The user can either:
-        # 1. Select columns to use
-        # 2. Select 1 or more tables in their entirety
-        # 3. Select specific column from 1 or more tables
+        # Tables are defined either by selecting specific columns,
+        # or by selecting one or more tables
 
         # If 'columns' were specified
         if len(elem.get("columns", {})) > 0:
 
-            # Iterate over the columns in the schema and prompt the user
-            # for which data to supply for each
-            for col_kw, col_elem in elem.get("columns", {}).items():
-
-                self.render_dataframe_column(
-                    prefix,
-                    key,
-                    col_kw,
-                    col_elem,
-                    axis,
-                    container
-                )
-
-            df = self.build_dataframe(
-                join_kws(prefix, key),
+            # Build the DataFrame from the specified columns
+            df = self.render_dataframe_columns(
+                key,
                 elem["columns"],
-                axis
+                axis,
+                container
             )
 
         # If 'columns' was not specified
         else:
 
-            tables_kw = join_kws(prefix, key, "tables")
+            # Build the DataFrame from the selected tables
+            df = self.render_dataframe_tables(
+                key,
+                axis,
+                container
+            )
 
-            all_tables = app.tree_tables(self.params[axis_kw])
+            if df is not None:
 
-            # If any invalid tables were selected
-            if any([
-                table not in all_tables
-                for table in self.params.get(tables_kw, [])
-            ]):
-                # Remove any invalid tables
-                self.update_view_param(
-                    tables_kw,
-                    [
-                        table
-                        for table in self.params.get(tables_kw, [])
-                        if table in all_tables
-                    ]
-                )
+                # The user can filter the data along the columns
+                df = self.filter_dataframe_cols(key, axis, df, container)
 
-            # Let the user select one or more tables
-            if self.params_editable:
+        if df is not None:
 
-                container.multiselect(
-                    "Select table(s)",
-                    all_tables,
-                    **self.input_multiselect_kwargs(
-                        tables_kw,
-                        all_tables
-                    )
-                )
+            # The user can filter the data along the rows
+            df = self.filter_dataframe_rows(key, axis, df, container)
 
-            # Make a DataFrame with the selected table(s)
-            selected_tables: List[str] = self.params.get(tables_kw, [])
-            if len(selected_tables) == 0:
-                container.write("No tables selected.")
-                self.params_complete = False
-                return
+            # The user can transform the values in the DataFrame
+            df = self.transform_dataframe(key, df, container)
 
-            df = app.join_dataframe_tables(selected_tables, axis)
-
-        # Let the user optionally filter rows
-        if elem.get("query", True):
-            filtered_obs = self.render_query(prefix, key, axis, container)
-            if filtered_obs is not None:
-                df = df.loc[
-                    list(set(filtered_obs) & set(df.index))
-                ]
+            # Drop any null values
+            dropped_rows = df.shape[0] - df.dropna().shape[0]
+            df = df.dropna()
+            if dropped_rows:
                 if self.params_editable:
-                    container.write(f"Filtered to {df.shape[0]:,} samples.")
-
-        # If the user has the option to select specific columns
-        if elem.get("select_columns", False):
-            # Get the list of available columns
-            avail_columns = list(df.columns.values)
-
-            # Get the columns selected by the user
-            selected_columns_kw = join_kws(prefix, key, "selected_columns")
-            selected_columns = self.param(selected_columns_kw, default=[])
-
-            # Make sure that the selected columns are valid
-            if any([cname not in avail_columns for cname in selected_columns]):
-                selected_columns = [
-                    cname
-                    for cname in selected_columns
-                    if cname in avail_columns
-                ]
-                self.update_view_param(selected_columns_kw, selected_columns)
-
-            # Let the user select the columns to use
-            if self.params_editable:
-                # Check to see if the user wants to select all of the columns
-                if container.checkbox(
-                    "Use all columns",
-                    len(selected_columns) == 0
-                ):
-                    self.update_view_param(selected_columns_kw, [])
-
-                # Otherwise, present a list of columns to select from
-                else:
-                    container.multiselect(
-                        "Select columns",
-                        avail_columns,
-                        **self.input_multiselect_kwargs(
-                            selected_columns_kw,
-                            avail_columns
-                        )
+                    container.write(
+                        f"Removed {dropped_rows:,} rows with missing values."
                     )
 
-            # Filter the DataFrame to the selected columns
-            if len(selected_columns) > 0:
-                df = df[selected_columns].dropna()
-
-        if self.params_editable and df.shape[0] == 0:
+        if self.params_editable and (df is None or df.shape[0] == 0):
             container.write("No data available.")
             return
 
-        self.params[join_kws(prefix, key, "dataframe")] = df
-        if self.params_editable:
+        self.params[join_kws(key, "dataframe")] = df
+        if self.params_editable and df is not None:
             container.write(
                 "Selected {:,} rows and {:,} columns.".format(*df.shape)
             )
 
+    def render_dataframe_columns(
+        self,
+        key: str,
+        columns: dict,
+        axis: int,
+        container: DeltaGenerator
+    ):
+        # Iterate over the columns in the schema and prompt the user
+        # for which data to supply for each
+        for col_kw, col_elem in columns.items():
+
+            self.render_dataframe_column(
+                key,
+                col_kw,
+                col_elem,
+                axis,
+                container
+            )
+
+        return self.build_dataframe(
+            key,
+            columns,
+            axis
+        )
+
     def render_dataframe_column(
         self,
-        prefix: Union[None, str],
         key: str,
         col_kw: str,
         col_elem: dict,
@@ -551,7 +541,7 @@ class MuDataAppHelpers:
         all_tables = app.tree_tables(axis)
 
         # Table selection
-        table_kw = join_kws(prefix, key, col_kw, "table")
+        table_kw = join_kws(key, col_kw, "table")
         if self.params.get(table_kw) not in all_tables:
             self.update_view_param(
                 table_kw,
@@ -565,7 +555,7 @@ class MuDataAppHelpers:
         )
 
         # Column label selection
-        label_kw = join_kws(prefix, key, col_kw, "label")
+        label_kw = join_kws(key, col_kw, "label")
         if self.params.get(label_kw) is None:
             self.update_view_param(
                 label_kw,
@@ -573,7 +563,7 @@ class MuDataAppHelpers:
             )
 
         # Column name selection
-        cname_kw = join_kws(prefix, key, col_kw, "cname")
+        cname_kw = join_kws(key, col_kw, "cname")
         if self.params.get(cname_kw) not in all_cnames:
             cname_val = all_cnames[0]
             self.update_view_param(cname_kw, cname_val)
@@ -586,7 +576,7 @@ class MuDataAppHelpers:
             container.write(f"**{col_elem.get('label', col_kw)}**")
 
             # Optional column selection
-            enabled_kw = join_kws(prefix, key, col_kw, "enabled")
+            enabled_kw = join_kws(key, col_kw, "enabled")
             if col_elem.get("optional", False):
                 container.checkbox(
                     "Enabled",
@@ -629,14 +619,13 @@ class MuDataAppHelpers:
 
                     # Let the user select whether the colors are categorical
                     is_categorical_kw = join_kws(
-                        prefix,
                         key,
                         col_kw,
                         "is_categorical"
                     )
 
                     # Select a pallete for the colors
-                    colorscale_kw = join_kws(prefix, key, col_kw, "scale")
+                    colorscale_kw = join_kws(key, col_kw, "scale")
 
                     container.checkbox(
                         "Categorical Values",
@@ -673,6 +662,53 @@ class MuDataAppHelpers:
                             )
                         )
 
+    def render_dataframe_tables(
+        self,
+        key,
+        axis: int,
+        container: DeltaGenerator
+    ):
+
+        tables_kw = join_kws(key, "tables")
+
+        all_tables = app.tree_tables(axis)
+
+        # If any invalid tables were selected
+        if any([
+            table not in all_tables
+            for table in self.params.get(tables_kw, [])
+        ]):
+            # Remove any invalid tables
+            self.update_view_param(
+                tables_kw,
+                [
+                    table
+                    for table in self.params.get(tables_kw, [])
+                    if table in all_tables
+                ]
+            )
+
+        # Let the user select one or more tables
+        if self.params_editable:
+
+            container.multiselect(
+                "Select table(s)",
+                all_tables,
+                **self.input_multiselect_kwargs(
+                    tables_kw,
+                    all_tables
+                )
+            )
+
+        # Make a DataFrame with the selected table(s)
+        selected_tables: List[str] = self.params.get(tables_kw, [])
+        if len(selected_tables) == 0:
+            container.write("No tables selected.")
+            self.params_complete = False
+            return
+
+        return app.join_dataframe_tables(selected_tables, axis)
+
     def build_dataframe(self, key: str, columns: dict, axis: int):
         # Get the information for each column
         return pd.DataFrame({
@@ -691,21 +727,86 @@ class MuDataAppHelpers:
             )
         }).dropna()
 
-    def render_query(
+    def filter_dataframe_cols(
         self,
-        prefix: str,
         key: str,
         axis: int,
+        df: pd.DataFrame,
+        parent_container: DeltaGenerator
+    ) -> pd.DataFrame:
+        """
+        Let the user select a subset of columns for analysis.
+        """
+        if self.ix == -1:
+            container = parent_container.expander("Filter Columns")
+        else:
+            container = parent_container.container(border=True)
+            container.write("**Filter Columns**")
+        df = self.render_query(
+            join_kws(key, "cols_query"),
+            0 if axis else 1,  # Filter the opposite axis
+            1,  # Perform the filtering on the columns
+            df,
+            container
+        )
+        if self.params_editable and df is not None:
+            container.write(f"Number of filtered columns: {df.shape[1]:,}")
+        return df
+
+    def filter_dataframe_rows(
+        self,
+        key: str,
+        axis: int,
+        df: pd.DataFrame,
+        parent_container: DeltaGenerator
+    ) -> pd.DataFrame:
+        """
+        Let the user select a subset of rows for analysis.
+        """
+        if self.ix == -1:
+            container = parent_container.expander("Filter Rows")
+        elif self.params_editable:
+            container = parent_container.container(border=True)
+            container.write("**Filter Rows**")
+        else:
+            container = parent_container
+
+        df = self.render_query(
+            join_kws(key, "rows_query"),
+            axis,
+            0,  # Perform the filtering on the rows
+            df,
+            container
+        )
+        if self.params_editable and df is not None:
+            container.write(f"Number of filtered rows: {df.shape[0]:,}")
+        return df
+
+    def render_query(
+        self,
+        key: str,
+        axis: int,
+        filter_axis: int,
+        df: pd.DataFrame,
         container: DeltaGenerator
-    ):
+    ) -> pd.DataFrame:
 
         # Set the default values
+
+        # Type of selection, either by value or by index
+        type_kw = join_kws(key, "query", "type")
+        if self.params.get(type_kw) is None:
+            # By default, select by value
+            self.update_view_param(
+                type_kw,
+                "value"
+            )
 
         # Get the list of tables available for all modalities
         all_tables = app.tree_tables(axis)
 
         # Table selection
-        table_kw = join_kws(prefix, key, "query", "table")
+        table_kw = join_kws(key, "query", "table")
         if self.params.get(table_kw) not in all_tables:
             self.update_view_param(
                 table_kw,
@@ -719,7 +820,7 @@ class MuDataAppHelpers:
         )
 
         # Column name selection
-        cname_kw = join_kws(prefix, key, "query", "cname")
+        cname_kw = join_kws(key, "query", "cname")
         if self.params.get(cname_kw) not in all_cnames:
 
             self.update_view_param(
@@ -728,7 +829,7 @@ class MuDataAppHelpers:
             )
 
         # Boolean operator selection
-        expr_kw = join_kws(prefix, key, "query", "expr")
+        expr_kw = join_kws(key, "query", "expr")
         if self.params.get(expr_kw) is None:
 
             self.update_view_param(
@@ -736,81 +837,185 @@ class MuDataAppHelpers:
                 ">="
             )
 
-        # Boolean value selection
-        value_kw = join_kws(prefix, key, "query", "value")
-        if self.params.get(value_kw) is None:
+        # Comparison value selection
+        # There are a few cases where we will set a new default value
+        value_kw = join_kws(key, "query", "value")
+        if (
+            # if no value is set
+            self.params.get(value_kw) is None
+            or (
+                # If the value is a list but the 
+                # expression is not 'in' or 'not in'
+                isinstance(self.params.get(value_kw), list)
+                and self.params.get(expr_kw) not in ["in", "not in"]
+            )
+            or (
+                # If the value is not a list but the
+                # expression is 'in' or 'not in'
+                not isinstance(self.params.get(value_kw), list)
+                and self.params.get(expr_kw) in ["in", "not in"]
+            )
+        ):
 
-            self.update_view_param(value_kw, "")
+            self.update_view_param(
+                value_kw,
+                (
+                    []
+                    if self.params.get(expr_kw) in ["in", "not in"]
+                    else ""
+                )
+            )
 
         # If the views are editable
         if self.params_editable:
 
-            # Print the column name
-            container.write("#### Filter samples")
-
-            # Make three columns for the table, and column name
-            cols = container.columns([1, 1, 1, 1])
-
-            # Select the table of interest
-            cols[0].selectbox(
-                "Table",
-                all_tables,
-                **self.input_selectbox_kwargs(table_kw, all_tables)
-            )
-
-            # Get the list of possible columns
-            all_cnames = app.list_cnames(
-                self.params[table_kw],
-                axis=axis
-            )
-
-            # Select the column name
-            cols[1].selectbox(
-                "Column",
-                all_cnames,
+            # First figure out whether we're selecting by value
+            # or by selecting specific indices
+            names = [
+                "Filtering by Value",
+                "Selecting Specific {}".format(
+                    "Rows" if filter_axis == 0 else "Columns"
+                )
+            ]
+            values = ["value", "index"]
+            container.selectbox(
+                "Select by:",
+                names,
                 **self.input_selectbox_kwargs(
-                    cname_kw,
-                    all_cnames
+                    type_kw,
+                    values,
+                    names,
+                    invalidate=[value_kw]
                 )
             )
 
-            # Input the boolean operator
-            cols[2].selectbox(
-                "Operator",
-                [">=", "<=", "==", "!=", ">", "<"],
-                **self.input_selectbox_kwargs(
-                    expr_kw,
-                    [
-                        ">=",
-                        "<=",
-                        "==",
-                        "!=",
-                        ">",
-                        "<"
-                    ]
+            # If we're selecting by value
+            if self.params[type_kw] == "value":
+
+                # Select the table of interest
+                container.selectbox(
+                    "Table",
+                    all_tables,
+                    **self.input_selectbox_kwargs(table_kw, all_tables)
                 )
+
+                # Get the list of possible columns
+                all_cnames = app.list_cnames(
+                    self.params[table_kw],
+                    axis=axis
+                )
+
+                # Select the column name
+                container.selectbox(
+                    "Column",
+                    all_cnames,
+                    **self.input_selectbox_kwargs(
+                        cname_kw,
+                        all_cnames
+                    )
+                )
+                operators = [">=", "<=", "==", "!=", ">", "<", "in", "not in"]
+
+            else:
+                operators = ["in", "not in"]
+
+            # Input the comparison operator
+            container.selectbox(
+                "Keep items which are:",
+                operators,
+                **self.input_selectbox_kwargs(expr_kw, operators)
             )
 
-            # Input the boolean value
-            cols[3].text_input(
-                "Value",
-                help="Enter a value to filter samples on.",
-                **self.input_value_kwargs(value_kw)
-            )
+            if self.params[expr_kw] in ["in", "not in"]:
+
+                # If we're selecting by value
+                if self.params[type_kw] == "value":
+
+                    # Let the user select specific values, selecting
+                    # from the values in the table
+                    value_options = app.get_dataframe_column(
+                        axis,
+                        self.params[table_kw],
+                        self.params[cname_kw]
+                    ).unique()
+
+                # Otherwise, we're selecting by index
+                else:
+
+                    # Get the index values along the axis
+                    # which will be filtered
+                    value_options = (
+                        df.index.values if filter_axis == 0
+                        else df.columns.values
+                    )
+
+                # Input the comparison value directly
+                container.multiselect(
+                    "Value",
+                    value_options,
+                    help="Select the values for filtering",
+                    **self.input_multiselect_kwargs(
+                        value_kw,
+                        value_options
+                    )
+                )
+
+            else:
+
+                # Input the comparison value directly
+                container.text_input(
+                    "Value",
+                    help="Enter a value to filter samples on.",
+                    **self.input_value_kwargs(value_kw)
+                )
 
         # Get the values for the query
         query = {
-            "table": self.param(key, "query", "table"),
-            "cname": self.param(key, "query", "cname"),
-            "expr": self.param(key, "query", "expr"),
-            "value": self.param(key, "query", "value")
+            kw: self.param(key, "query", kw)
+            for kw in [
+                "type",
+                "table",
+                "cname",
+                "expr",
+                "value"
+            ]
         }
+
+        # If the user is selecting certain indices
+        if query["type"] == "index":
+
+            # Only keep the values which are in that index
+            query["value"] = [
+                val for val in query["value"]
+                if val in (
+                    df.index if filter_axis == 0
+                    else df.columns
+                )
+            ]
 
         # If no value is provided
         if query['value'] is None or len(query['value']) == 0:
             if self.params_editable:
                 container.write("Provide a value to filter samples.")
-            return
+            return df
+
+        # If the user is selecting certain indices
+        if query["type"] == "index":
+
+            # If we are dropping rows/cols
+            assert query["expr"] in ["in", "not in"]
+            if query["expr"] == "not in":
+                return df.drop(
+                    query["value"],
+                    axis=filter_axis
+                )
+            else:
+                return df.reindex(
+                    query["value"],
+                    axis=filter_axis
+                )
+
+        # If we are filtering by value
 
         if query["table"] == "Observation Metadata":
             query["table"] = "obs"
@@ -828,22 +1033,179 @@ class MuDataAppHelpers:
         if table is None:
             if self.params_editable:
                 container.write("No data available for filtering.")
-            return
+            return df
 
         msg = f"Column {query['cname']} not found in table."
         assert query['cname'] in table.columns, msg
 
-        # Apply the filter
+        # If we are selecting certain values
+        if query["expr"] in ["in", "not in"]:
+            query["value"] = [
+                val for val in query["value"]
+                if val in table[query["cname"]].values
+            ]
+            if len(query["value"]) == 0:
+                if self.params_editable:
+                    container.write("No values match the filter criteria.")
+                return df
+
+            if query["expr"] == "in":
+                return df.loc[
+                    df[query["cname"]].isin(query["value"])
+                ]
+            else:
+                return df.loc[
+                    ~df[query["cname"]].isin(query["value"])
+                ]
+
+        # Apply the filter, trying both string and numeric values
+        filtered_table = None
         try:
-            table = table.query("{cname} {expr} {value}".format(**query))
+            filtered_table = table.query(
+                "{cname} {expr} {value}".format(**query)
+            )
+        except:  # noqa
+            pass
+        try:
+            filtered_table = table.query(
+                "{cname} {expr} '{value}'".format(**query)
+            )
         except Exception as e:
             container.write("Error while filtering")
             container.exception(e)
-            return
+            return df
 
         # If no values are returned
-        if table.shape[0] == 0:
+        if filtered_table.shape[0] == 0:
             container.write("No samples match the filter criteria.")
+            return df
+
+        # Subset the larger table by the filtered table
+        if filter_axis == 0:
+            return df.loc[filtered_table.index]
+        else:
+            return df[filtered_table.index]
+
+    def _get_values_in_column(
+        self,
+        axis: int,
+        table: str,
+        cname: str
+    ) -> List[str]:
+        """
+        Get the unique values in the specified column.
+        """
+        # Get the unique values
+        return app.get_dataframe_column(axis, table, cname).unique()
+
+    def transform_dataframe(
+        self,
+        key: str,
+        df: pd.DataFrame,
+        parent_container: DeltaGenerator
+    ) -> pd.DataFrame:
+
+        if self.ix == -1:
+            container = parent_container.expander("Transform Values")
+        elif self.params_editable:
+            container = parent_container.container(border=True)
+            container.write("**Transform Values**")
+        else:
+            container = parent_container
+
+        # Get the list of transformations
+        transforms = self.param(key, "transforms")
+
+        if self.params_editable:
+
+            # Show each of the transformations, and also allow
+            # the user to remove those transformations
+            for ix, transform in enumerate(transforms):
+                cols = container.columns([4, 1])
+                cols[0].button(
+                    f"{ix + 1}: {get_transform(transform).name}",
+                    use_container_width=True
+                )
+                cols[1].button(
+                    "Remove",
+                    key=f"remove_transform_{ix}",
+                    on_click=self._remove_transform,
+                    args=(key, ix),
+                    use_container_width=True
+                )
+
+            # Let the user add a transformation
+            if container.button("Add Transformation"):
+                self._add_transform_popup(key)
+
+        # Run all of the transformations
+        for transform in transforms:
+            try:
+                df = get_transform(transform).run(df)
+            except Exception as e:
+                container.exception(e)
+
+        return df
+
+    def _remove_transform(self, key, ix):
+        """Remove a particular transform from the list."""
+
+        # Get the list of transformations
+        transforms: list = self.param(key, "transforms")
+
+        # Remove the element
+        transforms.pop(ix)
+
+        # Update the list of transformations
+        self.update_view_param(
+            join_kws(key, "transforms"),
+            transforms
+        )
+
+    @st.experimental_dialog("Add Transformation")
+    def _add_transform_popup(self, key):
+        st.selectbox(
+            "Select Transformation",
+            [""] + [
+                transform.name
+                for transform in all_transforms().values()
+            ],
+            index=0,
+            key=f"add_transform_{key}",
+        )
+        if st.session_state[f"add_transform_{key}"] != "":
+            if st.button("Add"):
+                self._add_transform(key)
+                st.rerun()
+
+    def _add_transform(self, key):
+        """Add a transform to the list."""
+
+        # Get the selected transform (by name)
+        selected_name = st.session_state[f"add_transform_{key}"]
+
+        # Stop if no name was selected
+        if len(selected_name) == 0:
             return
 
-        return table.index
+        # Get the id of that transform
+        selected_id = None
+        for transform_id, transform in all_transforms().items():
+            if transform.name == selected_name:
+                selected_id = transform_id
+                break
+
+        msg = f"Couldn't find transform: {selected_name}"
+        assert selected_id is not None, msg
+
+        # Get the list of transformations
+        transforms: list = self.param(key, "transforms")
+
+        # Add the new transform
+        transforms.append(selected_id)
+
+        # Update the list of transformations
+        self.update_view_param(
+            join_kws(key, "transforms"),
+            transforms
+        )

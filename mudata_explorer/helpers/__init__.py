@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 from mudata_explorer import views
 from mudata_explorer import process
 from mudata_explorer.base.base import MuDataAppHelpers

@@ -5,18 +5,14 @@ from streamlit.delta_generator import DeltaGenerator
 
 
 def print_history(history: List[dict], container: DeltaGenerator):
-    for ix, event in enumerate(history):
-        if "timestamp" in event:
-            container.write(f"**{event['timestamp']}**")
-        if "process" in event:
-            container.write(f"- Ran: {event['process']}")
-        if "updated_keys" in event:
-            container.write(f"- Updated: {event['updated_keys']}")
-        if "params" in event:
-            for kw, val in event['params'].items():
-                container.write(f" - {kw}: {val}")
-        if ix < len(history) - 1:
-            container.write("---")
+    for event in history:
+        label = f"**{event['timestamp']}**: Ran: {event['process']}"
+        with container.expander(label, expanded=False):
+            if "updated_keys" in event:
+                st.write(f"- Updated: {event['updated_keys']}")
+            if "params" in event:
+                for kw, val in event['params'].items():
+                    st.write(f" - {kw}: {val}")
 
 
 def run():
