@@ -141,7 +141,7 @@ def show_table(
         return
 
     # Provide a button to add a new table
-    if st.button(f"Add New {label} CSV"):
+    if st.button(f"Add New {label} Table"):
         upload_csv_modal(slice, kw)
 
 
