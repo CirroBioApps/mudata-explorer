@@ -8,6 +8,22 @@ class RunPCA(Process):
     type = "pca"
     name = "PCA"
     desc = "Principle Coordinates Analysis (PCA)"
+    help_text = """
+    PCA is a linear dimensionality reduction technique that seeks to find the
+    directions (or principal components) in which the data varies the most.
+    These directions are found by computing the eigenvectors of the covariance
+    matrix of the data.
+
+    The first principal component is the direction in which the data varies
+    the most. The second principal component is the direction in which the data
+    varies the second most, and so on.
+
+    The degree to which each principal component captures the variance in the
+    data is reported in the results as a percentage.
+
+    - [Wikipedia: Principal Component Analysis](https://en.wikipedia.org/wiki/Principal_component_analysis)
+    - [Visual Explanation of PCA](https://towardsdatascience.com/principal-component-analysis-pca-explained-visually-with-zero-math-1cbf392b9e7d)
+    """
     category = "Dimensionality Reduction"
     schema = {
         "table": {

@@ -9,6 +9,23 @@ class RunDBSCAN(Process):
     type = "dbscan"
     name = "DBSCAN"
     desc = "DBSCAN Clustering"
+    help_text = """
+    DBSCAN (Density-Based Spatial Clustering of Applications with Noise)
+    is a clustering algorithm that groups together points that are
+    closely packed together (points with many nearby neighbors), marking
+    as outliers points that lie alone in low-density regions.
+
+    The algorithm works by defining neighborhoods around each point and
+    grouping points that are within a certain distance of each other.
+    Points that are within the neighborhood of a core point are considered
+    part of the same cluster. Points that are within the neighborhood of
+    a non-core point but are not core points themselves are considered
+    border points. Points that are not within the neighborhood of any
+    core points are considered outliers.
+
+    - [Wikipedia: DBSCAN](https://en.wikipedia.org/wiki/DBSCAN)
+    - [Explanation of DBSCAN (video)](https://www.youtube.com/watch?v=C3r7tGRe2eI)
+    """
     category = "Clustering"
     schema = {
         "table": {

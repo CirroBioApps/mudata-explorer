@@ -13,6 +13,20 @@ class RunKmeans(Process):
     type = "kmeans"
     name = "K-Means"
     desc = "K-Means Clustering"
+    help_text = """
+    K-Means clustering is a method of vector quantization that aims to partition
+    n observations into k clusters in which each observation belongs to the
+    cluster with the nearest mean.
+
+    The user selects the number of clusters (k) to group the samples into.
+
+    Silhouette scores are computed over a range of values of k to evaluate the
+    clustering performance. The silhouette score is a measure of how similar
+    an object is to its own cluster compared to other clusters.
+
+    - [Wikipedia: K-Means Clustering](https://en.wikipedia.org/wiki/K-means_clustering)
+    - [Visual Explanation of K-Means](https://www.naftaliharris.com/blog/visualizing-k-means-clustering/)
+    """
     category = "Clustering"
     schema = {
         "table": {

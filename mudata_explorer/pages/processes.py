@@ -87,6 +87,14 @@ def run():
         params=process_def.get("params", {})
     )
 
+    # If there is any help text defined, show it
+    if process.help_text:
+        (
+            container
+            .expander("Description", expanded=False)
+            .markdown(process.help_text)
+        )
+
     # Get the parameters from the user
     process.get_data(container)
 

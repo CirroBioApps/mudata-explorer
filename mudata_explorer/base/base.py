@@ -21,6 +21,8 @@ class MuDataAppHelpers:
     params_complete: bool
     # Flag used to indicate whether the parameters are editable
     params_editable: bool
+    # Optional help text
+    help_text: Optional[str] = False
 
     def param(self, *kws, default=None):
         return self.params.get(join_kws(*kws), default)

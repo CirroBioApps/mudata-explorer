@@ -9,6 +9,23 @@ class UMAP(Process):
     type = "umap"
     name = "UMAP"
     desc = "Uniform Manifold Approximation and Projection (UMAP)"
+    help_text = """
+    UMAP is a fairly flexible non-linear dimension reduction algorithm.
+    It seeks to learn the manifold structure of your data and find a low
+    dimensional embedding that preserves the essential topological structure
+    of that manifold.
+
+    Compared to something like PCA, UMAP is able to capture more complex
+    relationships between groups of data points using a smaller number of
+    dimensions.
+    Instead of having to look through PC1, PC2, PC3, etc. to understand the
+    structure of your data, UMAP can often capture the same information in
+    just UMAP1 and UMAP2.
+
+    - [UMAP Documentation](https://umap-learn.readthedocs.io/en/latest/)
+    - [Understanding UMAP](https://pair-code.github.io/understanding-umap/)
+    - [UMAP in Single-Cell Analysis](https://alleninstitute.org/resource/what-is-a-umap/)
+    """
     category = "Dimensionality Reduction"
     schema = {
         "table": {
