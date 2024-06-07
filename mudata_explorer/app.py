@@ -453,46 +453,6 @@ def dehydrate_uns(mdata: mu.MuData):
                 mdata.uns[kw] = json.dumps(mdata.uns[kw], sort_keys=True)
 
 
-def make_modality_df(mdata: mu.MuData, mod_name: str) -> pd.DataFrame:
-    """
-    Make a single DataFrame which combines information from the modality.
-    If there are any conflicting column names, they will be suffixed with
-    the slot they came from.
-    """
-    adata: ad.AnnData = mdata.mod[mod_name]
-
-    # Collect all of the DataFrames
-    all_dfs = {}
-
-    # Data from the X slot
-    all_dfs["data"] = adata.to_df()
-
-    # Metadata
-    all_dfs["metadata"] = adata.obs
-
-    # For each obsm slot
-    for kw, slot in adata.obsm.items():
-        all_dfs[kw] = pd.DataFrame(slot, index=adata.obs.index)
-
-    # Find each column name which is repeated across the DataFrames
-    all_cols = []
-    for df in all_dfs.values():
-        all_cols.extend(df.columns.values)
-    all_cols = pd.Series(all_cols)
-    dup_cols = all_cols[all_cols.duplicated()].unique()
-
-    # For each duplicated column name, add the slot name as a suffix
-    for col in dup_cols:
-        for slot, df in all_dfs.items():
-            if col in df.columns:
-                df.rename(columns={col: f"{col}_{slot}"}, inplace=True)
-
-    # Concatenate all of the DataFrames
-    df = pd.concat(all_dfs.values(), axis=1)
-
-    return df
-
-
 def get_timestamp():
     return str(pd.Timestamp.now())
 
