@@ -1020,7 +1020,7 @@ class MuDataAppHelpers:
         # If we are filtering by value
 
         if query["table"] == "Observation Metadata":
-            query["table"] = "obs"
+            query["table"] = "metadata"
             query["modality"] = None
 
         else:
@@ -1061,32 +1061,45 @@ class MuDataAppHelpers:
                 ]
 
         # Apply the filter, trying both string and numeric values
-        filtered_table = None
-        try:
-            filtered_table = table.query(
-                "{cname} {expr} {value}".format(**query)
-            )
-        except:  # noqa
-            pass
-        try:
-            filtered_table = table.query(
-                "{cname} {expr} '{value}'".format(**query)
-            )
-        except Exception as e:
-            container.write("Error while filtering")
-            container.exception(e)
-            return df
+        filtered_table = self._filter_table(table, query)
 
         # If no values are returned
-        if filtered_table.shape[0] == 0:
+        if filtered_table is None:
             container.write("No samples match the filter criteria.")
             return df
 
         # Subset the larger table by the filtered table
         if filter_axis == 0:
-            return df.loc[filtered_table.index]
+            return df.loc[list(set(filtered_table.index) & set(df.index))]
         else:
-            return df[filtered_table.index]
+            return df[list(set(filtered_table.index) & set(df.columns))]
+
+    @staticmethod
+    def _filter_table(table, query):
+
+        filtered_table = None
+
+        try:
+            filtered_table = table.query(
+                "{cname} {expr} {value}".format(**query)
+            )
+        except: # noqa
+            pass
+
+        if isinstance(filtered_table, pd.DataFrame):
+            if filtered_table.shape[0] > 0:
+                return filtered_table
+            
+        try:
+            filtered_table = table.query(
+                "{cname} {expr} '{value}'".format(**query)
+            )
+        except: # noqa
+            pass
+
+        if isinstance(filtered_table, pd.DataFrame):
+            if filtered_table.shape[0] > 0:
+                return filtered_table
 
     def _get_values_in_column(
         self,
