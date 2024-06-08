@@ -1150,7 +1150,10 @@ class MuDataAppHelpers:
                 )
 
             # Let the user add a transformation
-            if container.button("Add Transformation"):
+            if container.button(
+                "Add Transformation",
+                key=f"add-transformation-{self.ix}"
+            ):
                 self._add_transform_popup(key)
 
         # Run all of the transformations
