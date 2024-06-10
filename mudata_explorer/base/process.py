@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Generator
 import numpy as np
 import pandas as pd
 from mudata_explorer import app
@@ -40,7 +40,7 @@ class Process(MuDataAppHelpers):
     def resolve_output_loc(
         self,
         output: dict
-    ) -> Union[MuDataSlice, List[MuDataSlice]]:
+    ) -> Generator[MuDataSlice, None, None]:
 
         # If the axis value ends with .T, it means that the axis
         # is transposed
@@ -89,7 +89,7 @@ class Process(MuDataAppHelpers):
         # If the modality is an empty list,
         # it means that the output cannot be set
         if output["modality"] == []:
-            return []
+            return
 
         # If the modality is a list
         if isinstance(output["modality"], list):

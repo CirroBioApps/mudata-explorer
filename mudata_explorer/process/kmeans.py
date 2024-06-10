@@ -26,7 +26,7 @@ class RunKmeans(Process):
 
     - [Wikipedia: K-Means Clustering](https://en.wikipedia.org/wiki/K-means_clustering)
     - [Visual Explanation of K-Means](https://www.naftaliharris.com/blog/visualizing-k-means-clustering/)
-    """
+    """ # noqa
     category = "Clustering"
     schema = {
         "table": {

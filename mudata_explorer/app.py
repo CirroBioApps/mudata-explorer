@@ -16,6 +16,15 @@ from mudata_explorer.base.slice import MuDataSlice
 from plotly import io
 
 
+def get_edit_views_flag() -> bool:
+    return st.session_state.get("_edit_views_flag", False)
+
+
+def set_edit_views_flag(val: bool):
+    assert isinstance(val, bool)
+    st.session_state["_edit_views_flag"] = val
+
+
 def sidebar_page_links(page_links):
     for path, label in page_links:
         st.sidebar.page_link(
@@ -25,14 +34,10 @@ def sidebar_page_links(page_links):
 
 
 def sidebar_edit_views():
-    if get_mdata() is None:
-        return
 
-    settings = get_settings()
-
-    settings["editable"] = st.sidebar.checkbox(
+    st.sidebar.checkbox(
         "Edit Figures",
-        value=settings.get("editable", True),
+        value=get_edit_views_flag(),
         help="Display a set of menus to modify the figures.",
         on_change=update_edit_views,
         key="sidebar_edit_views"
@@ -41,10 +46,8 @@ def sidebar_edit_views():
 
 def update_edit_views():
     flag = st.session_state["sidebar_edit_views"]
-    settings = get_settings()
-    if flag != settings["editable"]:
-        settings["editable"] = flag
-        set_settings(settings)
+    if flag != get_edit_views_flag():
+        set_edit_views_flag(flag)
 
 
 def sidebar_load_history():
@@ -75,7 +78,6 @@ def setup_sidebar(
         ("processes", "Analysis"),
         ("views", "Figures"),
         ("history", "History"),
-        # ("settings", "Settings"),
         ("about", "About")
     ])
     if edit_views:
@@ -343,11 +345,6 @@ def get_settings() -> dict:
             get_mdata().uns.get("mudata-explorer-settings", {})
         )
 
-    for kw, val in dict(
-        editable=True
-    ).items():
-        if kw not in settings:
-            settings[kw] = val
     return settings
 
 

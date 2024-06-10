@@ -25,7 +25,7 @@ class RunDBSCAN(Process):
 
     - [Wikipedia: DBSCAN](https://en.wikipedia.org/wiki/DBSCAN)
     - [Explanation of DBSCAN (video)](https://www.youtube.com/watch?v=C3r7tGRe2eI)
-    """
+    """ # noqa
     category = "Clustering"
     schema = {
         "table": {

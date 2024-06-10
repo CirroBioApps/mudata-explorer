@@ -1,4 +1,3 @@
-import json
 from mudata_explorer import app
 from mudata_explorer.base.view import View
 from mudata_explorer.helpers import all_views, make_view
@@ -6,11 +5,10 @@ from mudata_explorer.helpers import asset_categories, asset_type_desc_lists
 from mudata_explorer.helpers import filter_by_category
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
-from streamlit.errors import DuplicateWidgetID
 
 
 def make_views(editable=False):
-    
+
     views = app.get_views()
 
     return [
@@ -29,10 +27,8 @@ def make_editable(ix: int):
 
 def edit_view(view: View, container: DeltaGenerator, ix: int, n_views: int):
 
-    settings = app.get_settings()
-
     # If the views are not editable, don't show the edit buttons
-    if not settings["editable"]:
+    if not app.get_edit_views_flag():
         # Instead, just set up the params for the view
         view.get_data()
         return
@@ -144,8 +140,10 @@ def run():
 
     app.setup_sidebar(edit_views=True)
 
+    container = st.container()
+
     if app.get_mdata() is None:
-        st.page_link(
+        container.page_link(
             "pages/tables.py",
             label="Upload data to get started"
         )
@@ -154,46 +152,76 @@ def run():
     # If the user has selected a view to edit, show the edit menu
     if st.query_params.get("edit-view") is not None:
 
-        # The view to edit
-        edit_ix = int(st.query_params.get("edit-view"))
-
-        # Get the list of all views defined in the dataset
-        views = app.get_views()
-
-        if len(views) < (edit_ix + 1):
-            st.error("No views to edit.")
-
-        # Instantiate the view to edit
-        view = make_view(
-            ix=edit_ix,
-            editable=True,
-            **views[edit_ix]
-        )
-
-        view.get_data()
+        run_edit_view(container)
 
     else:
 
-        # All of the views defined in the dataset
-        mdata_views = make_views(editable=False)
+        # If the views are editable
+        if app.get_edit_views_flag():
 
-        # Global settings
-        settings = app.get_settings()
+            # Show the views with edit buttons
+            view_editable(container)
 
-        for ix, view in enumerate(mdata_views):
+        else:
+            # Show the views with no edit buttons
+            view_non_editable(container)
 
-            # If the settings are editable
-            if settings["editable"]:
-                # Show the name of the view
-                st.write(f"#### {ix + 1}. {view.name}")
 
-                # Set up a set of buttons to edit the order of the view
-                edit_view(view, st.container(), ix, len(mdata_views))
+def run_edit_view(container: DeltaGenerator):
 
-            # Attach the view to the display
-            view.attach(st.container())
+    # The view to edit
+    edit_ix = int(st.query_params.get("edit-view"))
 
-        if settings["editable"]:
+    # Get the list of all views defined in the dataset
+    views = app.get_views()
 
-            # Let the user add a new view
-            button_add_view()
+    if len(views) < (edit_ix + 1):
+        container.error("No views to edit.")
+
+    # Instantiate the view to edit
+    view = make_view(
+        ix=edit_ix,
+        editable=True,
+        **views[edit_ix]
+    )
+
+    view.get_data()
+
+
+def view_editable(container: DeltaGenerator):
+    """
+    Show the views with edit buttons.
+    """
+
+    if not app.get_edit_views_flag():
+        st.rerun()
+
+    # All of the views defined in the dataset
+    mdata_views = make_views(editable=False)
+
+    for ix, view in enumerate(mdata_views):
+
+        # If the settings are editable
+        if app.get_edit_views_flag():
+            # Show the name of the view
+            container.write(f"#### {ix + 1}. {view.name}")
+
+            # Set up a set of buttons to edit the order of the view
+            edit_view(view, container, ix, len(mdata_views))
+
+        # Attach the view to the display
+        view.attach(container)
+
+    # Let the user add a new view
+    button_add_view()
+
+
+def view_non_editable(container: DeltaGenerator):
+
+    # All of the views defined in the dataset
+    mdata_views = make_views(editable=False)
+
+    for view in mdata_views:
+
+        # Attach the view to the display
+        view.attach(container)

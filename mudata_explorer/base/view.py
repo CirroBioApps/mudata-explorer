@@ -1,4 +1,3 @@
-from mudata_explorer import app
 from mudata_explorer.base.base import MuDataAppHelpers
 from streamlit.delta_generator import DeltaGenerator
 

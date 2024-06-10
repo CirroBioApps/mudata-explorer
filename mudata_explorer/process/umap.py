@@ -25,7 +25,7 @@ class UMAP(Process):
     - [UMAP Documentation](https://umap-learn.readthedocs.io/en/latest/)
     - [Understanding UMAP](https://pair-code.github.io/understanding-umap/)
     - [UMAP in Single-Cell Analysis](https://alleninstitute.org/resource/what-is-a-umap/)
-    """
+    """ # noqa
     category = "Dimensionality Reduction"
     schema = {
         "table": {

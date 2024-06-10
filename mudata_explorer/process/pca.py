@@ -23,7 +23,7 @@ class RunPCA(Process):
 
     - [Wikipedia: Principal Component Analysis](https://en.wikipedia.org/wiki/Principal_component_analysis)
     - [Visual Explanation of PCA](https://towardsdatascience.com/principal-component-analysis-pca-explained-visually-with-zero-math-1cbf392b9e7d)
-    """
+    """ # noqa
     category = "Dimensionality Reduction"
     schema = {
         "table": {

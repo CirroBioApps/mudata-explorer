@@ -1,8 +1,8 @@
 import pandas as pd
+from mudata_explorer import app
 from mudata_explorer.base.view import View
 import seaborn as sns
 from streamlit.delta_generator import DeltaGenerator
-from mudata_explorer import app
 
 
 class Seaborn(View):
@@ -34,9 +34,6 @@ class Clustermap(Seaborn):
 
         data: pd.DataFrame = self.params.get("data.dataframe")
 
-        # Get the global settings
-        settings = app.get_settings()
-
         if data is None:
             return
 
@@ -50,7 +47,7 @@ class Clustermap(Seaborn):
                 if vals.std() == 0
             ]
             if len(drop_rows) > 0:
-                if settings["editable"]:
+                if app.get_edit_views_flag():
                     container.write(
                         f"Dropping {len(drop_rows):,} rows with no variance."
                     )
@@ -62,9 +59,11 @@ class Clustermap(Seaborn):
                 if vals.std() == 0
             ]
             if len(drop_cols) > 0:
-                if settings["editable"]:
+                if app.get_edit_views_flag():
                     container.write(
-                        f"Dropping {len(drop_cols):,} columns with no variance."
+                        "Dropping {:,} columns with no variance.".format(
+                            len(drop_cols)
+                        )
                     )
                 data = data.drop(drop_cols, axis=1)
 

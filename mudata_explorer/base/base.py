@@ -258,7 +258,11 @@ class MuDataAppHelpers:
 
         if self.params_editable:
             # Show the name of the view
-            container.write(f"#### {self.ix + 1}. {self.name}")
+            container.write(
+                f"#### {self.ix + 1}. {self.name}"
+                if self.ix != -1
+                else f"#### {self.name}"
+            )
 
         # Parse the form schema of the object
         self.render_form(container, self.schema)
@@ -860,7 +864,7 @@ class MuDataAppHelpers:
             # if no value is set
             self.params.get(value_kw) is None
             or (
-                # If the value is a list but the 
+                # If the value is a list but the
                 # expression is not 'in' or 'not in'
                 isinstance(self.params.get(value_kw), list)
                 and self.params.get(expr_kw) not in ["in", "not in"]
@@ -1103,7 +1107,7 @@ class MuDataAppHelpers:
         if isinstance(filtered_table, pd.DataFrame):
             if filtered_table.shape[0] > 0:
                 return filtered_table
-            
+
         try:
             filtered_table = table.query(
                 "{cname} {expr} '{value}'".format(**query)
