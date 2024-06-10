@@ -1,23 +1,18 @@
 import json
 from mudata_explorer import app
+from mudata_explorer.base.view import View
 from mudata_explorer.helpers import all_views, make_view
 from mudata_explorer.helpers import asset_categories, asset_type_desc_lists
 from mudata_explorer.helpers import filter_by_category
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
+from streamlit.errors import DuplicateWidgetID
 
 
-def make_views(editable: bool):
-    if not app.has_mdata():
-        return []
-    mdata = app.get_mdata()
-    views = mdata.uns.get("mudata-explorer-views", [])
-    if isinstance(views, str):
-        views = json.loads(views)
-        assert isinstance(views, list), (type(views), views)
-        mdata.uns["mudata-explorer-views"] = views
-        app.set_mdata(mdata)
-    assert isinstance(views, list), (type(views), views)
+def make_views(editable=False):
+    
+    views = app.get_views()
+
     return [
         make_view(
             ix=ix,
@@ -28,55 +23,74 @@ def make_views(editable: bool):
     ]
 
 
-def edit_view(container: DeltaGenerator, ix: int, n_views: int):
+def make_editable(ix: int):
+    st.query_params["edit-view"] = ix
 
-    # Add a horizontal line
-    container.markdown("---")
 
-    # Make a set of columns
-    cols = container.columns(4)
+def edit_view(view: View, container: DeltaGenerator, ix: int, n_views: int):
 
-    # Add buttons for editing, reordering, and deleting
-    if ix > 0:
-        cols[0].button(
-            "Move Up",
-            use_container_width=True,
-            on_click=move_up,
-            key=f"move-up-{ix}",
-            args=(ix,)
-        )
-    cols[1].button(
-        "Delete",
-        use_container_width=True,
-        on_click=app.delete_view,
-        key=f"delete-view-{ix}",
+    settings = app.get_settings()
+
+    # If the views are not editable, don't show the edit buttons
+    if not settings["editable"]:
+        # Instead, just set up the params for the view
+        view.get_data()
+        return
+
+    cols = container.columns([1, 1, 1, 1, 1, 5])
+
+    # The first button allows the user to provide inputs
+    cols[0].button(
+        ":pencil:",
+        help="Edit the inputs for this view.",
+        key=f"edit-inputs-{ix}",
+        on_click=make_editable,
         args=(ix,)
     )
-    cols[2].button(
-        "Duplicate",
-        use_container_width=True,
+
+    # For every view past the first
+    cols[1].button(
+        ":arrow_up_small:",
+        on_click=move_up,
+        key=f"move-up-{ix}",
+        args=(ix,),
+        help="Move this view up in the list.",
+        disabled=ix == 0
+    )
+
+    if cols[2].button(
+        ":heavy_minus_sign:",
+        key=f"delete-view-{ix}",
+        args=(ix,),
+        help="Delete this view."
+    ):
+        app.delete_view(ix)
+        st.rerun()
+    cols[3].button(
+        ":heavy_plus_sign:",
         on_click=app.duplicate_view,
         key=f"duplicate-view-{ix}",
-        args=(ix,)
+        args=(ix,),
+        help="Duplicate this view."
     )
-    if ix < (n_views - 1):
-        cols[3].button(
-            "Move Down",
-            use_container_width=True,
-            on_click=move_down,
-            key=f"move-down-{ix}",
-            args=(ix,)
-        )
+    cols[4].button(
+        ":arrow_down_small:",
+        on_click=move_down,
+        key=f"move-down-{ix}",
+        args=(ix,),
+        help="Move this view down in the list.",
+        disabled=ix == (n_views - 1)
+    )
 
 
-def button_add_view(container: DeltaGenerator):
+def button_add_view():
 
-    container.write("#### Add a new view")
+    st.write("#### Add a new view")
 
     # Let the user select the type of view to add
     all_categories = asset_categories(all_views)
 
-    selected_category = container.selectbox(
+    selected_category = st.selectbox(
         "Select a category",
         all_categories
     )
@@ -87,14 +101,14 @@ def button_add_view(container: DeltaGenerator):
     # Get the assets needed to select from the filtered views
     type_list, desc_list = asset_type_desc_lists(filtered_views)
 
-    selected_desc = container.selectbox(
+    selected_desc = st.selectbox(
         "Select a view to add",
         desc_list
     )
     selected_type = type_list[desc_list.index(selected_desc)]
 
     # Instantiate the selected view type if the user clicks a button
-    container.button(
+    st.button(
         f"Add {selected_desc}",
         on_click=app.add_view,
         args=(selected_type,),
@@ -137,29 +151,49 @@ def run():
         )
         return
 
-    container = st.container()
+    # If the user has selected a view to edit, show the edit menu
+    if st.query_params.get("edit-view") is not None:
 
-    settings = app.get_settings()
+        # The view to edit
+        edit_ix = int(st.query_params.get("edit-view"))
 
-    mdata_views = make_views(editable=settings["editable"])
+        # Get the list of all views defined in the dataset
+        views = app.get_views()
 
-    for ix, view in enumerate(mdata_views):
+        if len(views) < (edit_ix + 1):
+            st.error("No views to edit.")
 
-        # Show the name of the view
+        # Instantiate the view to edit
+        view = make_view(
+            ix=edit_ix,
+            editable=True,
+            **views[edit_ix]
+        )
+
+        view.get_data()
+
+    else:
+
+        # All of the views defined in the dataset
+        mdata_views = make_views(editable=False)
+
+        # Global settings
+        settings = app.get_settings()
+
+        for ix, view in enumerate(mdata_views):
+
+            # If the settings are editable
+            if settings["editable"]:
+                # Show the name of the view
+                st.write(f"#### {ix + 1}. {view.name}")
+
+                # Set up a set of buttons to edit the order of the view
+                edit_view(view, st.container(), ix, len(mdata_views))
+
+            # Attach the view to the display
+            view.attach(st.container())
+
         if settings["editable"]:
-            container.write(f"#### {ix + 1}. {view.name}")
 
-        # Attach the view to the display
-        view.attach(container)
-
-        # Set up a set of buttons to edit the order of the view
-        if settings["editable"]:
-            edit_view(view.inputs_container, ix, len(mdata_views))
-
-            # Show a horizontal rule
-            container.markdown("---")
-
-    if settings["editable"]:
-
-        # Let the user add a new view
-        button_add_view(container)
+            # Let the user add a new view
+            button_add_view()

@@ -30,9 +30,9 @@ def get_view_by_type(view_type: str) -> View:
     raise ValueError(f"View type '{view_type}' not found.")
 
 
-def make_view(type: str, editable: bool, **kwargs) -> View:
+def make_view(type: str, **kwargs) -> View:
     view = get_view_by_type(type)
-    return view(type=type, editable=editable, **kwargs)
+    return view(type=type, **kwargs)
 
 
 def get_process_by_type(process_type: str) -> Process:

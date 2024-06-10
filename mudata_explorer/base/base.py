@@ -248,16 +248,30 @@ class MuDataAppHelpers:
             for kw in invalidate:
                 self.delete_view_param(kw)
 
-    def get_data(self, container: DeltaGenerator):
+    def get_data(self, container: Optional[DeltaGenerator] = None):
+
+        if container is None:
+            container = st.container()
 
         # By default, params are complete until proven otherwise
         self.params_complete = True
 
         if self.params_editable:
-            container.write("##### Inputs")
+            # Show the name of the view
+            container.write(f"#### {self.ix + 1}. {self.name}")
 
         # Parse the form schema of the object
         self.render_form(container, self.schema)
+
+        if self.params_editable:
+            container.button(
+                "Save Changes",
+                key=f"save-changes-{self.ix}",
+                on_click=self.save_changes
+            )
+
+    def save_changes(self):
+        del st.query_params["edit-view"]
 
     def render_form(
         self,

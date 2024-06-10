@@ -1,5 +1,4 @@
 from mudata_explorer import app
-from typing import List
 from mudata_explorer.base.base import MuDataAppHelpers
 from streamlit.delta_generator import DeltaGenerator
 
@@ -9,20 +8,18 @@ class View(MuDataAppHelpers):
     editable: bool
     defaults: dict = {}
     view_container: DeltaGenerator
-    inputs_container: DeltaGenerator
 
     def __init__(
         self,
         ix: int,
         type: str,
-        editable: bool,
         name: str,
         desc: str,
-        params: dict
+        params: dict,
+        editable: bool
     ):
         self.ix = ix
         self.type = type
-        self.editable = editable
         self.name = name
         self.desc = desc
         self.params = {
@@ -30,30 +27,20 @@ class View(MuDataAppHelpers):
             for kw, val in self.get_schema_defaults(self.schema)
         }
 
-        # Whether the params are editable is driven by the settings
-        settings = app.get_settings() if app.has_mdata() else {}
-        self.params_editable = settings.get("editable", True)
+        # Whether the params are editable
+        self.params_editable = editable
 
     def attach(self, container: DeltaGenerator):
 
-        # Set up a container for the view
-        self.view_container = container.container()
-
-        if self.editable:
-            # Set up an expander element for up/down/delete buttons
-            self.inputs_container = container.expander("Edit Display")
-
-        # Get the parameters from the user
-        self.get_data(
-            self.inputs_container if self.editable else self.view_container
-        )
+        # Set up the parameters for viewing
+        self.get_data(container)
 
         # Now make the display, catching any errors
         try:
-            self.display(self.view_container)
+            self.display(container)
         except Exception as e:
             # Log the full traceback of the exception
-            self.view_container.exception(e)
+            container.exception(e)
 
     @classmethod
     def template(cls):
