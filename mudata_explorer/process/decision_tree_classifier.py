@@ -1,4 +1,6 @@
 import pandas as pd
+import plotly.express as px
+from plotly import io
 from sklearn import tree
 from mudata_explorer.base.process import Process
 
@@ -99,7 +101,7 @@ class DecisionTreeClassifier(Process):
             "attr": "outputs.dest_key"
         },
         "weights": {
-            "type": pd.Series,
+            "type": pd.DataFrame,
             "label": "Feature Weights",
             "desc": "Weights of each feature in the model.",
             "modality": "table.data.tables",
@@ -136,9 +138,11 @@ class DecisionTreeClassifier(Process):
         random_state = self.params["model_params.random_state"]
 
         # Get the training and testing sets
-        train = df.sample(frac=train_prop, random_state=random_state)
+        train_ix = df.sample(frac=train_prop, random_state=random_state).index
+        test_ix = df.index.difference(train_ix)
 
-        assert train.shape[0] > 0, "No training data - increase train_prop"
+        assert train_ix.shape[0] > 0, "No training data - increase train_prop"
+        assert test_ix.shape[0] > 0, "No testing data - decrease train_prop"
 
         # Run the DecisionTreeClassifier
         clf = tree.DecisionTreeClassifier(
@@ -151,26 +155,74 @@ class DecisionTreeClassifier(Process):
             min_samples_split=min_samples_split,
             random_state=random_state
         )
-        clf = clf.fit(train, pred.loc[train.index])
+        clf = clf.fit(df.loc[train_ix], pred.loc[train_ix])
+
+        # Compute the performance of the model by comparing the
+        # accuracy of classification on the held out testing set
+        # against the accuracy observed under random permutation
+        n_reps = 1000
+        null_dist = [
+            clf.score(
+                df.loc[test_ix],
+                pred.loc[test_ix].sample(frac=1, random_state=i)
+            )
+            for i in range(n_reps)
+        ]
+        score = clf.score(df.loc[test_ix], pred.loc[test_ix])
+
+        fig = px.histogram(
+            x=null_dist,
+            labels={"x": "Accuracy"},
+            title="Model Performance"
+        )
+        fig.add_vline(
+            x=score,
+            line_dash="dash",
+            line_color="grey"
+        )
+        # Annotate the figure with text indicating the score value
+        perc = sum([n < score for n in null_dist]) / n_reps
+        fig.add_annotation(
+            x=score,
+            xanchor="left",
+            y=-20,
+            text=f"Model Score: {score:.2f} (Above {int(100 * perc)}% of null distribution)", # noqa
+            showarrow=False
+        )
+        figures = [io.to_json(fig, validate=False)]
 
         # Generate predictions for the entire dataset
         assignments = pd.DataFrame(dict(
             actual=pred,
             predicted=clf.predict(df),
+            predict_log_proba=clf.predict_log_proba(df).tolist(),
+            predict_proba=clf.predict_proba(df).tolist(),
             group=pd.Series(
                 [
-                    "training" if ix in train.index else "testing"
+                    (
+                        "training"
+                        if ix in train_ix
+                        else (
+                            "testing"
+                            if ix in test_ix
+                            else None
+                        )
+                    )
                     for ix in df.index.values
                 ],
                 index=df.index
             )
         ))
-        self.save_results("assignments", assignments)
+        self.save_results("assignments", assignments, figures=figures)
 
         # Make a Series with the weights for each variable
         # in the model
-        weights = pd.Series(
-            clf.feature_importances_,
-            index=df.columns
+        weights = pd.DataFrame(
+            dict(
+                weights=pd.Series(
+                    clf.feature_importances_,
+                    index=df.columns
+                )
+            )
         )
-        self.save_results("weights", weights)
+        self.save_results("weights", weights, figures=figures)
