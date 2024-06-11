@@ -250,7 +250,8 @@ class PlotlyBox(Plotly):
                 "color": {
                     "label": "Color",
                     "optional": True,
-                    "colorscale": True
+                    "colorscale": True,
+                    "is_categorical": True
                 },
             },
             "query": True,
