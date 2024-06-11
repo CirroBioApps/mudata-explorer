@@ -32,7 +32,7 @@ class ZscoreRows(Transform):
     name = "Calculate Z-Scores for Rows"
 
     def run(df: pd.DataFrame) -> pd.DataFrame:
-        return df.apply(stats.zscore, axis=1)
+        return df.apply(safe_zscore, axis=1)
 
 
 class ZscoreCols(Transform):
@@ -40,7 +40,14 @@ class ZscoreCols(Transform):
     name = "Calculate Z-Scores for Columns"
 
     def run(df: pd.DataFrame) -> pd.DataFrame:
-        return df.apply(stats.zscore, axis=0)
+        print(df)
+        print(df.apply(safe_zscore, axis=0))
+        return df.apply(safe_zscore, axis=0)
+
+
+def safe_zscore(x: pd.Series):
+    """Calculate the z-score for a series, ignoring NaN values."""
+    return (x - x.dropna().mean()) / x.dropna().std()
 
 
 class LogTen(Transform):
