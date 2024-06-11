@@ -9,7 +9,7 @@ import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 from tempfile import NamedTemporaryFile
 from typing import Any, List, Optional, Tuple, Union, Dict
-from mudata_explorer.helpers import get_view_by_type
+from mudata_explorer.helpers import get_view_by_type, all_view_types # noqa
 from mudata_explorer.helpers.join_kws import join_kws
 from mudata_explorer.helpers import mudata, plotting, save_load
 from mudata_explorer.base.slice import MuDataSlice
@@ -129,17 +129,22 @@ def mdata_to_binary(mdata: mu.MuData) -> bytes:
     # Write out the MuData object to a temporary file
     with NamedTemporaryFile(suffix=".h5mu", delete=True) as tmp:
 
-        # Convert any .uns objects to strings
-        dehydrate_uns(mdata)
-
-        # Format as h5mu
-        mdata.write(tmp.file.name)
-
-        # Convert back to objects
-        hydrate_uns(mdata)
+        # Write the MuData object to the file
+        write_h5mu(mdata, tmp.file.name)
 
         # Get the file object in bytes
         return tmp.read()
+
+
+def write_h5mu(mdata: mu.MuData, file_name: str):
+    # Convert any .uns objects to strings
+    dehydrate_uns(mdata)
+
+    # Format as h5mu
+    mdata.write(file_name)
+
+    # Convert back to objects
+    hydrate_uns(mdata)
 
 
 def read_h5mu(h5mu_file):
@@ -302,32 +307,43 @@ def duplicate_view(ix: int):
     set_views(views)
 
 
-def add_view(view_type: str):
-    if get_mdata() is None:
-        setup_mdata()
-    views = get_views()
+def add_view(
+    view_type: str,
+    mdata: Optional[mu.MuData] = None,
+    params: Optional[dict] = None
+):
+    if mdata is None:
+        if get_mdata() is None:
+            setup_mdata()
+    views = get_views(mdata)
     views.append(
         get_view_by_type(view_type).template()
     )
-    set_views(views)
+    if params is not None:
+        views[-1]["params"] = params
+    set_views(views, mdata)
 
 
-def get_views() -> List[dict]:
-    if not has_mdata():
+def get_views(mdata: Optional[mu.MuData] = None) -> List[dict]:
+    if mdata is None:
+        mdata = get_mdata()
+    if mdata is None:
         return []
-    mdata = get_mdata()
     assert isinstance(mdata, mu.MuData), type(mdata)
     return _json_safe(mdata.uns.get("mudata-explorer-views", []))
 
 
-def set_views(views):
-    mdata = get_mdata()
+def set_views(views, mdata: Optional[mu.MuData] = None):
+    use_global = mdata is None
+    if use_global:
+        mdata = get_mdata()
 
     # Make sure that the data is JSON serializable
     views = validate_json(views)
 
     mdata.uns["mudata-explorer-views"] = views
-    set_mdata(mdata)
+    if use_global:
+        set_mdata(mdata)
 
 
 def _json_safe(obj: Union[str, dict]):

@@ -4,6 +4,9 @@ from streamlit.delta_generator import DeltaGenerator
 
 class View(MuDataAppHelpers):
 
+    type: str
+    name: str
+    desc: str
     editable: bool
     defaults: dict = {}
     view_container: DeltaGenerator
@@ -28,6 +31,22 @@ class View(MuDataAppHelpers):
 
         # Whether the params are editable
         self.params_editable = editable
+
+    @classmethod
+    def build(
+        cls,
+        ix=-1,
+        params=dict(),
+        editable=False
+    ):
+        return cls(
+            ix=ix,
+            type=cls.type,
+            name=cls.name,
+            desc=cls.desc,
+            params=params,
+            editable=editable
+        )
 
     def attach(self, container: DeltaGenerator):
 

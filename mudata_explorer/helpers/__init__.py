@@ -30,6 +30,10 @@ def get_view_by_type(view_type: str) -> View:
     raise ValueError(f"View type '{view_type}' not found.")
 
 
+def all_view_types() -> List[str]:
+    return [view.type for view in all_views if view.type is not None]
+
+
 def make_view(type: str, **kwargs) -> View:
     view = get_view_by_type(type)
     return view(type=type, **kwargs)
