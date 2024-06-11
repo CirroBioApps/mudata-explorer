@@ -272,6 +272,9 @@ class PlotlyBox(Plotly):
 
         data, colorscale = self.fetch_dataframe("data")
 
+        if "color_continuous_scale" in colorscale:
+            container.error("Color scale must be categorical for box plots.")
+
         fig = px.box(
             data,
             x="x",
