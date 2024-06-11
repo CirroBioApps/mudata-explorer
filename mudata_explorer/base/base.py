@@ -502,6 +502,15 @@ class MuDataAppHelpers:
             # The user can transform the values in the DataFrame
             df = self.transform_dataframe(key, df, container)
 
+            # Drop any columns which are entirely missing
+            dropped_cols = df.shape[1] - df.dropna(axis=1, how="all").shape[1]
+            df = df.dropna(axis=1, how="all")
+            if dropped_cols:
+                if self.params_editable:
+                    container.write(
+                        f"Removed {dropped_cols:,} columns with entirely missing values." # noqa
+                    )
+
             # Drop any null values
             dropped_rows = df.shape[0] - df.dropna().shape[0]
             df = df.dropna()
