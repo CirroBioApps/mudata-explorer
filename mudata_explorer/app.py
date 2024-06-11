@@ -59,7 +59,6 @@ def sidebar_load_history():
 
     if st.sidebar.button("Rerun Analysis"):
         save_load.load_history()
-        # st.rerun()
 
 
 def setup_sidebar(
