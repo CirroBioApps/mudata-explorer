@@ -267,7 +267,7 @@ class MuDataAppHelpers:
         # Parse the form schema of the object
         self.render_form(container, self.schema)
 
-        if self.params_editable:
+        if self.params_editable and self.ix >= 0:
             container.button(
                 "Save Changes",
                 key=f"save-changes-{self.ix}",
