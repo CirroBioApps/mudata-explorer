@@ -40,8 +40,6 @@ class ZscoreCols(Transform):
     name = "Calculate Z-Scores for Columns"
 
     def run(df: pd.DataFrame) -> pd.DataFrame:
-        print(df)
-        print(df.apply(safe_zscore, axis=0))
         return df.apply(safe_zscore, axis=0)
 
 
