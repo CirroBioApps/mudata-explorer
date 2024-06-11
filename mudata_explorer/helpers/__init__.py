@@ -52,6 +52,7 @@ def asset_categories(list_of_assets):
     all_categories = list(set([
         asset.category
         for asset in list_of_assets
+        if hasattr(asset, "category")
     ]))
     all_categories.sort()
     return all_categories
@@ -64,6 +65,7 @@ def filter_by_category(
     return [
         asset
         for asset in list_of_assets
+        if hasattr(asset, "category")
         if category == asset.category
     ]
 
