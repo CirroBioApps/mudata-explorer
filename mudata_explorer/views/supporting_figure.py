@@ -16,7 +16,6 @@ class SupportingFigure(View):
             "type": "supporting_figure"
         }
     }
-    use_orientation = False
 
     def display(self, container: DeltaGenerator):
 
