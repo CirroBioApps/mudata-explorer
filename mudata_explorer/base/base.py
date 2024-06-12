@@ -526,14 +526,15 @@ class MuDataAppHelpers:
                         f"Removed {dropped_cols:,} columns with entirely missing values." # noqa
                     )
 
-            # Drop any null values
-            dropped_rows = df.shape[0] - df.dropna().shape[0]
-            df = df.dropna()
-            if dropped_rows:
-                if self.params_editable:
-                    container.write(
-                        f"Removed {dropped_rows:,} rows with missing values."
-                    )
+            if elem.get("dropna", True):
+
+                # Drop any null values
+                n = df.shape[0] - df.dropna().shape[0]
+                df = df.dropna()
+                if n:
+                    if self.params_editable:
+                        msg = f"Removed {n:,} rows with missing values."
+                        container.write(msg)
 
         if self.params_editable and (df is None or df.shape[0] == 0):
             container.write("No data available.")
