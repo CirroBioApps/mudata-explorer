@@ -101,7 +101,12 @@ def button_add_view():
         "Select a view to add",
         df["name"].tolist()
     )
-    selected_type = df["type"].tolist()[df["name"].tolist().index(selected_name)]
+    selected_ix = df["name"].tolist().index(selected_name)
+    selected_type = df["type"].tolist()[selected_ix]
+    help_text = df["help_text"].tolist()[selected_ix]
+
+    if help_text is not None:
+        st.markdown(help_text)
 
     # Instantiate the selected view type if the user clicks a button
     st.button(

@@ -94,7 +94,8 @@ def asset_dataframe(
     return pd.DataFrame(
         dict(
             name=asset.name,
-            type=asset.type
+            type=asset.type,
+            help_text=getattr(asset, "help_text", None)
         )
         for asset in list_of_assets
     )
