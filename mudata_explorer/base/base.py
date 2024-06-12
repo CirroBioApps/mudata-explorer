@@ -301,6 +301,9 @@ class MuDataAppHelpers:
                 if "label" in elem and self.params_editable:
                     container.write(f"**{elem.get('label', prefix_key)}**")
 
+                if elem.get("help") is not None and self.params_editable:
+                    container.write(elem.get('help'))
+
                 self.render_form(
                     container,
                     elem["properties"],
@@ -441,6 +444,9 @@ class MuDataAppHelpers:
 
         if "label" in elem and self.params_editable:
             container.write(f"**{elem.get('label')}**")
+
+        if elem.get("help") is not None and self.params_editable:
+            container.write(elem.get('help'))
 
         if not app.has_mdata():
             container.write("No MuData object available.")
