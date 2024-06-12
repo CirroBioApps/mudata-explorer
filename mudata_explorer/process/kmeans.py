@@ -74,7 +74,7 @@ class RunKmeans(Process):
                     "default": "kmeans",
                     "label": "Label to use for results",
                     "help": """
-                    Key to use when saving the output to the container
+                    Key to use when saving the output
                     """
                 }
             }

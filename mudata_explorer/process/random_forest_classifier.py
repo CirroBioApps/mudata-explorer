@@ -113,7 +113,7 @@ class RandomForestClassifier(Process):
                     "default": "random_forest_classifier",
                     "label": "Label to use for results",
                     "help": """
-                    Key to use when saving the output to the container
+                    Key to use when saving the output
                     """
                 }
             }
