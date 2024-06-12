@@ -40,6 +40,8 @@ def plotly_line(
     Display a series of data as a line graph using Plotly.
     """
 
+    assert isinstance(mdata, MuData), "mdata must be a MuData object"
+
     app.add_view(
         'plotly-line',
         mdata,

@@ -45,6 +45,8 @@ def plotly_scatter_3d(
     Display a three dimensional distribution of data using Plotly.
     """
 
+    assert isinstance(mdata, MuData), "mdata must be a MuData object"
+
     app.add_view(
         'plotly-scatter-3d',
         mdata,

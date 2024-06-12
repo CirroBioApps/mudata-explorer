@@ -5,7 +5,7 @@ from muon import MuData
 from mudata_explorer.helpers import make_process
 
 
-def decision_tree_classifier(
+def random_forest_classifier(
     mdata: MuData,
     table_data_axis=0,
     table_data_tables=[],
@@ -36,22 +36,24 @@ def decision_tree_classifier(
     table_predictor_cols_query_query_value='',
     table_predictor_transforms=[],
     model_params_train_prop=0.5,
+    model_params_n_estimators=100,
     model_params_criterion='gini',
     model_params_max_depth=0,
     model_params_min_samples_split=2,
     model_params_random_state=0,
-    outputs_dest_key='decision_tree_classifier'
+    outputs_dest_key='random_forest_classifier'
 ):
     """
     
-    Predict the value of a target variable by learning
+    Predict the value of a target variable building a large
+    number of decision tree classifiers each using
     simple decision rules inferred from the data features.
-    
+
     This analysis is used to predict _categorical_ variables.
     
-    The Decision Tree Classifier is implemented using the
+    The Random Forest Classifier is implemented using the
     scikit-learn library, and more complete information can
-    be found on the [scikit-learn documentation](https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html).
+    be found on the [scikit-learn documentation](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html).
 
     The performance of the model is evaluated by comparing the
     accuracy of classification on the held out testing set
@@ -71,7 +73,7 @@ def decision_tree_classifier(
 
     # Instantiate the process using all of the parameters
     process = make_process(
-        'decision_tree_classifier',
+        'random_forest_classifier',
         params={
             'table.data.axis': table_data_axis,
             'table.data.tables': table_data_tables,
@@ -102,6 +104,7 @@ def decision_tree_classifier(
             'table.predictor.cols_query.query.value': table_predictor_cols_query_query_value,
             'table.predictor.transforms': table_predictor_transforms,
             'model_params.train_prop': model_params_train_prop,
+            'model_params.n_estimators': model_params_n_estimators,
             'model_params.criterion': model_params_criterion,
             'model_params.max_depth': model_params_max_depth,
             'model_params.min_samples_split': model_params_min_samples_split,

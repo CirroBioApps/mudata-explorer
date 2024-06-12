@@ -5,6 +5,7 @@ from mudata_explorer import app
 from mudata_explorer.base.base import MuDataAppHelpers
 from mudata_explorer.base.slice import MuDataSlice
 from streamlit.delta_generator import DeltaGenerator
+from muon import MuData
 
 
 class Process(MuDataAppHelpers):
@@ -14,14 +15,19 @@ class Process(MuDataAppHelpers):
 
     def __init__(
         self,
-        params: dict = {}
+        params: dict = {},
+        mdata: Optional[MuData] = None,
+        params_editable=True
     ):
+        """If the optional mdata is provided, the process will 
+        save results to that object instead of the global object."""
+
         self.params = {
             kw: params.get(kw, val)
             for kw, val in self.get_schema_defaults(self.schema)
         }
-        # Params are always editable for a new process
-        self.params_editable = True
+        self.params_editable = params_editable
+        self.mdata = mdata
 
     def get_output_locs(self) -> List[MuDataSlice]:
         """
@@ -142,7 +148,10 @@ class Process(MuDataAppHelpers):
         assert output_kw in self.outputs, f"Output {output_kw} not found"
 
         # Get the MuData object
-        mdata = app.get_mdata()
+        if self.mdata is None:
+            mdata = app.get_mdata()
+        else:
+            mdata = self.mdata
 
         # Get the output location
         for loc in self.resolve_output_loc(self.outputs[output_kw]):
@@ -158,7 +167,7 @@ class Process(MuDataAppHelpers):
                 figures
             )
 
-    def execute(self) -> Union[pd.Series, pd.DataFrame]:
+    def execute(self):
         pass
 
     def param_key(self, kw):

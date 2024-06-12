@@ -36,6 +36,8 @@ def plotly_box(
     Display a series of data as a box graph using Plotly.
     """
 
+    assert isinstance(mdata, MuData), "mdata must be a MuData object"
+
     app.add_view(
         'plotly-box',
         mdata,

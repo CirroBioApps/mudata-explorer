@@ -22,6 +22,8 @@ class MuDataAppHelpers:
     params_editable: bool
     # Optional help text
     help_text: Optional[str] = False
+    # Optionally attach a MuData object to the object
+    mdata = None
 
     def param(self, *kws, default=None):
         return self.params.get(join_kws(*kws), default)
@@ -249,7 +251,7 @@ class MuDataAppHelpers:
 
     def get_data(self, container: Optional[DeltaGenerator] = None):
 
-        if container is None:
+        if container is None and self.mdata is None:
             container = st.container()
 
         # By default, params are complete until proven otherwise
@@ -278,7 +280,7 @@ class MuDataAppHelpers:
 
     def render_form(
         self,
-        container: DeltaGenerator,
+        container: Optional[DeltaGenerator],
         schema: Dict[str, dict],
         prefix: str = None
     ):
@@ -293,7 +295,11 @@ class MuDataAppHelpers:
                 self.render_dataframe(
                     prefix_key,
                     elem,
-                    container.container(border=True)
+                    (
+                        container.container(border=True)
+                        if self.params_editable
+                        else container
+                    )
                 )
 
             elif elem["type"] == "object":
@@ -373,19 +379,19 @@ class MuDataAppHelpers:
 
             elif elem["type"] == "integer":
 
-                # Make sure that the value is an integer
-                val = st.session_state.get(
-                    self.param_key(prefix_key),
-                    elem.get("default")
-                )
-                if val is None:
-                    val = 0
-
-                if not isinstance(val, int):
-                    # Update the value
-                    self.update_view_param(prefix_key, int(val))
-
                 if self.params_editable:
+                    # Make sure that the value is an integer
+                    val = st.session_state.get(
+                        self.param_key(prefix_key),
+                        elem.get("default")
+                    )
+                    if val is None:
+                        val = 0
+
+                    if not isinstance(val, int):
+                        # Update the value
+                        self.update_view_param(prefix_key, int(val))
+
                     self.params[prefix_key] = container.number_input(
                         key if elem.get("label") is None else elem["label"],
                         help=elem.get("help"),
@@ -448,7 +454,7 @@ class MuDataAppHelpers:
         if elem.get("help") is not None and self.params_editable:
             container.write(elem.get('help'))
 
-        if not app.has_mdata():
+        if self.params_editable and app.has_mdata() is False:
             container.write("No MuData object available.")
             self.params_complete = False
             return
@@ -571,37 +577,39 @@ class MuDataAppHelpers:
 
         # Set the default values
 
-        # Get the list of tables available for this orientation
-        all_tables = app.tree_tables(axis)
+        if self.mdata is None:
 
-        # Table selection
-        table_kw = join_kws(key, col_kw, "table")
-        if self.params.get(table_kw) not in all_tables:
-            self.update_view_param(
-                table_kw,
-                app.tree_tables(axis)[0]
+            # Get the list of tables available for this orientation
+            all_tables = app.tree_tables(axis)
+
+            # Table selection
+            table_kw = join_kws(key, col_kw, "table")
+            if self.params.get(table_kw) not in all_tables:
+                self.update_view_param(
+                    table_kw,
+                    app.tree_tables(axis)[0]
+                )
+
+            # Get all of the columns for the selected table
+            all_cnames = app.list_cnames(
+                self.params[table_kw],
+                axis=axis
             )
 
-        # Get all of the columns for the selected table
-        all_cnames = app.list_cnames(
-            self.params[table_kw],
-            axis=axis
-        )
+            # Column label selection
+            label_kw = join_kws(key, col_kw, "label")
+            if self.params.get(label_kw) is None:
+                self.update_view_param(
+                    label_kw,
+                    "Label"
+                )
 
-        # Column label selection
-        label_kw = join_kws(key, col_kw, "label")
-        if self.params.get(label_kw) is None:
-            self.update_view_param(
-                label_kw,
-                "Label"
-            )
-
-        # Column name selection
-        cname_kw = join_kws(key, col_kw, "cname")
-        if self.params.get(cname_kw) not in all_cnames:
-            cname_val = all_cnames[0]
-            self.update_view_param(cname_kw, cname_val)
-            self.update_view_param(label_kw, cname_val)
+            # Column name selection
+            cname_kw = join_kws(key, col_kw, "cname")
+            if self.params.get(cname_kw) not in all_cnames:
+                cname_val = all_cnames[0]
+                self.update_view_param(cname_kw, cname_val)
+                self.update_view_param(label_kw, cname_val)
 
         # If the views are editable
         if self.params_editable:
@@ -702,25 +710,26 @@ class MuDataAppHelpers:
         axis: int,
         container: DeltaGenerator
     ):
-
         tables_kw = join_kws(key, "tables")
 
-        all_tables = app.tree_tables(axis)
+        if self.mdata is None:
 
-        # If any invalid tables were selected
-        if any([
-            table not in all_tables
-            for table in self.params.get(tables_kw, [])
-        ]):
-            # Remove any invalid tables
-            self.update_view_param(
-                tables_kw,
-                [
-                    table
-                    for table in self.params.get(tables_kw, [])
-                    if table in all_tables
-                ]
-            )
+            all_tables = app.tree_tables(axis)
+
+            # If any invalid tables were selected
+            if any([
+                table not in all_tables
+                for table in self.params.get(tables_kw, [])
+            ]):
+                # Remove any invalid tables
+                self.update_view_param(
+                    tables_kw,
+                    [
+                        table
+                        for table in self.params.get(tables_kw, [])
+                        if table in all_tables
+                    ]
+                )
 
         # Let the user select one or more tables
         if self.params_editable:
@@ -737,16 +746,22 @@ class MuDataAppHelpers:
         # Make a DataFrame with the selected table(s)
         selected_tables: List[str] = self.params.get(tables_kw, [])
         if len(selected_tables) == 0:
-            container.write("No tables selected.")
+            if self.mdata is None:
+                container.write("No tables selected.")
             self.params_complete = False
             return
 
-        return app.join_dataframe_tables(selected_tables, axis)
+        return app.join_dataframe_tables(
+            selected_tables,
+            axis,
+            mdata=self.mdata
+        )
 
     def build_dataframe(self, key: str, columns: dict, axis: int):
         # Get the information for each column
         return pd.DataFrame({
             col_kw: app.get_dataframe_column(
+                mdata=self.mdata,
                 axis=axis,
                 **{
                     kw: self.param(key, col_kw, kw)
@@ -771,11 +786,14 @@ class MuDataAppHelpers:
         """
         Let the user select a subset of columns for analysis.
         """
-        if self.ix == -1:
-            container = parent_container.expander("Filter Columns")
+        if parent_container is not None:
+            if self.ix == -1:
+                container = parent_container.expander("Filter Columns")
+            else:
+                container = parent_container.container(border=True)
+                container.write("**Filter Columns**")
         else:
-            container = parent_container.container(border=True)
-            container.write("**Filter Columns**")
+            container = parent_container
         df = self.render_query(
             join_kws(key, "cols_query"),
             0 if axis else 1,  # Filter the opposite axis
@@ -797,11 +815,14 @@ class MuDataAppHelpers:
         """
         Let the user select a subset of rows for analysis.
         """
-        if self.ix == -1:
-            container = parent_container.expander("Filter Rows")
-        elif self.params_editable:
-            container = parent_container.container(border=True)
-            container.write("**Filter Rows**")
+        if parent_container is not None:
+            if self.ix == -1:
+                container = parent_container.expander("Filter Rows")
+            elif self.params_editable:
+                container = parent_container.container(border=True)
+                container.write("**Filter Rows**")
+            else:
+                container = parent_container
         else:
             container = parent_container
 
@@ -822,83 +843,85 @@ class MuDataAppHelpers:
         axis: int,
         filter_axis: int,
         df: pd.DataFrame,
-        container: DeltaGenerator
+        container: Optional[DeltaGenerator]
     ) -> pd.DataFrame:
 
         # Set the default values
 
-        # Type of selection, either by value or by index
-        type_kw = join_kws(key, "query", "type")
-        if self.params.get(type_kw) is None:
-            # By default, select by value
-            self.update_view_param(
-                type_kw,
-                "value"
-            )
+        if container is not None:
 
-        # Get the list of tables available for all modalities
-        all_tables = app.tree_tables(axis)
-
-        # Table selection
-        table_kw = join_kws(key, "query", "table")
-        if self.params.get(table_kw) not in all_tables:
-            self.update_view_param(
-                table_kw,
-                all_tables[0]
-            )
-
-        # Get the list of possible columns
-        all_cnames = app.list_cnames(
-            self.params[table_kw],
-            axis=axis
-        )
-
-        # Column name selection
-        cname_kw = join_kws(key, "query", "cname")
-        if self.params.get(cname_kw) not in all_cnames:
-
-            self.update_view_param(
-                cname_kw,
-                all_cnames[0]
-            )
-
-        # Boolean operator selection
-        expr_kw = join_kws(key, "query", "expr")
-        if self.params.get(expr_kw) is None:
-
-            self.update_view_param(
-                expr_kw,
-                ">="
-            )
-
-        # Comparison value selection
-        # There are a few cases where we will set a new default value
-        value_kw = join_kws(key, "query", "value")
-        if (
-            # if no value is set
-            self.params.get(value_kw) is None
-            or (
-                # If the value is a list but the
-                # expression is not 'in' or 'not in'
-                isinstance(self.params.get(value_kw), list)
-                and self.params.get(expr_kw) not in ["in", "not in"]
-            )
-            or (
-                # If the value is not a list but the
-                # expression is 'in' or 'not in'
-                not isinstance(self.params.get(value_kw), list)
-                and self.params.get(expr_kw) in ["in", "not in"]
-            )
-        ):
-
-            self.update_view_param(
-                value_kw,
-                (
-                    []
-                    if self.params.get(expr_kw) in ["in", "not in"]
-                    else ""
+            # Type of selection, either by value or by index
+            type_kw = join_kws(key, "query", "type")
+            if self.params.get(type_kw) is None:
+                # By default, select by value
+                self.update_view_param(
+                    type_kw,
+                    "value"
                 )
+
+            # Get the list of tables available for all modalities
+            all_tables = app.tree_tables(axis)
+
+            # Table selection
+            table_kw = join_kws(key, "query", "table")
+            if self.params.get(table_kw) not in all_tables:
+                self.update_view_param(
+                    table_kw,
+                    all_tables[0]
+                )
+
+            # Get the list of possible columns
+            all_cnames = app.list_cnames(
+                self.params[table_kw],
+                axis=axis
             )
+
+            # Column name selection
+            cname_kw = join_kws(key, "query", "cname")
+            if self.params.get(cname_kw) not in all_cnames:
+
+                self.update_view_param(
+                    cname_kw,
+                    all_cnames[0]
+                )
+
+            # Boolean operator selection
+            expr_kw = join_kws(key, "query", "expr")
+            if self.params.get(expr_kw) is None:
+
+                self.update_view_param(
+                    expr_kw,
+                    ">="
+                )
+
+            # Comparison value selection
+            # There are a few cases where we will set a new default value
+            value_kw = join_kws(key, "query", "value")
+            if (
+                # if no value is set
+                self.params.get(value_kw) is None
+                or (
+                    # If the value is a list but the
+                    # expression is not 'in' or 'not in'
+                    isinstance(self.params.get(value_kw), list)
+                    and self.params.get(expr_kw) not in ["in", "not in"]
+                )
+                or (
+                    # If the value is not a list but the
+                    # expression is 'in' or 'not in'
+                    not isinstance(self.params.get(value_kw), list)
+                    and self.params.get(expr_kw) in ["in", "not in"]
+                )
+            ):
+
+                self.update_view_param(
+                    value_kw,
+                    (
+                        []
+                        if self.params.get(expr_kw) in ["in", "not in"]
+                        else ""
+                    )
+                )
 
         # If the views are editable
         if self.params_editable:
@@ -1062,7 +1085,8 @@ class MuDataAppHelpers:
         table = app.get_dataframe_table(
             query["modality"],
             query["table"],
-            axis
+            axis,
+            mdata=self.mdata
         )
         if table is None:
             if self.params_editable:
@@ -1096,7 +1120,7 @@ class MuDataAppHelpers:
         filtered_table = self._filter_table(table, query)
 
         # If no values are returned
-        if filtered_table is None:
+        if filtered_table is None and container is not None:
             container.write("No samples match the filter criteria.")
             return df
 
@@ -1152,11 +1176,14 @@ class MuDataAppHelpers:
         parent_container: DeltaGenerator
     ) -> pd.DataFrame:
 
-        if self.ix == -1:
-            container = parent_container.expander("Transform Values")
-        elif self.params_editable:
-            container = parent_container.container(border=True)
-            container.write("**Transform Values**")
+        if parent_container is not None:
+            if self.ix == -1:
+                container = parent_container.expander("Transform Values")
+            elif self.params_editable:
+                container = parent_container.container(border=True)
+                container.write("**Transform Values**")
+            else:
+                container = parent_container
         else:
             container = parent_container
 
@@ -1194,8 +1221,12 @@ class MuDataAppHelpers:
             try:
                 df = tr.run(df)
             except Exception as e:
-                container.exception(e)
-            parent_container.write(f"Ran: {tr.name}")
+                if container is not None:
+                    container.exception(e)
+                else:
+                    raise e
+            if parent_container is not None:
+                parent_container.write(f"Ran: {tr.name}")
 
         return df
 

@@ -64,6 +64,8 @@ def {safe_view_type}({signature}):
     {help_text}
     \"\"\"
 
+    assert isinstance(mdata, MuData), "mdata must be a MuData object"
+
     app.add_view(
         '{view_type}',
         mdata,
@@ -137,6 +139,7 @@ def codegen_processes():
 
 from mudata_explorer import app
 from muon import MuData
+from mudata_explorer.helpers import make_process
 
 
 def {safe_process_type}({signature}):
@@ -144,13 +147,27 @@ def {safe_process_type}({signature}):
     {help_text}
     \"\"\"
 
-    app.add_process(
+    assert isinstance(mdata, MuData), "mdata must be a MuData object"
+
+    # Instantiate the process using all of the parameters
+    process = make_process(
         '{process_type}',
-        mdata,
         params={{
             {add_process_params}
-        }}
+        }},
+        mdata=mdata,
+        params_editable=False
     )
+
+    assert process.params_editable is False, "params_editable must be False"
+    assert isinstance(process.mdata, MuData), type(process.mdata)
+
+    # Get the data from the object
+    process.get_data()
+
+    # Run the process
+    process.execute()
+
 """.format(**elem)
 
         # Write the code to a file

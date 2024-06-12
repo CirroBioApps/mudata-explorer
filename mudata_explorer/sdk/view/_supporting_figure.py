@@ -12,6 +12,8 @@ def supporting_figure(
     Display a figure which was generated during an analysis process.
     """
 
+    assert isinstance(mdata, MuData), "mdata must be a MuData object"
+
     app.add_view(
         'supporting_figure',
         mdata,

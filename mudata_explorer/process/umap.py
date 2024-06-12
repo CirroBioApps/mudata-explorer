@@ -104,7 +104,7 @@ class UMAP(Process):
         }
     }
 
-    def execute(self) -> pd.DataFrame:
+    def execute(self):
 
         df: pd.DataFrame = self.params["table.data.dataframe"]
 

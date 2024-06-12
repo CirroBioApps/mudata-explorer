@@ -580,13 +580,15 @@ def list_cnames(table: str, axis=0):
 def get_dataframe_table(
     modality: str,
     table: str,
-    axis: int
+    axis: int,
+    mdata: Optional[mu.MuData] = None
 ) -> pd.DataFrame:
 
     _is_axis(axis)
 
     # Get the complete set of data
-    mdata = get_mdata()
+    if mdata is None:
+        mdata = get_mdata()
 
     # Special case for observation metadata
     if axis == 0 and table == "metadata":
@@ -615,7 +617,8 @@ def get_dataframe_table(
 
 def join_dataframe_tables(
     tables: List[str],
-    axis: int
+    axis: int,
+    mdata: Optional[mu.MuData] = None
 ) -> pd.DataFrame:
     """
     Tables from the same modality:
@@ -635,10 +638,10 @@ def join_dataframe_tables(
         if table == "Observation Metadata":
             assert axis == 0
             modality = 'None'
-            df = get_dataframe_table(None, "metadata", axis)
+            df = get_dataframe_table(None, "metadata", axis, mdata=mdata)
         else:
             modality, attr = table.split(".", 1)
-            df = get_dataframe_table(modality, attr, axis)
+            df = get_dataframe_table(modality, attr, axis, mdata=mdata)
 
         assert df is not None, f"Could not find table: {table}"
         modality_tables[modality].append(df)
@@ -668,6 +671,7 @@ def join_dataframe_tables(
 
 
 def get_dataframe_column(
+    mdata: Optional[mu.MuData],
     axis: int,
     table: str,
     cname: str
@@ -708,7 +712,13 @@ def get_dataframe_column(
     )
 
     # Return the data
-    return slice.dataframe(get_mdata())
+    return slice.dataframe(
+        (
+            get_mdata()
+            if mdata is None
+            else mdata
+        )
+    )
 
 
 def get_dat_hash():

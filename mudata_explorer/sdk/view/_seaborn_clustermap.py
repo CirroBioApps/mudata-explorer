@@ -25,6 +25,8 @@ def seaborn_clustermap(
     Display a heatmap with clustered rows and columnsusing Seaborn.
     """
 
+    assert isinstance(mdata, MuData), "mdata must be a MuData object"
+
     app.add_view(
         'seaborn-clustermap',
         mdata,

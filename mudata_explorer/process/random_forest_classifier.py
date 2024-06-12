@@ -1,23 +1,25 @@
+import numpy as np
 import pandas as pd
 import plotly.express as px
 from plotly import io
-from sklearn import tree
+from sklearn import ensemble
 from mudata_explorer.base.process import Process
 
 
-class DecisionTreeClassifier(Process):
+class RandomForestClassifier(Process):
 
-    type = "decision_tree_classifier"
-    name = "Decision Tree Classifier"
+    type = "random_forest_classifier"
+    name = "Random Forest Classifier"
     help_text = """
-    Predict the value of a target variable by learning
+    Predict the value of a target variable building a large
+    number of decision tree classifiers each using
     simple decision rules inferred from the data features.
-    
+
     This analysis is used to predict _categorical_ variables.
     
-    The Decision Tree Classifier is implemented using the
+    The Random Forest Classifier is implemented using the
     scikit-learn library, and more complete information can
-    be found on the [scikit-learn documentation](https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html).
+    be found on the [scikit-learn documentation](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html).
 
     The performance of the model is evaluated by comparing the
     accuracy of classification on the held out testing set
@@ -45,9 +47,9 @@ class DecisionTreeClassifier(Process):
                     "query": "",
                 },
                 "predictor": {
-                    "label": "Predictor",
-                    "help": "Select the column containing values to predict",
                     "type": "dataframe",
+                    "label": "Predictor",
+                    "help": "Select the column containing categorical values to predict",
                     "columns": {"predictor": {"label": "Predictor"}}
                 }
             }
@@ -63,6 +65,12 @@ class DecisionTreeClassifier(Process):
                     "default": 0.5,
                     "label": "Training Proportion",
                     "help": "Proportion of the data to use for training."
+                },
+                "n_estimators": {
+                    "type": "integer",
+                    "label": "Number of Estimators",
+                    "help": "The number of trees in the forest.",
+                    "default": 100
                 },
                 "criterion": {
                     "type": "string",
@@ -102,7 +110,7 @@ class DecisionTreeClassifier(Process):
             "properties": {
                 "dest_key": {
                     "type": "string",
-                    "default": "decision_tree_classifier",
+                    "default": "random_forest_classifier",
                     "label": "Label to use for results",
                     "help": """
                     Key to use when saving the output to the container
@@ -152,6 +160,7 @@ class DecisionTreeClassifier(Process):
         pred = pred.loc[shared]
 
         train_prop = self.params["model_params.train_prop"]
+        n_estimators = self.params["model_params.n_estimators"]
         criterion = self.params["model_params.criterion"]
         max_depth = self.params["model_params.max_depth"]
         min_samples_split = self.params["model_params.min_samples_split"]
@@ -164,8 +173,9 @@ class DecisionTreeClassifier(Process):
         assert train_ix.shape[0] > 0, "No training data - increase train_prop"
         assert test_ix.shape[0] > 0, "No testing data - decrease train_prop"
 
-        # Run the DecisionTreeClassifier
-        clf = tree.DecisionTreeClassifier(
+        # Run the RandomForestClassifier
+        clf = ensemble.RandomForestClassifier(
+            n_estimators=n_estimators,
             criterion=criterion,
             max_depth=(
                 max_depth
@@ -180,15 +190,12 @@ class DecisionTreeClassifier(Process):
         # Compute the performance of the model by comparing the
         # accuracy of classification on the held out testing set
         # against the accuracy observed under random permutation
-        n_reps = 1000
-        null_dist = [
-            clf.score(
-                df.loc[test_ix],
-                pred.loc[test_ix].sample(frac=1, random_state=i)
-            )
-            for i in range(n_reps)
-        ]
-        score = clf.score(df.loc[test_ix], pred.loc[test_ix])
+        test_predictions = clf.predict(df.loc[test_ix])
+        score, null_dist, perc = self.score_by_permutation(
+            test_predictions,
+            pred.loc[test_ix].tolist()
+        )
+        print(f"Model Score: {score:.2f} (Above {int(100 * perc)}% of null distribution)")
 
         fig = px.histogram(
             x=null_dist,
@@ -201,7 +208,6 @@ class DecisionTreeClassifier(Process):
             line_color="grey"
         )
         # Annotate the figure with text indicating the score value
-        perc = sum([n < score for n in null_dist]) / n_reps
         fig.add_annotation(
             x=score,
             xanchor="left",
@@ -212,11 +218,19 @@ class DecisionTreeClassifier(Process):
         figures = [io.to_json(fig, validate=False)]
 
         # Generate predictions for the entire dataset
+        predicted = clf.predict(df)
+        # Get the probability of the predicted value
+        predict_proba = [
+            proba[list(clf.classes_).index(pred)]
+            for pred, proba in zip(
+                predicted,
+                clf.predict_proba(df).tolist()
+            )
+        ]
         assignments = pd.DataFrame(dict(
             actual=pred,
-            predicted=clf.predict(df),
-            predict_log_proba=clf.predict_log_proba(df).tolist(),
-            predict_proba=clf.predict_proba(df).tolist(),
+            predicted=predicted,
+            predict_proba=predict_proba,
             group=pd.Series(
                 [
                     (
@@ -246,3 +260,33 @@ class DecisionTreeClassifier(Process):
             )
         )
         self.save_results("weights", weights, figures=figures)
+
+    def score_by_permutation(self, pred, truth, n_reps=1000):
+        null_dist = []
+        for i in range(n_reps):
+            null_dist.append(
+                self.score(
+                    pred,
+                    truth,
+                    permute=True
+                )
+            )
+        score = self.score(pred, truth)
+        perc = sum([n < score for n in null_dist]) / n_reps
+
+        return score, null_dist, perc
+
+    @staticmethod
+    def score(pred, truth, permute=False):
+
+        return np.mean([
+            x == y
+            for x, y in zip(
+                pred,
+                (
+                    pd.Series(truth).sample(frac=1).tolist()
+                    if permute
+                    else truth
+                )
+            )
+        ])

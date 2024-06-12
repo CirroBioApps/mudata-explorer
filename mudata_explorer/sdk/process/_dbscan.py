@@ -2,6 +2,7 @@
 
 from mudata_explorer import app
 from muon import MuData
+from mudata_explorer.helpers import make_process
 
 
 def dbscan(
@@ -45,9 +46,11 @@ def dbscan(
     
     """
 
-    app.add_process(
+    assert isinstance(mdata, MuData), "mdata must be a MuData object"
+
+    # Instantiate the process using all of the parameters
+    process = make_process(
         'dbscan',
-        mdata,
         params={
             'table.data.axis': table_data_axis,
             'table.data.tables': table_data_tables,
@@ -67,5 +70,17 @@ def dbscan(
             'clustering.min_samples': clustering_min_samples,
             'clustering.metric': clustering_metric,
             'outputs.dest_key': outputs_dest_key
-        }
+        },
+        mdata=mdata,
+        params_editable=False
     )
+
+    assert process.params_editable is False, "params_editable must be False"
+    assert isinstance(process.mdata, MuData), type(process.mdata)
+
+    # Get the data from the object
+    process.get_data()
+
+    # Run the process
+    process.execute()
+

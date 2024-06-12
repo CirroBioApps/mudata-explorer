@@ -12,6 +12,8 @@ def markdown(
     Write any text using markdown syntax.
     """
 
+    assert isinstance(mdata, MuData), "mdata must be a MuData object"
+
     app.add_view(
         'markdown',
         mdata,

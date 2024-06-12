@@ -92,7 +92,7 @@ class RunKmeans(Process):
         }
     }
 
-    def execute(self) -> Union[pd.Series, pd.DataFrame]:
+    def execute(self):
 
         k = self.params["clustering.k"]
         min_k = self.params["clustering.min_k"]

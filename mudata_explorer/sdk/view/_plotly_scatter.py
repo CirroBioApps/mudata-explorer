@@ -41,6 +41,8 @@ def plotly_scatter(
     Display a two dimensional distribution of data using Plotly.
     """
 
+    assert isinstance(mdata, MuData), "mdata must be a MuData object"
+
     app.add_view(
         'plotly-scatter',
         mdata,

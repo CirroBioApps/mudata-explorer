@@ -212,6 +212,18 @@ class MuDataSlice:
                     f"{self.orientation}_names"
                 )
                 dat = dat.reindex(index=index)
+                # If there are any columns with mixed types that include
+                # strings and null, then we need to fill in empty strings
+                # for the missing values
+
+                # Iterate over the columns
+                for col in dat.columns:
+                    # Check if the column is of a mixed type
+                    if dat[col].dtype == "O":
+                        # If there are any strings in the column
+                        if str in dat[col].apply(type).values:
+                            # Fill in any missing values and coerce the rest
+                            dat[col] = dat[col].fillna("").apply(str)
                 getattr(mdata.mod[self.modality], self.slot)[self.attr] = dat
             # If writing a Series
             else:

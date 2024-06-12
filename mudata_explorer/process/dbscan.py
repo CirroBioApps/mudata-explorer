@@ -121,7 +121,7 @@ class RunDBSCAN(Process):
         }
     }
 
-    def execute(self) -> Union[pd.Series, pd.DataFrame]:
+    def execute(self):
 
         df: pd.DataFrame = self.params["table.data.dataframe"].dropna()
         msg = "Null values in all rows - remove invalid columns"
