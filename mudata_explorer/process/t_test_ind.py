@@ -70,9 +70,6 @@ class TTestIndependent(Process):
             .dropna()
         )
 
-        # The predictor must be a binary variable
-        assert group.nunique() == 2, "Group must have two unique values"
-
         # Get the set of observations which have both data and predictor
         shared = df.index.intersection(group.index)
 
@@ -80,6 +77,9 @@ class TTestIndependent(Process):
 
         df = df.loc[shared]
         group = group.loc[shared]
+
+        # The predictor must be a binary variable
+        assert group.nunique() == 2, "Group must have two unique values"
 
         # Perform the t-test
         group1 = df[group == group.unique()[0]]
