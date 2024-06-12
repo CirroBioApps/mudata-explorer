@@ -996,6 +996,7 @@ class MuDataAppHelpers:
                     # Let the user select specific values, selecting
                     # from the values in the table
                     value_options = app.get_dataframe_column(
+                        None,
                         axis,
                         self.params[table_kw],
                         self.params[cname_kw]
@@ -1114,11 +1115,11 @@ class MuDataAppHelpers:
 
             if query["expr"] == "in":
                 return df.loc[
-                    df[query["cname"]].isin(query["value"])
+                    table[query["cname"]].isin(query["value"])
                 ]
             else:
                 return df.loc[
-                    ~df[query["cname"]].isin(query["value"])
+                    ~table[query["cname"]].isin(query["value"])
                 ]
 
         # Apply the filter, trying both string and numeric values
