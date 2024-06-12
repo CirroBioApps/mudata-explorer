@@ -1,4 +1,3 @@
-from typing import Union
 import pandas as pd
 from sklearn.cluster import DBSCAN
 from mudata_explorer.base.process import Process

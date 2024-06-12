@@ -54,7 +54,8 @@ def add_obs(mdata: MuData, df: pd.DataFrame):
     of each of the AnnData objects.
     """
 
-    # Get the overlap of observations between the new data and the existing data
+    # Get the overlap of observations between
+    # the new data and the existing data
     obs = _overlapping_obs(mdata, df)
 
     # Update the index of the observation metadata

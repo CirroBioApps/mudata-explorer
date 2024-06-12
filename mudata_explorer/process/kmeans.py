@@ -1,4 +1,3 @@
-from typing import Union
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 import pandas as pd

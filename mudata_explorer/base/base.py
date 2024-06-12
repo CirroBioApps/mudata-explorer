@@ -94,7 +94,11 @@ class MuDataAppHelpers:
                         # Use a flag for the color scale to use
                         yield (
                             join_kws(key, col_kw, "scale"),
-                            "D3" if col_elem.get("is_categorical", False) else "Viridis"
+                            (
+                                "D3"
+                                if col_elem.get("is_categorical", False)
+                                else "Viridis"
+                            )
                         )
 
                 # Filtering of the rows and columns

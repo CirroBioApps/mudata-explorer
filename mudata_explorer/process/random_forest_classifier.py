@@ -49,7 +49,7 @@ class RandomForestClassifier(Process):
                 "predictor": {
                     "type": "dataframe",
                     "label": "Predictor",
-                    "help": "Select the column containing categorical values to predict",
+                    "help": "Select the column containing categorical values to predict", # noqa
                     "columns": {"predictor": {"label": "Predictor"}}
                 }
             }
@@ -195,7 +195,7 @@ class RandomForestClassifier(Process):
             test_predictions,
             pred.loc[test_ix].tolist()
         )
-        print(f"Model Score: {score:.2f} (Above {int(100 * perc)}% of null distribution)")
+        print(f"Model Score: {score:.2f} (Above {int(100 * perc)}% of null distribution)") # noqa
 
         fig = px.histogram(
             x=null_dist,

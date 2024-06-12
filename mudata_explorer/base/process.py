@@ -19,8 +19,10 @@ class Process(MuDataAppHelpers):
         mdata: Optional[MuData] = None,
         params_editable=True
     ):
-        """If the optional mdata is provided, the process will 
-        save results to that object instead of the global object."""
+        """
+        If the optional mdata is provided, the process will
+        save results to that object instead of the global object.
+        """
 
         self.params = {
             kw: params.get(kw, val)

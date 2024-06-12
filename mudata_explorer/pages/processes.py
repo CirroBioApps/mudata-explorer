@@ -17,7 +17,9 @@ def update_process_kwargs(kw):
 
 def update_process_type(df: pd.DataFrame):
     selected_name = st.session_state["process-name"]
-    selected_process = df["type"].values[df["name"].tolist().index(selected_name)]
+    selected_process = df["type"].values[
+        df["name"].tolist().index(selected_name)
+    ]
     app.update_process("type", selected_process)
 
 
