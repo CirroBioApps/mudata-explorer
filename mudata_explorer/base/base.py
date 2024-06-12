@@ -1185,10 +1185,12 @@ class MuDataAppHelpers:
 
         # Run all of the transformations
         for transform in transforms:
+            tr = get_transform(transform)
             try:
-                df = get_transform(transform).run(df)
+                df = tr.run(df)
             except Exception as e:
                 container.exception(e)
+            parent_container.write(f"Ran: {tr.name}")
 
         return df
 
