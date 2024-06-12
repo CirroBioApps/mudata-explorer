@@ -14,7 +14,7 @@ class Clustermap(Seaborn):
 
     type = "seaborn-clustermap"
     name = "Clustermap (Seaborn)"
-    desc = "Display a heatmap with clustered rows and columnsusing Seaborn."
+    help_text = "Display a heatmap with clustered rows and columnsusing Seaborn."
     schema = {
         "data": {
             "type": "dataframe",

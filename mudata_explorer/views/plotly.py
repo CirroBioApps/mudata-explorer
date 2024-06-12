@@ -49,7 +49,7 @@ class PlotlyScatter(Plotly):
 
     type = "plotly-scatter"
     name = "Scatterplot (Plotly)"
-    desc = "Display a two dimensional distribution of data using Plotly."
+    help_text = "Display a two dimensional distribution of data using Plotly."
     schema = {
         "data": {
             "type": "dataframe",
@@ -110,7 +110,7 @@ class PlotlyScatter3D(Plotly):
 
     type = "plotly-scatter-3d"
     name = "Scatterplot 3D (Plotly)"
-    desc = "Display a three dimensional distribution of data using Plotly."
+    help_text = "Display a three dimensional distribution of data using Plotly."
     schema = {
         "data": {
             "type": "dataframe",
@@ -179,7 +179,7 @@ class PlotlyLine(Plotly):
 
     type = "plotly-line"
     name = "Line Plot (Plotly)"
-    desc = "Display a series of data as a line graph using Plotly."
+    help_text = "Display a series of data as a line graph using Plotly."
     schema = {
         "data": {
             "type": "dataframe",
@@ -240,7 +240,7 @@ class PlotlyBox(Plotly):
 
     type = "plotly-box"
     name = "Box Plot (Plotly)"
-    desc = "Display a series of data as a box graph using Plotly."
+    help_text = "Display a series of data as a box graph using Plotly."
     schema = {
         "data": {
             "type": "dataframe",

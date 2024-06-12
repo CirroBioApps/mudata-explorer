@@ -6,8 +6,7 @@ from mudata_explorer.base.process import Process
 class RunPCA(Process):
 
     type = "pca"
-    name = "PCA"
-    desc = "Principle Coordinates Analysis (PCA)"
+    name = "Principle Coordinates Analysis (PCA)"
     help_text = """
     PCA is a linear dimensionality reduction technique that seeks to find the
     directions (or principal components) in which the data varies the most.

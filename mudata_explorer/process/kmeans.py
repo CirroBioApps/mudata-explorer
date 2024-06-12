@@ -11,8 +11,7 @@ from mudata_explorer.base.process import Process
 class RunKmeans(Process):
 
     type = "kmeans"
-    name = "K-Means"
-    desc = "K-Means Clustering"
+    name = "K-Means Clustering"
     help_text = """
     K-Means clustering is a method of vector quantization that aims to partition
     n observations into k clusters in which each observation belongs to the

@@ -6,7 +6,7 @@ class View(MuDataAppHelpers):
 
     type: str
     name: str
-    desc: str
+    help_text: str
     editable: bool
     defaults: dict = {}
     view_container: DeltaGenerator
@@ -14,16 +14,12 @@ class View(MuDataAppHelpers):
     def __init__(
         self,
         ix: int,
-        type: str,
-        name: str,
-        desc: str,
         params: dict,
-        editable: bool
+        editable: bool,
+        **kwargs
     ):
         self.ix = ix
         self.type = type
-        self.name = name
-        self.desc = desc
         self.params = {
             kw: params.get(kw, val)
             for kw, val in self.get_schema_defaults(self.schema)
@@ -41,9 +37,6 @@ class View(MuDataAppHelpers):
     ):
         return cls(
             ix=ix,
-            type=cls.type,
-            name=cls.name,
-            desc=cls.desc,
             params=params,
             editable=editable
         )
@@ -65,7 +58,7 @@ class View(MuDataAppHelpers):
         return dict(
             type=cls.type,
             name=cls.name,
-            desc=cls.desc,
+            help_text=cls.help_text,
             params=cls.params
         )
 

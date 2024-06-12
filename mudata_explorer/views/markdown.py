@@ -6,7 +6,7 @@ class Markdown(View):
 
     type = "markdown"
     name = "Markdown Text"
-    desc = "Write any text using markdown syntax."
+    help_text = "Write any text using markdown syntax."
     category = "Narrative"
     schema = {
         "text": {

@@ -6,7 +6,7 @@ class SummarizeMuData(View):
 
     type = "summarize-mudata"
     name = "Summarize MuData"
-    desc = "Print a short description of the data available."
+    help_text = "Print a short description of the data available."
     category = "Summary"
     defaults = {}
 

@@ -1,7 +1,7 @@
 from mudata_explorer import app
 from mudata_explorer.base.view import View
 from mudata_explorer.helpers import all_views, make_view
-from mudata_explorer.helpers import asset_categories, asset_type_desc_lists
+from mudata_explorer.helpers import asset_categories, asset_dataframe
 from mudata_explorer.helpers import filter_by_category
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
@@ -95,17 +95,17 @@ def button_add_view():
     filtered_views = filter_by_category(all_views, selected_category)
 
     # Get the assets needed to select from the filtered views
-    type_list, desc_list = asset_type_desc_lists(filtered_views)
+    df = asset_dataframe(filtered_views)
 
-    selected_desc = st.selectbox(
+    selected_name = st.selectbox(
         "Select a view to add",
-        desc_list
+        df["name"].tolist()
     )
-    selected_type = type_list[desc_list.index(selected_desc)]
+    selected_type = df["type"].tolist()[df["name"].tolist().index(selected_name)]
 
     # Instantiate the selected view type if the user clicks a button
     st.button(
-        f"Add {selected_desc}",
+        f"Add {selected_name}",
         on_click=app.add_view,
         args=(selected_type,),
         use_container_width=True

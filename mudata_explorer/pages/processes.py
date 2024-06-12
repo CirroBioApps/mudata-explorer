@@ -1,7 +1,7 @@
-from typing import List
+import pandas as pd
 from mudata_explorer import app
 from mudata_explorer.helpers import asset_categories, filter_by_category
-from mudata_explorer.helpers import asset_type_desc_lists
+from mudata_explorer.helpers import asset_dataframe
 from mudata_explorer.helpers import all_processes, make_process
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
@@ -15,12 +15,9 @@ def update_process_kwargs(kw):
     )
 
 
-def update_process_type(
-    type_list: List[str],
-    desc_list: List[str]
-):
-    selected_desc = st.session_state["process-type"]
-    selected_process = type_list[desc_list.index(selected_desc)]
+def update_process_type(df: pd.DataFrame):
+    selected_name = st.session_state["process-name"]
+    selected_process = df["type"].values[df["name"].tolist().index(selected_name)]
     app.update_process("type", selected_process)
 
 
@@ -42,20 +39,21 @@ def _get_selected_process(container: DeltaGenerator, process_def: dict):
     filtered_processes = filter_by_category(all_processes, selected_category)
 
     # Get the assets needed to select from the filtered views
-    type_list, desc_list = asset_type_desc_lists(filtered_processes)
+    df = asset_dataframe(filtered_processes)
 
-    if process_def.get("type") not in type_list:
-        app.update_process("type", type_list[0])
+    if process_def.get("type") not in df["type"].values:
+        app.update_process("type", df["type"].values[0])
 
-    selected_desc = container.selectbox(
+    selected_name = container.selectbox(
         "Select a process to run",
-        desc_list,
-        index=type_list.index(process_def["type"]),
+        df["name"].values,
+        index=df["type"].tolist().index(process_def["type"]),
         on_change=update_process_type,
-        key="process-type",
-        args=(type_list, desc_list,)
+        key="process-name",
+        args=(df,)
     )
-    selected_process = type_list[desc_list.index(selected_desc)]
+    selected_ix = df["name"].tolist().index(selected_name)
+    selected_process = df["type"].values[selected_ix]
     return selected_process
 
 

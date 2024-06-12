@@ -7,6 +7,7 @@ from mudata_explorer.base.process import Process
 from mudata_explorer.helpers.read_table import read_table # noqa
 from mudata_explorer.helpers.sanitize_types import sanitize_types # noqa
 from mudata_explorer.helpers.join_kws import join_kws # noqa
+import pandas as pd
 
 
 def list_resources(module):
@@ -31,12 +32,24 @@ def get_view_by_type(view_type: str) -> View:
 
 
 def all_view_types() -> List[str]:
-    return [view.type for view in all_views if view.type is not None]
+    return [
+        view.type
+        for view in all_views
+        if getattr(view, "type", None) is not None
+    ]
+
+
+def all_process_types() -> List[str]:
+    return [
+        process.type
+        for process in all_processes
+        if getattr(process, "type", None) is not None
+    ]
 
 
 def make_view(type: str, **kwargs) -> View:
     view = get_view_by_type(type)
-    return view(type=type, **kwargs)
+    return view(**kwargs)
 
 
 def get_process_by_type(process_type: str) -> Process:
@@ -74,20 +87,14 @@ def filter_by_category(
     ]
 
 
-def asset_name_list(list_of_assets):
-    return [view.name for view in list_of_assets]
-
-
-def asset_type_list(list_of_assets):
-    return [view.type for view in list_of_assets]
-
-
-def asset_desc_list(list_of_assets):
-    return [f"{asset.name}: {asset.desc}" for asset in list_of_assets]
-
-
-def asset_type_desc_lists(list_of_assets):
-    return (
-        asset_type_list(list_of_assets),
-        asset_desc_list(list_of_assets)
+def asset_dataframe(
+    list_of_assets: List[MuDataAppHelpers]
+) -> pd.DataFrame:
+    """Return a DataFrame of asset types and names."""
+    return pd.DataFrame(
+        dict(
+            name=asset.name,
+            type=asset.type
+        )
+        for asset in list_of_assets
     )

@@ -7,8 +7,7 @@ from mudata_explorer.base.process import Process
 class UMAP(Process):
 
     type = "umap"
-    name = "UMAP"
-    desc = "Uniform Manifold Approximation and Projection (UMAP)"
+    name = "Uniform Manifold Approximation and Projection (UMAP)"
     help_text = """
     UMAP is a fairly flexible non-linear dimension reduction algorithm.
     It seeks to learn the manifold structure of your data and find a low

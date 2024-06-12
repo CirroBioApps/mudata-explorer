@@ -7,8 +7,7 @@ from mudata_explorer.base.process import Process
 class RunDBSCAN(Process):
 
     type = "dbscan"
-    name = "DBSCAN"
-    desc = "DBSCAN Clustering"
+    name = "DBSCAN Clustering"
     help_text = """
     DBSCAN (Density-Based Spatial Clustering of Applications with Noise)
     is a clustering algorithm that groups together points that are

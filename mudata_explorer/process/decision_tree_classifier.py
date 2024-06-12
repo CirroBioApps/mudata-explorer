@@ -9,8 +9,26 @@ class DecisionTreeClassifier(Process):
 
     type = "decision_tree_classifier"
     name = "Decision Tree Classifier"
-    desc = """Predict the value of a target variable by learning
-    simple decision rules inferred from the data features"""
+    help_text = """
+    Predict the value of a target variable by learning
+    simple decision rules inferred from the data features.
+    
+    The Decision Tree Classifier is implemented using the
+    scikit-learn library, and more complete information can
+    be found on the [scikit-learn documentation](https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html).
+
+    The performance of the model is evaluated by comparing the
+    accuracy of classification on the held out testing set
+    against the accuracy observed under random permutation
+    of the labels in that testing set.
+
+    The outputs of the analysis include:
+
+    - A table of the actual and predicted values of the target variable,
+    which includes a column indicating whether the observation was
+    part of the training or testing set.
+    - A table of the weights of each feature in the model.
+    """ # noqa
     category = "Machine Learning"
     schema = {
         "table": {

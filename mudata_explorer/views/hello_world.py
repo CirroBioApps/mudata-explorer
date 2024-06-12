@@ -6,7 +6,7 @@ class HelloWorld(View):
 
     type = "hello-world"
     name = "Hello World"
-    desc = "Basic hello world view."
+    help_text = "Basic hello world view."
     category = "Testing"
     defaults = {"name": "World"}
 

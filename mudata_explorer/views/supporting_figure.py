@@ -10,7 +10,7 @@ class SupportingFigure(View):
     category = "Supporting Figure"
     type = "supporting_figure"
     name = "Supporting Figure"
-    desc = "Display a figure which was generated during an analysis process."
+    help_text = "Display a figure which was generated during an analysis process."
     schema = {
         "input": {
             "type": "supporting_figure"

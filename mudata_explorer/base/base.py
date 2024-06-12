@@ -15,7 +15,6 @@ class MuDataAppHelpers:
     schema: dict
     type: str
     name: str
-    desc: str
     category: str
     # Flag used to indicate whether all parameters have been provided
     params_complete: bool
