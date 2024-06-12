@@ -63,13 +63,14 @@ def sidebar_load_history():
 
 def setup_sidebar(
     edit_views=False,
-    load_history=False
+    load_history=False,
+    page_layout="centered"
 ):
     """
     Setup the sidebar with links to all of the pages.
     If edit_views is True, add a checkbox to allow the user to edit the views.
     """
-    st.set_page_config("MuData Explorer", layout="centered")
+    st.set_page_config("MuData Explorer", layout=page_layout)
     # st.sidebar.title("MuData Explorer")
 
     sidebar_page_links([

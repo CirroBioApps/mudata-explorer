@@ -138,7 +138,14 @@ def move_down(ix: int):
 
 def run():
 
-    app.setup_sidebar(edit_views=True)
+    app.setup_sidebar(
+        edit_views=True,
+        page_layout=(
+            "centered"
+            if st.query_params.get("edit-view") is None
+            else "wide"
+        )
+    )
 
     container = st.container()
 
