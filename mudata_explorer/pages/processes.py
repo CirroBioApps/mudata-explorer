@@ -61,7 +61,7 @@ def _get_selected_process(container: DeltaGenerator, process_def: dict):
 
 def run():
 
-    app.setup_sidebar(load_history=True)
+    app.setup_sidebar(load_history=True, page_layout="wide")
 
     container = st.container()
 
