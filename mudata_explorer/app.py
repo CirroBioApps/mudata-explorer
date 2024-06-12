@@ -10,6 +10,7 @@ from streamlit.delta_generator import DeltaGenerator
 from tempfile import NamedTemporaryFile
 from typing import Any, List, Optional, Tuple, Union, Dict
 from mudata_explorer.helpers import get_view_by_type, all_view_types # noqa
+from mudata_explorer.helpers import get_process_by_type, all_process_types # noqa
 from mudata_explorer.helpers.join_kws import join_kws
 from mudata_explorer.helpers import mudata, plotting, save_load
 from mudata_explorer.base.slice import MuDataSlice
