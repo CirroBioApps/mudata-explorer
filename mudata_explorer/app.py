@@ -721,11 +721,12 @@ def get_dataframe_column(
     )
 
 
-def get_dat_hash():
-    if not has_mdata():
+def get_dat_hash(mdata: Optional[mu.MuData] = None):
+    if mdata is None and has_mdata() is False:
         return None, None, None
 
-    mdata = get_mdata()
+    if mdata is None:
+        mdata = get_mdata()
 
     # Convert the MuData object to binary
     dat = mdata_to_binary(mdata)
