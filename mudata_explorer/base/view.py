@@ -46,6 +46,11 @@ class View(MuDataAppHelpers):
         # Set up the parameters for viewing
         self.get_data(container)
 
+        # Let the user run the method, catching any errors
+        if not self.params_complete:
+            container.write("Please complete all input fields")
+            return
+
         # Now make the display, catching any errors
         try:
             self.display(container)
