@@ -89,6 +89,15 @@ class TTestIndependent(Process):
             for col in df.columns
         ], index=df.columns)
 
+        # When calculating the -log10 p-value, protect
+        # against zero values
+        min_p = res.query("pvalue > 0")["pvalue"].min()
+        res = res.assign(
+            neg_log10_pvalue=(
+                -1 * res["pvalue"].clip(lower=min_p).apply(np.log10)
+            )
+        )
+
         self.save_results("res", res)
 
 
@@ -96,7 +105,6 @@ def ttest_ind(a, b):
     res = stats.ttest_ind(a, b)
     return {
         "pvalue": res.pvalue,
-        "neg_log10_pvalue": -1 * np.log10(res.pvalue),
         "t_statistic": res.statistic,
         "median_diff": a.median() - b.median()
     }
