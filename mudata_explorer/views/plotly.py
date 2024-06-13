@@ -89,7 +89,10 @@ class PlotlyScatter(Plotly):
             data.reset_index(),
             x="x",
             y="y",
-            hover_name=data.index.name,
+            hover_name=(
+                "index" if data.index.name is None else
+                data.index.name
+            ),
             log_x=self.params["scale_options.log_x"],
             log_y=self.params["scale_options.log_y"],
             color="color" if self.params["data.color.enabled"] else None,
@@ -156,7 +159,10 @@ class PlotlyScatter3D(Plotly):
             x="x",
             y="y",
             z="z",
-            hover_name=data.index.name,
+            hover_name=(
+                "index" if data.index.name is None else
+                data.index.name
+            ),
             log_x=self.params["scale_options.log_x"],
             log_y=self.params["scale_options.log_y"],
             log_z=self.params["scale_options.log_z"],
