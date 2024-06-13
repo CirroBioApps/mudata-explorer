@@ -111,10 +111,15 @@ def button_add_view():
     # Instantiate the selected view type if the user clicks a button
     st.button(
         f"Add {selected_name}",
-        on_click=app.add_view,
+        on_click=button_add_view_callback,
         args=(selected_type,),
         use_container_width=True
     )
+
+
+def button_add_view_callback(selected_type: str):
+    app.add_view(selected_type)
+    st.query_params["edit-view"] = len(app.get_views()) - 1
 
 
 def move_up(ix: int):
