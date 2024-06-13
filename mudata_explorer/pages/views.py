@@ -1,3 +1,4 @@
+import json
 from mudata_explorer import app
 from mudata_explorer.base.view import View
 from mudata_explorer.helpers import all_views, make_view
@@ -33,7 +34,7 @@ def edit_view(view: View, container: DeltaGenerator, ix: int, n_views: int):
         view.get_data()
         return
 
-    cols = container.columns([1, 1, 1, 1, 1, 5])
+    cols = container.columns([1, 1, 1, 1, 1, 1, 8])
 
     # The first button allows the user to provide inputs
     cols[0].button(
@@ -77,6 +78,31 @@ def edit_view(view: View, container: DeltaGenerator, ix: int, n_views: int):
         help="Move this view down in the list.",
         disabled=ix == (n_views - 1)
     )
+    cols[5].button(
+        ":information_source:",
+        on_click=show_view_params,
+        key=f"show-view-params-{ix}",
+        args=(ix,),
+        help="Display the parameters for this view."
+    )
+
+
+@st.experimental_dialog("Figure Parameters")
+def show_view_params(ix: int):
+    st.write((
+        json
+        .dumps(
+            {
+                kw.replace(".", "_"): val
+                for kw, val in app.get_views()[ix]["params"].items()
+            },
+            indent=4
+        )
+        .replace("\n", "\n\n")
+        .replace(': true,', ": True,")
+        .replace(': false,', ": False,")
+        .replace(': null,', ": None,")
+    ))
 
 
 def button_add_view():
