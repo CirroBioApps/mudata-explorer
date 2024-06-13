@@ -780,23 +780,30 @@ def show_provenance(loc: MuDataSlice, container: DeltaGenerator):
 
     prov = query_provenance(loc)
     if prov is not None:
-        container.write(
-            f"**Data currently in '{loc.address}'**"
-        )
-        container.write({
-            kw: val
-            for kw, val in prov.items()
-            if kw != "figures"
-        })
-        if isinstance(prov.get("figures"), list):
-            if len(prov.get("figures")) > 0:
-                container.write("Supporting Figures")
-            for fig_json in prov["figures"]:
-                fig = io.from_json(fig_json)
-                container.plotly_chart(fig)
-        container.write(
-            f"> 'Run' will overwrite existing data in '{loc.address}'."
-        )
+        with container.expander(
+            f"**Provenance: '{loc.address}'**"
+        ):
+            st.write(f"**Analysis:** {prov['process']}")
+            st.write(f"**Timestamp:** {prov['timestamp']}")
+            st.write("**Parameters:**")
+            st.write(
+                json.dumps(
+                    {
+                        kw.replace(".", "_"): val
+                        for kw, val in prov["params"].items()
+                    },
+                    indent=4
+                )
+                .replace("\n", "\n\n")
+            )
+            if isinstance(prov.get("figures"), list):
+                if len(prov.get("figures")) > 0:
+                    st.write("Supporting Figures")
+                for fig_json in prov["figures"]:
+                    fig = io.from_json(fig_json)
+                    st.plotly_chart(fig)
+        return True
+    return False
 
 
 def get_supp_figs() -> List[Tuple[str, dict]]:

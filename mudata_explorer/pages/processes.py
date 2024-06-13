@@ -106,11 +106,16 @@ def run():
         container.write("Please select input data")
         return
 
-    # For each of the destination modalities
-    for loc in output_locs:
-
+    # Check if the data already exists in the destination key
+    if any([
         # Report to the user if data already exists in the destination key
         app.show_provenance(loc, container)
+        # For each of the destination modalities
+        for loc in output_locs
+    ]):
+        container.write(
+            "> Existing data will be replaced"
+        )
 
     # Let the user run the method, catching any errors
     if not process.params_complete:
