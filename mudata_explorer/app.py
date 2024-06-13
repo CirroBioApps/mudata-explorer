@@ -543,7 +543,7 @@ def list_cnames(tables: Union[str, List[str]], axis=0):
 
     mdata = get_mdata()
 
-    if isinstance(tables, str):
+    if isinstance(tables, str) and len(tables) > 0:
         return get_table_cnames(tables, axis, mdata)
 
     cnames = []
