@@ -534,7 +534,7 @@ def list_tables(modality: str, axis: int):
     return tables
 
 
-def list_cnames(table: str, axis=0):
+def list_cnames(tables: Union[str, List[str]], axis=0):
 
     _is_axis(axis)
 
@@ -543,11 +543,35 @@ def list_cnames(table: str, axis=0):
 
     mdata = get_mdata()
 
+    if isinstance(tables, str):
+        return get_table_cnames(tables, axis, mdata)
+
+    cnames = []
+
+    for table in tables:
+        cnames.extend(
+            get_table_cnames(table, axis, mdata)
+        )
+
+    # Deduplicate the list of names
+    cnames = list(set(cnames))
+    cnames.sort()
+
+    return cnames
+
+
+def get_table_cnames(
+    table: str,
+    axis: int,
+    mdata: mu.MuData
+) -> List[str]:
+
     if table == "Observation Metadata":
         assert axis == 0
         return list(mdata.obs.columns)
 
     # Otherwise, parse the modality from the name
+    assert "." in table, table
     modality, table = table.split(".", 1)
     adata: ad.AnnData = mdata.mod[modality]
 
@@ -634,14 +658,19 @@ def join_dataframe_tables(
     # Keep track of which tables are from the same modality
     modality_tables = defaultdict(list)
 
+    if not isinstance(tables, list):
+        tables = [tables]
+
     for table in tables:
         if table == "Observation Metadata":
             assert axis == 0
             modality = 'None'
             df = get_dataframe_table(None, "metadata", axis, mdata=mdata)
-        else:
+        elif '.' in table:
             modality, attr = table.split(".", 1)
             df = get_dataframe_table(modality, attr, axis, mdata=mdata)
+        else:
+            raise ValueError(f"Could not find table: {table}")
 
         assert df is not None, f"Could not find table: {table}"
         modality_tables[modality].append(df)
@@ -673,52 +702,20 @@ def join_dataframe_tables(
 def get_dataframe_column(
     mdata: Optional[mu.MuData],
     axis: int,
-    table: str,
+    table: List[str],
     cname: str
 ):
+    if table is None:
+        return
+
     _is_axis(axis)
-    if table == "Observation Metadata":
-        modality = None
-        table = "metadata"
-    else:
-        assert "." in table, table
-        modality, table = table.split(".", 1)
 
-    # Parse the slot, attr, and subattr from the table name
-    # Get the table
-    subattr = None
-    if table == "metadata":
-        if axis == 0:
-            slot = "obs"
-        else:
-            slot = "var"
-        attr = cname
-    elif table == "data":
-        slot = "X"
-        attr = cname
-    elif "." in table:
-        slot, attr = table.split(".", 1)
-        subattr = cname
-    else:
-        raise ValueError(f"Invalid table: {table}")
-
-    # Define the slice of the data
-    slice = MuDataSlice(
-        modality=modality,
-        axis=axis,
-        slot=slot,
-        attr=attr,
-        subattr=subattr
+    df = join_dataframe_tables(
+        table,
+        axis,
+        mdata=mdata
     )
-
-    # Return the data
-    return slice.dataframe(
-        (
-            get_mdata()
-            if mdata is None
-            else mdata
-        )
-    )
+    return df[cname]
 
 
 def get_dat_hash(mdata: Optional[mu.MuData] = None):

@@ -588,11 +588,21 @@ class MuDataAppHelpers:
             all_tables = app.tree_tables(axis)
 
             # Table selection
+            # Only select tables which are valid for this axis
             table_kw = join_kws(key, col_kw, "table")
-            if self.params.get(table_kw) not in all_tables:
+            if self.params.get(table_kw) is None:
+                self.update_view_param(table_kw, [])
+            if any([
+                table not in all_tables
+                for table in self.params.get(table_kw)
+            ]):
                 self.update_view_param(
                     table_kw,
-                    app.tree_tables(axis)[0]
+                    [
+                        table
+                        for table in self.params.get(table_kw)
+                        if table in all_tables
+                    ]
                 )
 
             # Get all of the columns for the selected table
@@ -612,7 +622,11 @@ class MuDataAppHelpers:
             # Column name selection
             cname_kw = join_kws(key, col_kw, "cname")
             if self.params.get(cname_kw) not in all_cnames:
-                cname_val = all_cnames[0]
+                cname_val = (
+                    all_cnames[0]
+                    if len(all_cnames) > 0
+                    else ""
+                )
                 self.update_view_param(cname_kw, cname_val)
                 self.update_view_param(label_kw, cname_val)
 
@@ -633,19 +647,30 @@ class MuDataAppHelpers:
             # If the column is enabled
             if self.params.get(enabled_kw, True):
 
-                # Make three columns for:
-                #   table, column name, and label
-                cols = container.columns([1, 1, 1])
-
                 # Select the table of interest
-                cols[0].selectbox(
+                container.multiselect(
                     "Table",
                     all_tables,
-                    **self.input_selectbox_kwargs(table_kw, all_tables)
+                    **self.input_multiselect_kwargs(
+                        table_kw,
+                        all_tables
+                    )
+                )
+
+                # If no tables have been selected
+                if len(self.params.get(table_kw, [])) == 0:
+                    container.write("No tables selected.")
+                    self.params_complete = False
+                    return
+
+                # Get the list of possible columns
+                all_cnames = app.list_cnames(
+                    self.params[table_kw],
+                    axis=axis
                 )
 
                 # Select the column name
-                cols[1].selectbox(
+                container.selectbox(
                     "Column",
                     all_cnames,
                     **self.input_selectbox_kwargs(
@@ -656,7 +681,7 @@ class MuDataAppHelpers:
                 )
 
                 # Input the column label
-                cols[2].text_input(
+                container.text_input(
                     "Label",
                     **self.input_value_kwargs(label_kw)
                 )
@@ -763,6 +788,26 @@ class MuDataAppHelpers:
         )
 
     def build_dataframe(self, key: str, columns: dict, axis: int):
+        # If any columns did not have a table selected,
+        # then the DataFrame cannot be built
+        for col_kw, col_elem in columns.items():
+            # If the column is being used
+            if (
+                col_elem.get("optional", False) is False
+                or
+                self.param(key, col_kw, "enabled")
+            ):
+                # The user may have selected 1 or more tables
+                selected_tables = self.param(key, col_kw, "table")
+
+                # If the column has no tables selected
+                if (
+                    selected_tables is None
+                    or selected_tables == []
+                ):
+                    self.params_complete = False
+                    return
+
         # Get the information for each column
         return pd.DataFrame({
             col_kw: app.get_dataframe_column(
@@ -774,6 +819,11 @@ class MuDataAppHelpers:
                 }
             )
             for col_kw, col_elem in columns.items()
+            if (
+                self.param(key, col_kw, "table") is not None
+                and
+                len(self.param(key, col_kw, "table")) > 0
+            )
             if (
                 col_elem.get("optional", False) is False
                 or
@@ -853,7 +903,7 @@ class MuDataAppHelpers:
 
         # Set the default values
 
-        if container is not None:
+        if self.mdata is None:
 
             # Type of selection, either by value or by index
             type_kw = join_kws(key, "query", "type")
@@ -869,10 +919,19 @@ class MuDataAppHelpers:
 
             # Table selection
             table_kw = join_kws(key, "query", "table")
-            if self.params.get(table_kw) not in all_tables:
+            if self.params.get(table_kw) is None:
+                self.update_view_param(table_kw, [])
+            if any([
+                table not in all_tables
+                for table in self.params.get(table_kw)
+            ]):
                 self.update_view_param(
                     table_kw,
-                    all_tables[0]
+                    [
+                        table
+                        for table in self.params.get(table_kw)
+                        if table in all_tables
+                    ]
                 )
 
             # Get the list of possible columns
@@ -887,7 +946,11 @@ class MuDataAppHelpers:
 
                 self.update_view_param(
                     cname_kw,
-                    all_cnames[0]
+                    (
+                        all_cnames[0]
+                        if len(all_cnames) > 0
+                        else ""
+                    )
                 )
 
             # Boolean operator selection
@@ -955,11 +1018,19 @@ class MuDataAppHelpers:
             if self.params[type_kw] == "value":
 
                 # Select the table of interest
-                container.selectbox(
+                container.multiselect(
                     "Table",
                     all_tables,
-                    **self.input_selectbox_kwargs(table_kw, all_tables)
+                    **self.input_multiselect_kwargs(
+                        table_kw,
+                        all_tables
+                    )
                 )
+
+                # If no tables have been selected
+                if len(self.params.get(table_kw, [])) == 0:
+                    container.write("No tables selected.")
+                    return df
 
                 # Get the list of possible columns
                 all_cnames = app.list_cnames(
@@ -1080,16 +1151,8 @@ class MuDataAppHelpers:
 
         # If we are filtering by value
 
-        if query["table"] == "Observation Metadata":
-            query["table"] = "metadata"
-            query["modality"] = None
-
-        else:
-            query["modality"], query["table"] = query["table"].split(".")
-
         # Get the table
-        table = app.get_dataframe_table(
-            query["modality"],
+        table = app.join_dataframe_tables(
             query["table"],
             axis,
             mdata=self.mdata
@@ -1162,18 +1225,6 @@ class MuDataAppHelpers:
         if isinstance(filtered_table, pd.DataFrame):
             if filtered_table.shape[0] > 0:
                 return filtered_table
-
-    def _get_values_in_column(
-        self,
-        axis: int,
-        table: str,
-        cname: str
-    ) -> List[str]:
-        """
-        Get the unique values in the specified column.
-        """
-        # Get the unique values
-        return app.get_dataframe_column(axis, table, cname).unique()
 
     def transform_dataframe(
         self,
