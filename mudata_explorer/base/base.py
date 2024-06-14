@@ -268,6 +268,8 @@ class MuDataAppHelpers:
                 if self.ix != -1
                 else f"#### {self.name}"
             )
+            if st.query_params.get("edit-view"):
+                container.write(self.help_text)
 
         # Parse the form schema of the object
         self.render_form(container, self.schema)
