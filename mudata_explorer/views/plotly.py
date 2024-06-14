@@ -245,8 +245,15 @@ class PlotlyLine(Plotly):
 class PlotlyBox(Plotly):
 
     type = "plotly-box"
-    name = "Box Plot (Plotly)"
-    help_text = "Display a series of data as a box graph using Plotly."
+    name = "Box Plot - Single Measurement (Plotly)"
+    help_text = """
+    Display a single column of data as a box graph using Plotly, summarizing
+    the data in terms of the median, quartiles, and outliers.
+
+    A single column is used to define the values on the y-axis, and a
+    second column is used for the categorical groups which are
+    displayed on the x-axis.
+    """
     schema = {
         "data": {
             "type": "dataframe",
@@ -294,6 +301,111 @@ class PlotlyBox(Plotly):
             ),
             **colorscale
         )
+
+        container.plotly_chart(fig)
+
+
+class PlotlyBoxMulti(Plotly):
+
+    type = "plotly-box-multiple"
+    name = "Box Plot - Multiple Measurements (Plotly)"
+    help_text = """
+    Display multiple columns of data as a box graph using Plotly, summarizing
+    the data in terms of the median, quartiles, and outliers.
+
+    A collection of columns are used to define the values on the y-axis, and a
+    second column is used for the categorical groups which are
+    displayed on the x-axis.
+    """
+    schema = {
+        "table": {
+            "type": "object",
+            "label": "Data Table",
+            "properties": {
+                "data": {
+                    "type": "dataframe",
+                    "label": "Data",
+                    "help": "Select the measurement values to summarize",
+                    "select_columns": True,
+                    "query": "",
+                },
+                "category": {
+                    "type": "dataframe",
+                    "label": "Category",
+                    "help": "Select the column containing category labels", # noqa
+                    "columns": {"category": {"label": "Category"}}
+                }
+            }
+        },
+        "scale_options": {
+            "type": "object",
+            "label": "Scale Options",
+            "properties": {
+                "log_y": {
+                    "type": "boolean",
+                    "label": "Log Scale - Y Axis"
+                }
+            }
+        },
+        "display_options": {
+            "type": "object",
+            "label": "Display Options",
+            "properties": {
+                "ncols": {
+                    "type": "integer",
+                    "label": "Number of Columns",
+                    "default": 1,
+                    "min_value": 1
+                }
+            }
+        }
+    }
+
+    def display(self, container: DeltaGenerator):
+
+        data: pd.DataFrame = self.params["table.data.dataframe"]
+        category: pd.Series = (
+            self.params
+            ["table.category.dataframe"]
+            ["category"]
+        )
+
+        # Get the shared indices
+        index = data.index.intersection(category.index)
+
+        # Make sure that there is some degree of intersection
+        msg = "No common indices found between the data and category tables."
+        assert len(index) > 0, msg
+
+        # Subset each to just those indices
+        data = data.loc[index]
+        category = category.loc[index]
+        data.index.name = "index"
+
+        # Make a long DataFrame which has all of the values
+        data_long = (
+            data
+            .reset_index()
+            .melt(id_vars="index")
+            .assign(
+                category=lambda df: df["index"].apply(category.get)
+            )
+        )
+
+        fig = px.box(
+            data_long,
+            x="category",
+            y="value",
+            facet_col="variable",
+            boxmode="overlay",
+            facet_col_wrap=int(self.params["display_options.ncols"]),
+            log_y=self.params["scale_options.log_y"],
+            labels=dict(
+                category=self.params["table.category.category.label"]
+            )
+        )
+        fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
+        fig.update_yaxes(matches=None)
 
         container.plotly_chart(fig)
 
@@ -381,6 +493,165 @@ class PlotlyCategoryCount(Plotly):
             ),
             barmode=self.params["barmode"],
             **colorscale
+        )
+
+        container.plotly_chart(fig)
+        
+
+class PlotlyCategorySummarizeValues(Plotly):
+
+    type = "plotly-category-summarize-values"
+    name = "Category Summary (Plotly)"
+    help_text = """
+    Summarize the values in a collection of columns,
+    grouped by a single column which contains categories.
+
+    The plot will be laid out with the categories on the y-axis,
+    and each of the columns will be shown on the x-axis.
+
+    For each of the categories, the values in each of the columns
+    will be summarized in terms of:
+
+    - The mean value
+    - The median value
+    - The number of positive, non-zero values
+    - The number of non-null values
+
+    The size and color of the points can be set to represent
+    any of those summary statistics.
+    """
+    schema = {
+        "table": {
+            "type": "object",
+            "label": "Data Table",
+            "properties": {
+                "data": {
+                    "type": "dataframe",
+                    "label": "Data",
+                    "help": "Select the measurement values to summarize",
+                    "select_columns": True,
+                    "query": "",
+                },
+                "category": {
+                    "type": "dataframe",
+                    "label": "Category",
+                    "help": "Select the column containing category labels", # noqa
+                    "columns": {"category": {"label": "Category"}}
+                }
+            }
+        },
+        "formatting": {
+            "type": "object",
+            "label": "Formatting",
+            "properties": {
+                "size": {
+                    "type": "string",
+                    "enum": ["Mean", "Median", "Positive", "Non-Null", "None"],
+                    "default": "Mean",
+                    "label": "Point Size",
+                    "help": "Metric used to scale the size of each point."
+                },
+                "color": {
+                    "type": "string",
+                    "enum": ["Mean", "Median", "Positive", "Non-Null", "None"],
+                    "default": "Non-Null",
+                    "label": "Point Color",
+                    "help": "Metric used to scale the color of each point."
+                }
+            }
+        }
+    }
+
+    def display(self, container: DeltaGenerator):
+
+        data: pd.DataFrame = self.params["table.data.dataframe"]
+        category: pd.Series = (
+            self.params
+            ["table.category.dataframe"]
+            ["category"]
+        )
+
+        # Get the shared indices
+        index = data.index.intersection(category.index)
+
+        # Make sure that there is some degree of intersection
+        msg = "No common indices found between the data and category tables."
+        assert len(index) > 0, msg
+
+        # Subset each to just those indices
+        data = data.loc[index]
+        category = category.loc[index]
+
+        # Calculate the summary metrics
+        summary = (
+            data
+            .groupby(category)
+            .apply(
+                lambda group_df: group_df.apply(
+                    lambda x: pd.Series({
+                        "Mean": x.mean(),
+                        "Median": x.median(),
+                        "Positive": (x.dropna() > 0).sum() / x.shape[0],
+                        "Non-Null": x.notnull().sum() / x.shape[0]
+                    })
+                )
+            )
+            .reset_index()
+            .rename(columns={"level_1": "metric"})
+            .melt(id_vars=["category", "metric"], var_name="column")
+            .pivot_table(
+                index=["column", "category"],
+                columns="metric",
+                values="value"
+            )
+        )
+
+        # Add scaled values for the size and color
+        summary = pd.concat(
+            [
+                summary,
+                summary.apply(
+                    lambda c: (
+                        (c - c.min()) / (c.max() - c.min()) + 0.1
+                        if c.min() < c.max()
+                        else c
+                    )
+                ).rename(
+                    columns=lambda c: f"{c}-scaled"
+                )
+            ],
+            axis=1
+        )
+
+        labels = dict()
+        if self.params['formatting.size'] != "None":
+            size = self.params['formatting.size'] + "-scaled"
+            labels[size] = self.params['formatting.size']
+        else:
+            size = None
+
+        if self.params['formatting.color'] != "None":
+            color = self.params['formatting.color'] + "-scaled"
+            labels[color] = self.params['formatting.color']
+        else:
+            color = None
+
+        fig = px.scatter(
+            summary.reset_index(),
+            x="column",
+            y="category",
+            size=size,
+            color=color,
+            hover_data=["Mean", "Median", "Positive", "Non-Null"],
+            labels=dict(
+                column=(
+                    "Observation"
+                    if self.params["table.data.axis"]
+                    else "Variable"
+                ),
+                category=self.params["table.category.category.label"],
+                **labels
+            )
         )
 
         container.plotly_chart(fig)

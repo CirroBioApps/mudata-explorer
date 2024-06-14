@@ -33,7 +33,14 @@ def plotly_box(
     scale_options_log_y=None
 ):
     """
-    Display a series of data as a box graph using Plotly.
+    
+    Display a single column of data as a box graph using Plotly, summarizing
+    the data in terms of the median, quartiles, and outliers.
+
+    A single column is used to define the values on the y-axis, and a
+    second column is used for the categorical groups which are
+    displayed on the x-axis.
+    
     """
 
     assert isinstance(mdata, MuData), "mdata must be a MuData object"
