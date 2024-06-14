@@ -80,29 +80,35 @@ def edit_view(view: View, container: DeltaGenerator, ix: int, n_views: int):
     )
     cols[5].button(
         ":information_source:",
-        on_click=show_view_params,
-        key=f"show-view-params-{ix}",
+        on_click=show_view_sdk_snippet,
+        key=f"show-view-sdk-snippet-{ix}",
         args=(ix,),
-        help="Display the parameters for this view."
+        help="Show an example for configuration via SDK."
     )
 
 
-@st.experimental_dialog("Figure Parameters")
-def show_view_params(ix: int):
-    st.write((
-        json
-        .dumps(
-            {
-                kw.replace(".", "_"): val
-                for kw, val in app.get_views()[ix]["params"].items()
-            },
-            indent=4
-        )
-        .replace("\n", "\n\n")
-        .replace(': true,', ": True,")
-        .replace(': false,', ": False,")
-        .replace(': null,', ": None,")
-    ))
+@st.experimental_dialog("Figure Parameters", width='large')
+def show_view_sdk_snippet(ix: int):
+    view = app.get_views()[ix]
+    st.code(sdk_snippet(view))
+
+
+def sdk_snippet(view: dict):
+    assert "type" in view.keys()
+    assert "params" in view.keys()
+    params = app.nest_params(view["params"])
+    params_str = (
+        json.dumps(params, indent=4)
+        .replace('false', 'False')
+        .replace('true', 'True')
+        .replace('null', 'None')
+        .replace("\n", "\n    ")
+    )
+    return f"""view.{view['type'].replace('-', '_')}(
+    mdata,
+    **{params_str}
+)
+"""
 
 
 def button_add_view():

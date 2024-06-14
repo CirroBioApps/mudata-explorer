@@ -785,17 +785,9 @@ def show_provenance(loc: MuDataSlice, container: DeltaGenerator):
         ):
             st.write(f"**Analysis:** {prov['process']}")
             st.write(f"**Timestamp:** {prov['timestamp']}")
-            st.write("**Parameters:**")
-            st.write(
-                json.dumps(
-                    {
-                        kw.replace(".", "_"): val
-                        for kw, val in prov["params"].items()
-                    },
-                    indent=4
-                )
-                .replace("\n", "\n\n")
-            )
+            st.write("**SDK Configuration:**")
+            st.code(process_sdk_snippet(prov))
+
             if isinstance(prov.get("figures"), list):
                 if len(prov.get("figures")) > 0:
                     st.write("Supporting Figures")
@@ -804,6 +796,41 @@ def show_provenance(loc: MuDataSlice, container: DeltaGenerator):
                     st.plotly_chart(fig)
         return True
     return False
+
+
+def nest_params(params: dict):
+    output = dict()
+    for key, value in params.items():
+        if '.' in key:
+            keys = key.split('.', 1)
+            if keys[0] not in output:
+                output[keys[0]] = dict()
+            output[keys[0]][keys[1]] = value
+        else:
+            output[key] = value
+    return {
+        key: nest_params(value) if isinstance(value, dict) else value
+        for key, value in output.items()
+    }
+
+
+def process_sdk_snippet(prov: dict):
+    assert "process" in prov.keys()
+    assert "params" in prov.keys()
+    params = nest_params(prov["params"])
+    params_str = (
+        json.dumps(params, indent=4)
+        .replace('false', 'False')
+        .replace('true', 'True')
+        .replace('null', 'None')
+        .replace("\n", "\n    ")
+    )
+    return f"""process.{prov['process'].replace('-', '_')}(
+    mdata,
+    **{params_str}
+)
+"""
+
 
 
 def get_supp_figs() -> List[Tuple[str, dict]]:
