@@ -841,7 +841,7 @@ class MuDataAppHelpers:
         """
         Let the user select a subset of columns for analysis.
         """
-        if parent_container is not None:
+        if parent_container is not None and self.params_editable:
             if self.ix == -1:
                 container = parent_container.expander("Filter Columns")
             else:
@@ -1282,7 +1282,7 @@ class MuDataAppHelpers:
                     container.exception(e)
                 else:
                     raise e
-            if parent_container is not None:
+            if parent_container is not None and self.params_editable:
                 parent_container.write(f"Ran: {tr.name}")
 
         return df
