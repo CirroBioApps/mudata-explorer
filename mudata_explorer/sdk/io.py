@@ -38,3 +38,16 @@ def write_h5mu(mdata: MuData, prefix: str):
         f.write(dat)
 
     logging.info(f"Saved MuData object to {prefix}-{hash}.h5mu ({size} bytes)")
+
+
+def write_zarr(mdata: MuData, prefix: str):
+    """
+    Save the MuData object to an .zarr file using the filename:
+    {prefix}-{hash}.zarr
+    """
+
+    dat, hash, size = get_dat_hash(mdata)
+
+    dat.write_zarr(f"{prefix}-{hash}.zarr")
+
+    logging.info(f"Saved MuData object to {prefix}-{hash}.zarr")
