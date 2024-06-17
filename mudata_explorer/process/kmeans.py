@@ -17,6 +17,9 @@ class RunKmeans(Process):
     cluster with the nearest mean.
 
     The user selects the number of clusters (k) to group the samples into.
+    If the number of clusters is set to 0, the algorithm will evaluate the
+    clustering performance over a range of values of k and use the silhouette
+    score to determine the optimal number of clusters.
 
     Silhouette scores are computed over a range of values of k to evaluate the
     clustering performance. The silhouette score is a measure of how similar
@@ -44,9 +47,9 @@ class RunKmeans(Process):
             "properties": {
                 "k": {
                     "type": "integer",
-                    "min_value": 2,
+                    "min_value": 0,
                     "default": 5,
-                    "label": "Number of Clusters (K)",
+                    "label": "Number of Clusters (K) (0=auto)",
                     "help": """
                     Number of clusters to group samples into
                     """
@@ -97,9 +100,15 @@ class RunKmeans(Process):
         min_k = self.params["clustering.min_k"]
         max_k = self.params["clustering.max_k"]
 
-        msg = "Selected value of K must fall between the lower and upper bound"
-        assert k >= min_k, msg
-        assert k <= max_k, msg
+        # If the k is set to 0 or 1, autoselect
+        if k == 0 or k == 1:
+            k = None
+
+        # If not, check the bounds
+        if k is not None:
+            msg = "Selected value of K must fall between the lower and upper bound"
+            assert k >= min_k, msg
+            assert k <= max_k, msg
 
         df: pd.DataFrame = self.params["table.data.dataframe"].dropna()
         msg = "Null values in all rows - remove invalid columns"
@@ -120,6 +129,13 @@ class RunKmeans(Process):
             n: silhouette_score(df, clust)
             for n, clust in clusters.items()
         }
+
+        # If k is not set, select the best value
+        if k is None:
+            k = max(
+                silhouette_scores,
+                key=silhouette_scores.get
+            )
 
         # Plot the silhouette scores
         fig = px.line(
