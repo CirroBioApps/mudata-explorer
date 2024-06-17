@@ -122,6 +122,9 @@ def show_table(
         attr=attr
     )
     df = slice.dataframe(app.get_mdata())
+    if isinstance(df, str):
+        st.write(df)
+        return
 
     if df is None or df.shape[0] == 0:
         if df is not None:

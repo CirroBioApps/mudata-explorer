@@ -156,7 +156,8 @@ class MuDataSlice:
         if self.subattr is not None:
             dat = dat[self.subattr]
 
-        assert isinstance(dat, (pd.Series, pd.DataFrame))
+        if not isinstance(dat, (pd.Series, pd.DataFrame)):
+            return f"Unexpected type: {type(dat)}"
 
         dat.index.name = self.orientation
 
