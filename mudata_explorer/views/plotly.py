@@ -78,6 +78,20 @@ class PlotlyScatter(Plotly):
                     "label": "Log Scale - Y Axis"
                 }
             }
+        },
+        "formatting": {
+            "type": "object",
+            "label": "Formatting",
+            "properties": {
+                "opacity": {
+                    "type": "float",
+                    "label": "Point Opacity",
+                    "default": 1.0,
+                    "min_value": 0.,
+                    "max_value": 1.,
+                    "step": 0.1
+                }
+            }
         }
     }
 
@@ -97,6 +111,7 @@ class PlotlyScatter(Plotly):
             log_y=self.params["scale_options.log_y"],
             color="color" if self.params["data.color.enabled"] else None,
             size="size" if self.params["data.size.enabled"] else None,
+            opacity=self.params["formatting.opacity"],
             labels=dict(
                 x=self.params["data.x.label"],
                 y=self.params["data.y.label"],

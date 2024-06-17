@@ -37,6 +37,7 @@ def plotly_scatter(
     data_transforms=[],
     scale_options_log_x=None,
     scale_options_log_y=None,
+    formatting_opacity=1.0,
     **extra_params
 ):
     """
@@ -79,6 +80,7 @@ def plotly_scatter(
             'data.cols_query.query.value': extra_params.get('data_cols_query_query_value', data_cols_query_query_value),
             'data.transforms': extra_params.get('data_transforms', data_transforms),
             'scale_options.log_x': extra_params.get('scale_options_log_x', scale_options_log_x),
-            'scale_options.log_y': extra_params.get('scale_options_log_y', scale_options_log_y)
+            'scale_options.log_y': extra_params.get('scale_options_log_y', scale_options_log_y),
+            'formatting.opacity': extra_params.get('formatting_opacity', formatting_opacity)
         }
     )
