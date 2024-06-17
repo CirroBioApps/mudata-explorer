@@ -28,19 +28,19 @@ def summary_stats(
     
     Calculate a variety of summary statistics for the selected data.
 
-    Note that only numerical columns may be summarized in this way.
+    Note that only numerical data may be summarized in this way.
 
-    - count: Number of non-null values in each column
-    - prop_valid: Proportion of non-null values in each column
-    - nunique: Number of unique values in each column
-    - median: Median value of each column
-    - mean: Mean value of each column
-    - std: Standard deviation of each column
-    - min: Minimum value of each column
-    - max: Maximum value of each column
-    - 25%: 25th percentile of each column
-    - 50%: 50th percentile of each column
-    - 75%: 75th percentile of each column
+    - count: Number of non-null values
+    - prop_valid: Proportion of non-null values
+    - nunique: Number of unique values
+    - median: Median value
+    - mean: Mean value
+    - std: Standard deviation
+    - min: Minimum value
+    - max: Maximum value
+    - 25%: 25th percentile
+    - 50%: 50th percentile
+    - 75%: 75th percentile
 
     
     """

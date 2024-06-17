@@ -34,6 +34,9 @@ def kmeans(
     cluster with the nearest mean.
 
     The user selects the number of clusters (k) to group the samples into.
+    If the number of clusters is set to 0, the algorithm will evaluate the
+    clustering performance over a range of values of k and use the silhouette
+    score to determine the optimal number of clusters.
 
     Silhouette scores are computed over a range of values of k to evaluate the
     clustering performance. The silhouette score is a measure of how similar
