@@ -98,6 +98,10 @@ class PlotlyScatter(Plotly):
     def display(self, container: DeltaGenerator):
 
         data, colorscale = self.fetch_dataframe("data")
+        try:
+            opacity = float(self.params["formatting.opacity"])
+        except ValueError:
+            opacity = 1.0
 
         fig = px.scatter(
             data.reset_index(),
@@ -111,7 +115,7 @@ class PlotlyScatter(Plotly):
             log_y=self.params["scale_options.log_y"],
             color="color" if self.params["data.color.enabled"] else None,
             size="size" if self.params["data.size.enabled"] else None,
-            opacity=self.params["formatting.opacity"],
+            opacity=opacity,
             labels=dict(
                 x=self.params["data.x.label"],
                 y=self.params["data.y.label"],
