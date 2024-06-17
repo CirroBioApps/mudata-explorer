@@ -4,23 +4,31 @@ from mudata_explorer.helpers.mudata import add_mdata_uns
 from mudata_explorer.app import get_dat_hash
 from muon import MuData
 from pandas import DataFrame
-from typing import Dict
+from typing import Dict, Optional, Union
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 
 
-def build_mdata(dat: Dict[str, DataFrame], obs=DataFrame) -> MuData:
+def build_mdata(
+    dat: Dict[str, Union[DataFrame, AnnData]],
+    obs: Optional[DataFrame] = None
+) -> MuData:
     """Build a MuData object from a dictionary of AnnData objects."""
     mdata = MuData(
         {
-            kw: AnnData(
-                X=df.rename(columns=lambda cname: f"{kw}:{cname}")
+            kw: (
+                AnnData(
+                    X=df.rename(columns=lambda cname: f"{kw}:{cname}")
+                )
+                if isinstance(df, DataFrame)
+                else df
             )
             for kw, df in dat.items()
         }
     )
-    mdata.obs = obs
+    if obs is not None:
+        mdata.obs = obs
     add_mdata_uns(mdata)
 
     return mdata
@@ -48,6 +56,6 @@ def write_zarr(mdata: MuData, prefix: str):
 
     dat, hash, size = get_dat_hash(mdata)
 
-    dat.write_zarr(f"{prefix}-{hash}.zarr")
+    mdata.write_zarr(f"{prefix}-{hash}.zarr")
 
     logging.info(f"Saved MuData object to {prefix}-{hash}.zarr")
