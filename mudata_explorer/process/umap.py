@@ -60,11 +60,18 @@ class UMAP(Process):
                     "type": "string",
                     "label": "UMAP: Metric",
                     "enum": [
+                        "braycurtis",
+                        "canberra",
+                        "chebyshev",
+                        "correlation",
                         "cosine",
                         "euclidean",
+                        "haversine",
+                        "mahalanobis",
                         "manhattan",
-                        "correlation",
-                        "jaccard"
+                        "minkowski",
+                        "seuclidean",
+                        "wminkowski"
                     ],
                     "default": "correlation",
                     "help": "The metric to use for the UMAP algorithm."
