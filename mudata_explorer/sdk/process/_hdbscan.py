@@ -6,7 +6,7 @@ from mudata_explorer.helpers import make_process
 from muon import MuData
 
 
-def dbscan(
+def hdbscan(
     mdata: MuData,
     table_data_axis=0,
     table_data_tables=[],
@@ -21,29 +21,30 @@ def dbscan(
     table_data_cols_query_query_expr='',
     table_data_cols_query_query_value='',
     table_data_transforms=[],
-    clustering_eps=0.5,
+    clustering_min_cluster_size=5,
     clustering_min_samples=5,
-    clustering_metric=None,
+    clustering_cluster_selection_epsilon=0.0,
+    clustering_metric='euclidean',
+    clustering_alpha=1.0,
+    clustering_algorithm='auto”',
+    clustering_leaf_size=40,
+    clustering_cluster_selection_method='eom',
+    clustering_allow_single_cluster=False,
     outputs_dest_key='dbscan',
     **extra_params
 ):
     """
     
-    DBSCAN (Density-Based Spatial Clustering of Applications with Noise)
-    is a clustering algorithm that groups together points that are
-    closely packed together (points with many nearby neighbors), marking
-    as outliers points that lie alone in low-density regions.
+    Cluster data using hierarchical density-based clustering.
 
-    The algorithm works by defining neighborhoods around each point and
-    grouping points that are within a certain distance of each other.
-    Points that are within the neighborhood of a core point are considered
-    part of the same cluster. Points that are within the neighborhood of
-    a non-core point but are not core points themselves are considered
-    border points. Points that are not within the neighborhood of any
-    core points are considered outliers.
+    [HDBSCAN - Hierarchical Density-Based Spatial Clustering of Applications with Noise](https://scikit-learn.org/stable/modules/generated/sklearn.cluster.HDBSCAN.html#sklearn.cluster.HDBSCAN).
+    Performs DBSCAN over varying epsilon values and integrates the result to find a
+    clustering that gives the best stability over epsilon. This allows HDBSCAN to
+    find clusters of varying densities (unlike DBSCAN), and be more robust to
+    parameter selection. Read more in the [User Guide](https://scikit-learn.org/stable/modules/clustering.html#hdbscan).
 
-    - [Wikipedia: DBSCAN](https://en.wikipedia.org/wiki/DBSCAN)
-    - [Explanation of DBSCAN (video)](https://www.youtube.com/watch?v=C3r7tGRe2eI)
+    For an example of how to use HDBSCAN, as well as a comparison to DBSCAN, please see the
+    [plotting demo](https://scikit-learn.org/stable/auto_examples/cluster/plot_hdbscan.html#sphx-glr-auto-examples-cluster-plot-hdbscan-py).
     
     """
 
@@ -52,7 +53,7 @@ def dbscan(
 
     # Instantiate the process using all of the parameters
     process = make_process(
-        'dbscan',
+        'hdbscan',
         params={
             'table.data.axis': extra_params.get('table_data_axis', table_data_axis),
             'table.data.tables': extra_params.get('table_data_tables', table_data_tables),
@@ -67,9 +68,15 @@ def dbscan(
             'table.data.cols_query.query.expr': extra_params.get('table_data_cols_query_query_expr', table_data_cols_query_query_expr),
             'table.data.cols_query.query.value': extra_params.get('table_data_cols_query_query_value', table_data_cols_query_query_value),
             'table.data.transforms': extra_params.get('table_data_transforms', table_data_transforms),
-            'clustering.eps': extra_params.get('clustering_eps', clustering_eps),
+            'clustering.min_cluster_size': extra_params.get('clustering_min_cluster_size', clustering_min_cluster_size),
             'clustering.min_samples': extra_params.get('clustering_min_samples', clustering_min_samples),
+            'clustering.cluster_selection_epsilon': extra_params.get('clustering_cluster_selection_epsilon', clustering_cluster_selection_epsilon),
             'clustering.metric': extra_params.get('clustering_metric', clustering_metric),
+            'clustering.alpha': extra_params.get('clustering_alpha', clustering_alpha),
+            'clustering.algorithm': extra_params.get('clustering_algorithm', clustering_algorithm),
+            'clustering.leaf_size': extra_params.get('clustering_leaf_size', clustering_leaf_size),
+            'clustering.cluster_selection_method': extra_params.get('clustering_cluster_selection_method', clustering_cluster_selection_method),
+            'clustering.allow_single_cluster': extra_params.get('clustering_allow_single_cluster', clustering_allow_single_cluster),
             'outputs.dest_key': extra_params.get('outputs_dest_key', outputs_dest_key)
         },
         mdata=mdata,
