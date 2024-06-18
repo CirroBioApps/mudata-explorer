@@ -41,14 +41,6 @@ class RunDBSCAN(Process):
             "type": "object",
             "label": "Clustering Parameters",
             "properties": {
-                "use_zscore": {
-                    "type": "boolean",
-                    "label": "Use Z-Score Normalization",
-                    "help": """
-                    Normalize the data before clustering.
-                    This is useful when the features have different scales.
-                    """
-                },
                 "eps": {
                     "type": "float",
                     "min_value": 0.,
