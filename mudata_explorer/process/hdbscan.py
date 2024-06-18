@@ -224,4 +224,7 @@ class RunHDBSCAN(Process):
             index=df.index
         )
 
+        # Anything with a cluster assignment of -1 was unassigned
+        res = res.loc[res != '-1']
+
         self.save_results("res", res)
