@@ -8,3 +8,5 @@ plotly
 streamlit
 openpyxl
 zarr
+scanpy
+leidenalg
