@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-from scipy import stats
 
 
 class Transform:
@@ -48,12 +47,16 @@ def safe_zscore(x: pd.Series):
     return (x - x.dropna().mean()) / x.dropna().std()
 
 
+def safe_log(df: pd.DataFrame):
+    return df.replace({-np.inf: np.nan})
+
+
 class LogTen(Transform):
     id = "log10"
     name = "Logarithm Base 10"
 
     def run(df: pd.DataFrame) -> pd.DataFrame:
-        return df.apply(np.log10)
+        return safe_log(df.apply(np.log10))
 
 
 class LogTwo(Transform):
@@ -61,7 +64,7 @@ class LogTwo(Transform):
     name = "Logarithm Base 2"
 
     def run(df: pd.DataFrame) -> pd.DataFrame:
-        return df.apply(np.log2)
+        return safe_log(df.apply(np.log2))
 
 
 class Log(Transform):
@@ -69,7 +72,7 @@ class Log(Transform):
     name = "Natural Logarithm"
 
     def run(df: pd.DataFrame) -> pd.DataFrame:
-        return df.apply(np.log)
+        return safe_log(df.apply(np.log))
 
 
 class Log1p(Transform):
