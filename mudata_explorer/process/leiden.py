@@ -130,7 +130,8 @@ class RunLeiden(Process):
         sc.pp.neighbors(
             adata,
             n_neighbors=int(self.params["clustering.n_neighbors"]),
-            metric=self.params["clustering.metric"]
+            metric=self.params["clustering.metric"],
+            use_rep='X'
         )
 
         # Run Leiden clustering
