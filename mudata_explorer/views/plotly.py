@@ -576,6 +576,13 @@ class PlotlyCategorySummarizeValues(Plotly):
                     "default": "Non-Null",
                     "label": "Point Color",
                     "help": "Metric used to scale the color of each point."
+                },
+                "colorscale": {
+                    "type": "string",
+                    "label": "Color Scale",
+                    "help": "The color scale to use for the color metric.",
+                    "default": "bluered",
+                    "enum": px.colors.named_colorscales()
                 }
             }
         }
@@ -661,6 +668,7 @@ class PlotlyCategorySummarizeValues(Plotly):
             y="category",
             size=size,
             color=color,
+            color_continuous_scale=self.params['formatting.colorscale'],
             hover_data=["Mean", "Median", "Positive", "Non-Null"],
             labels=dict(
                 column=(
