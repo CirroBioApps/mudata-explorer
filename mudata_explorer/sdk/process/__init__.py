@@ -1,3 +1,4 @@
+from ._anova import anova # noqa
 from ._dbscan import dbscan # noqa
 from ._decision_tree_classifier import decision_tree_classifier # noqa
 from ._hdbscan import hdbscan # noqa
