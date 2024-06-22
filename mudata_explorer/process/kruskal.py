@@ -27,7 +27,7 @@ Documentation:
                 "data": {
                     "type": "dataframe",
                     "label": "Data",
-                    "help": "Select the data which will be used to perform the Kruskal-Wallis test",
+                    "help": "Select the data which will be used to perform the Kruskal-Wallis test", # noqa
                     "select_columns": True,
                     "query": "",
                 },

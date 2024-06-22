@@ -35,7 +35,7 @@ class RunAnova(Process):
                 "data": {
                     "type": "dataframe",
                     "label": "Data",
-                    "help": "Select the data which will be used to perform the ANOVA",
+                    "help": "Select the data which will be used to perform the ANOVA", # noqa
                     "select_columns": True,
                     "query": "",
                 },
