@@ -8,3 +8,4 @@ from .plotly import PlotlyBoxMulti # noqa
 from .plotly import PlotlyCategoryCount # noqa
 from .seaborn import Clustermap # noqa
 from .supporting_figure import SupportingFigure # noqa
+from .group_freq import GroupFreq # noqa

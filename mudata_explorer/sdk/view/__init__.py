@@ -1,3 +1,4 @@
+from ._group_freq import group_freq # noqa
 from ._markdown import markdown # noqa
 from ._plotly_box import plotly_box # noqa
 from ._plotly_box_multiple import plotly_box_multiple # noqa
