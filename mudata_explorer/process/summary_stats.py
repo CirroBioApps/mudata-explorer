@@ -22,6 +22,8 @@ class SummaryStats(Process):
     - 25%: 25th percentile
     - 50%: 50th percentile
     - 75%: 75th percentile
+    - prop_positive: Proportion of samples with positive values
+    - prop_negative: Proportion of samples with negative values
 
     """
     category = "Summary Statistics"
@@ -86,4 +88,6 @@ class SummaryStats(Process):
             vals.dropna().shape[0] / vals.shape[0]
         )
         output['nunique'] = vals.dropna().nunique()
+        output['prop_positive'] = (vals > 0).mean()
+        output['prop_negative'] = (vals < 0).mean()
         return output
