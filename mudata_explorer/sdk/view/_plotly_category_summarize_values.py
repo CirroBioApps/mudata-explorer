@@ -37,6 +37,7 @@ def plotly_category_summarize_values(
     table_category_transforms=[],
     formatting_size='Mean',
     formatting_color='Non-Null',
+    formatting_colorscale='bluered',
     **extra_params
 ):
     """
@@ -96,6 +97,7 @@ def plotly_category_summarize_values(
             'table.category.cols_query.query.value': extra_params.get('table_category_cols_query_query_value', table_category_cols_query_query_value),
             'table.category.transforms': extra_params.get('table_category_transforms', table_category_transforms),
             'formatting.size': extra_params.get('formatting_size', formatting_size),
-            'formatting.color': extra_params.get('formatting_color', formatting_color)
+            'formatting.color': extra_params.get('formatting_color', formatting_color),
+            'formatting.colorscale': extra_params.get('formatting_colorscale', formatting_colorscale)
         }
     )

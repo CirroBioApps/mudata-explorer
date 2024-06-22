@@ -44,7 +44,7 @@ def plotly_scatter_3d(
     **extra_params
 ):
     """
-    Display a three dimensional distribution of data using Plotly.
+    Display a three dimensional distribution of data using Plotly
     """
 
     assert isinstance(mdata, MuData), "mdata must be a MuData object"

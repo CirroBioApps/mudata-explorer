@@ -132,7 +132,7 @@ class PlotlyScatter3D(Plotly):
 
     type = "plotly-scatter-3d"
     name = "Scatterplot 3D (Plotly)"
-    help_text = "Display a three dimensional distribution of data using Plotly."
+    help_text = "Display a three dimensional distribution of data using Plotly"
     schema = {
         "data": {
             "type": "dataframe",
@@ -465,7 +465,7 @@ class PlotlyCategoryCount(Plotly):
         "barmode": {
             "type": "string",
             "label": "Bar Color Mode",
-            "help_text": "If a color column is used, should the bars be stacked or grouped?",
+            "help_text": "If a color column is used, should the bars be stacked or grouped?", # noqa
             "enum": ["stack", "group"],
         },
         "scale_options": {
@@ -485,7 +485,7 @@ class PlotlyCategoryCount(Plotly):
         data, colorscale = self.fetch_dataframe("data")
 
         if "color_continuous_scale" in colorscale:
-            container.error("Color scale must be categorical for this display.")
+            container.error("Color scale must be categorical for this display")
 
         # Count up the number of rows for each unique value
         df = (
@@ -515,7 +515,7 @@ class PlotlyCategoryCount(Plotly):
         )
 
         container.plotly_chart(fig)
-        
+
 
 class PlotlyCategorySummarizeValues(Plotly):
 
