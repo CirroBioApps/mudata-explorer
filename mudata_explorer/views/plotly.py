@@ -865,6 +865,13 @@ is found in the data.
 
 The primary purpose of this display is to identify when there is
 a strong correlation between the values in two different columns.
+
+The display can be used to show either:
+
+- The number of items in each combination, or
+- The odds ratio of each combination, calculated as the log2 of the
+    ratio of the observed frequency to the expected frequency.
+
     """
     schema = {
         "data": {
@@ -879,18 +886,19 @@ a strong correlation between the values in two different columns.
             "type": "object",
             "label": "Formatting",
             "properties": {
-                "item_label": {
-                    "type": "string",
-                    "label": "Item Label",
-                    "help": "The label to use for the items in the table.",
-                    "default": "Samples"
-                },
                 "colorscale": {
                     "type": "string",
                     "label": "Color Scale",
                     "help": "The color scale to use for the color metric.",
                     "default": "blues",
                     "enum": px.colors.named_colorscales()
+                },
+                "values": {
+                    "type": "string",
+                    "label": "Display Values",
+                    "help": "The values to display in the table.",
+                    "default": "Number of Items",
+                    "enum": ["Number of Items", "Odds Ratio (log2)"]
                 }
             }
         }
@@ -905,7 +913,19 @@ a strong correlation between the values in two different columns.
             data["y"],
             data["x"]
         )
-        item_label = self.params["formatting.item_label"]
+
+        # If the user has selected to display an odds ratio
+        value_format = self.params["formatting.values"]
+        if value_format == "Odds Ratio (log2)":
+            table = table / table.sum().sum()
+            table = pd.DataFrame({
+                col: {
+                    row: table.loc[row, col] / (table.loc[row].sum() * table[col].sum())
+                    for row in table.index
+                }
+                for col in table.columns
+            }).apply(np.log2)
+
         fig = go.Figure(
             data=go.Heatmap(
                 z=table.values,
@@ -913,16 +933,17 @@ a strong correlation between the values in two different columns.
                 y=table.index,
                 hovertext=table.applymap(
                     lambda i: (
-                        f"{i} {item_label}"
+                        f"{value_format}: {i}"
                     )
                 ),
-                colorscale=self.params["formatting.colorscale"]
+                zmid=0 if value_format == "Odds Ratio (log2)" else None,
+                colorscale=self.params["formatting.colorscale"],
+                colorbar_title=value_format
             )
         )
         fig.update_layout(
             xaxis_title=self.params["data.x.label"],
-            yaxis_title=self.params["data.y.label"],
-            legend_title="Number of Samples"
+            yaxis_title=self.params["data.y.label"]
         )
 
         container.plotly_chart(fig)
