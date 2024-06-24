@@ -602,7 +602,7 @@ class PlotlyBoxMulti(Plotly):
             data_long,
             x="category",
             y="value",
-            facet_col="variable",
+            facet_col="var",
             boxmode="overlay",
             facet_col_wrap=int(self.params["display_options.ncols"]),
             log_y=self.params["scale_options.log_y"],
