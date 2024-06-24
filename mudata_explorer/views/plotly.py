@@ -16,6 +16,9 @@ class Plotly(View):
         This provides added functionality for parsing the color scales.
         """
 
+        if self.params.get(f"{table_kw}.dataframe") is None:
+            return None, {}
+
         data: pd.DataFrame = self.params[f"{table_kw}.dataframe"]
         colorscale = {}
 
@@ -108,6 +111,9 @@ and using a log scale for the x- and y-axes.
     def display(self, container: DeltaGenerator):
 
         data, colorscale = self.fetch_dataframe("data")
+        if data is None:
+            container.write("Please select a data table")
+            return
         try:
             opacity = float(self.params["formatting.opacity"])
         except ValueError:
@@ -341,6 +347,9 @@ class PlotlyScatter3D(Plotly):
     def display(self, container: DeltaGenerator):
 
         data, colorscale = self.fetch_dataframe("data")
+        if data is None:
+            container.write("Please select a data table")
+            return
 
         fig = px.scatter_3d(
             data.reset_index(),
@@ -410,6 +419,9 @@ class PlotlyLine(Plotly):
         container: DeltaGenerator
     ):
         data, colorscale = self.fetch_dataframe("data")
+        if data is None:
+            container.write("Please select a data table")
+            return
         data.sort_values("sort_by", inplace=True)
 
         fig = px.line(
@@ -472,6 +484,9 @@ class PlotlyBox(Plotly):
     def display(self, container: DeltaGenerator):
 
         data, colorscale = self.fetch_dataframe("data")
+        if data is None:
+            container.write("Please select a data table")
+            return
 
         if "color_continuous_scale" in colorscale:
             container.error("Color scale must be categorical for box plots.")
@@ -652,6 +667,9 @@ class PlotlyCategoryCount(Plotly):
     def display(self, container: DeltaGenerator):
 
         data, colorscale = self.fetch_dataframe("data")
+        if data is None:
+            container.write("Please select a data table")
+            return
 
         if "color_continuous_scale" in colorscale:
             container.error("Color scale must be categorical for this display")
