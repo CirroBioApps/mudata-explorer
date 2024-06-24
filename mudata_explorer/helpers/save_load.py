@@ -70,7 +70,7 @@ def load_history():
     """Let the user select a previously run process to copy settings from."""
 
     # Get the list of previous analyses
-    history = app.get_history(exclude=['add_data', 'add_view'])
+    history = app.get_history(exclude=['add_data', 'add_view', 'data_hash'])
 
     if len(history) == 0:
         st.write("No previous analyses found.")
