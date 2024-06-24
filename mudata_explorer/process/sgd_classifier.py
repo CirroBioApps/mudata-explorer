@@ -279,6 +279,7 @@ part of the training or testing set.
                 for cls_ix, cls_name in enumerate(clf.classes_[1:])
             }
         )
+
         # Make a barplot showing the weights of each feature
         figures = [
             io.to_json(
@@ -296,6 +297,12 @@ part of the training or testing set.
             )
             for cname, cvals in weights.items()
         ]
+
+        # Also save the absolute value of the weights
+        weights = pd.concat([
+            weights,
+            weights.abs().rename(columns=lambda x: f"abs_{x}")
+        ], axis=1)
 
         self.save_results("weights", weights, figures=figures)
 

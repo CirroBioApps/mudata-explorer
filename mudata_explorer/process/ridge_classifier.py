@@ -272,6 +272,12 @@ class RidgeClassifier(Process):
             for cname, cvals in weights.items()
         ]
 
+        # Also save the absolute value of the weights
+        weights = pd.concat([
+            weights,
+            weights.abs().rename(columns=lambda x: f"abs_{x}")
+        ], axis=1)
+
         self.save_results("weights", weights, figures=figures)
 
     def score_by_permutation(self, pred, truth, n_reps=1000):
