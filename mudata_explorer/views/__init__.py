@@ -2,6 +2,7 @@
 # from .summarize_mdata import SummarizeMuData # noqa
 from .markdown import Markdown # noqa
 from .plotly import PlotlyScatter # noqa
+from .plotly import PlotlyScatterMulti # noqa
 from .plotly import PlotlyScatter3D # noqa
 from .plotly import PlotlyBox # noqa
 from .plotly import PlotlyBoxMulti # noqa

@@ -5,7 +5,7 @@ from mudata_explorer.sdk.helpers import collapse_params
 from muon import MuData
 
 
-def plotly_scatter(
+def plotly_scatter_multi(
     mdata: MuData,
     data_axis=0,
     data_x_table=None,
@@ -18,12 +18,6 @@ def plotly_scatter(
     data_size_cname=None,
     data_size_label='size',
     data_size_enabled=True,
-    data_color_table=None,
-    data_color_cname=None,
-    data_color_label='Color',
-    data_color_enabled=True,
-    data_color_is_categorical=False,
-    data_color_scale='Viridis',
     data_rows_query_query_type='',
     data_rows_query_query_table='',
     data_rows_query_query_cname='',
@@ -35,16 +29,35 @@ def plotly_scatter(
     data_cols_query_query_expr='',
     data_cols_query_query_value='',
     data_transforms=[],
+    colors_axis=0,
+    colors_tables=[],
+    colors_rows_query_query_type='',
+    colors_rows_query_query_table='',
+    colors_rows_query_query_cname='',
+    colors_rows_query_query_expr='',
+    colors_rows_query_query_value='',
+    colors_cols_query_query_type='',
+    colors_cols_query_query_table='',
+    colors_cols_query_query_cname='',
+    colors_cols_query_query_expr='',
+    colors_cols_query_query_value='',
+    colors_transforms=[],
     scale_options_log_x=None,
     scale_options_log_y=None,
+    scale_options_log_color=None,
+    formatting_colorscale='bluered',
     formatting_opacity=1.0,
+    formatting_ncols=1,
+    formatting_color_label='Abundance',
     **extra_params
 ):
     """
     
 Display a two dimensional distribution of data using Plotly.
+Display the same set of points in multiple panels, each of which
+is colored by a different column of data.
 
-In addition to the data used for the x- and y-axes, the size and color
+In addition to the data used for the x- and y-axes, the size
 of the points can be set to represent additional dimensions of the data.
 
 Additional formatting options include setting the opacity of the points
@@ -56,7 +69,7 @@ and using a log scale for the x- and y-axes.
     extra_params = collapse_params(extra_params)
 
     app.add_view(
-        'plotly-scatter',
+        'plotly-scatter-multi',
         mdata,
         params={
             'data.axis': extra_params.get('data_axis', data_axis),
@@ -70,12 +83,6 @@ and using a log scale for the x- and y-axes.
             'data.size.cname': extra_params.get('data_size_cname', data_size_cname),
             'data.size.label': extra_params.get('data_size_label', data_size_label),
             'data.size.enabled': extra_params.get('data_size_enabled', data_size_enabled),
-            'data.color.table': extra_params.get('data_color_table', data_color_table),
-            'data.color.cname': extra_params.get('data_color_cname', data_color_cname),
-            'data.color.label': extra_params.get('data_color_label', data_color_label),
-            'data.color.enabled': extra_params.get('data_color_enabled', data_color_enabled),
-            'data.color.is_categorical': extra_params.get('data_color_is_categorical', data_color_is_categorical),
-            'data.color.scale': extra_params.get('data_color_scale', data_color_scale),
             'data.rows_query.query.type': extra_params.get('data_rows_query_query_type', data_rows_query_query_type),
             'data.rows_query.query.table': extra_params.get('data_rows_query_query_table', data_rows_query_query_table),
             'data.rows_query.query.cname': extra_params.get('data_rows_query_query_cname', data_rows_query_query_cname),
@@ -87,8 +94,25 @@ and using a log scale for the x- and y-axes.
             'data.cols_query.query.expr': extra_params.get('data_cols_query_query_expr', data_cols_query_query_expr),
             'data.cols_query.query.value': extra_params.get('data_cols_query_query_value', data_cols_query_query_value),
             'data.transforms': extra_params.get('data_transforms', data_transforms),
+            'colors.axis': extra_params.get('colors_axis', colors_axis),
+            'colors.tables': extra_params.get('colors_tables', colors_tables),
+            'colors.rows_query.query.type': extra_params.get('colors_rows_query_query_type', colors_rows_query_query_type),
+            'colors.rows_query.query.table': extra_params.get('colors_rows_query_query_table', colors_rows_query_query_table),
+            'colors.rows_query.query.cname': extra_params.get('colors_rows_query_query_cname', colors_rows_query_query_cname),
+            'colors.rows_query.query.expr': extra_params.get('colors_rows_query_query_expr', colors_rows_query_query_expr),
+            'colors.rows_query.query.value': extra_params.get('colors_rows_query_query_value', colors_rows_query_query_value),
+            'colors.cols_query.query.type': extra_params.get('colors_cols_query_query_type', colors_cols_query_query_type),
+            'colors.cols_query.query.table': extra_params.get('colors_cols_query_query_table', colors_cols_query_query_table),
+            'colors.cols_query.query.cname': extra_params.get('colors_cols_query_query_cname', colors_cols_query_query_cname),
+            'colors.cols_query.query.expr': extra_params.get('colors_cols_query_query_expr', colors_cols_query_query_expr),
+            'colors.cols_query.query.value': extra_params.get('colors_cols_query_query_value', colors_cols_query_query_value),
+            'colors.transforms': extra_params.get('colors_transforms', colors_transforms),
             'scale_options.log_x': extra_params.get('scale_options_log_x', scale_options_log_x),
             'scale_options.log_y': extra_params.get('scale_options_log_y', scale_options_log_y),
-            'formatting.opacity': extra_params.get('formatting_opacity', formatting_opacity)
+            'scale_options.log_color': extra_params.get('scale_options_log_color', scale_options_log_color),
+            'formatting.colorscale': extra_params.get('formatting_colorscale', formatting_colorscale),
+            'formatting.opacity': extra_params.get('formatting_opacity', formatting_opacity),
+            'formatting.ncols': extra_params.get('formatting_ncols', formatting_ncols),
+            'formatting.color_label': extra_params.get('formatting_color_label', formatting_color_label)
         }
     )
