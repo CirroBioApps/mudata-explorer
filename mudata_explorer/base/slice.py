@@ -108,7 +108,10 @@ class MuDataSlice:
 
     @classmethod
     def hydrate(cls, params: str):
-        return cls(**json.loads(params))
+        try:
+            return cls(**json.loads(params))
+        except json.JSONDecodeError:
+            return cls(**json.loads(params.replace('None', 'null')))
 
     @property
     def address(self) -> str:
