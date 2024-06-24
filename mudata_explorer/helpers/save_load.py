@@ -53,11 +53,13 @@ def download_button():
     st.write(f"File is {size}")
     st.write(f"Unique hash: {hash}")
 
+    name = st.text_input("File Name", "mudata")
+
     # Name the downloaded file for the hash of the data
     if st.download_button(
         "Download MuData (.h5mu)",
         dat,
-        f"mudata-{hash}.h5mu",
+        name + f"-{hash}.h5mu",
         help="Click here to download the MuData object as a file."
     ):
         st.rerun()
