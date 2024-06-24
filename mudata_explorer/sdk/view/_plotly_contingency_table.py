@@ -25,8 +25,8 @@ def plotly_contingency_table(
     data_cols_query_query_expr='',
     data_cols_query_query_value='',
     data_transforms=[],
-    formatting_item_label='Samples',
     formatting_colorscale='blues',
+    formatting_values='Number of Items',
     **extra_params
 ):
     """
@@ -38,6 +38,13 @@ is found in the data.
 
 The primary purpose of this display is to identify when there is
 a strong correlation between the values in two different columns.
+
+The display can be used to show either:
+
+- The number of items in each combination, or
+- The odds ratio of each combination, calculated as the log2 of the
+    ratio of the observed frequency to the expected frequency.
+
     
     """
 
@@ -66,7 +73,7 @@ a strong correlation between the values in two different columns.
             'data.cols_query.query.expr': extra_params.get('data_cols_query_query_expr', data_cols_query_query_expr),
             'data.cols_query.query.value': extra_params.get('data_cols_query_query_value', data_cols_query_query_value),
             'data.transforms': extra_params.get('data_transforms', data_transforms),
-            'formatting.item_label': extra_params.get('formatting_item_label', formatting_item_label),
-            'formatting.colorscale': extra_params.get('formatting_colorscale', formatting_colorscale)
+            'formatting.colorscale': extra_params.get('formatting_colorscale', formatting_colorscale),
+            'formatting.values': extra_params.get('formatting_values', formatting_values)
         }
     )
