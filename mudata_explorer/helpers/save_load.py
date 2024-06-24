@@ -19,13 +19,16 @@ def upload_button():
         )
         return
 
-    if app.hash_dat(h5mu_file.read()) in h5mu_file.name:
+    mdata_hash = app.hash_dat(h5mu_file.read())
+
+    if mdata_hash in h5mu_file.name:
         st.write("**Data Validated**: Unique hash matches file name.")
     else:
         st.write("Unique file hash not found in file name.")
 
     if st.button("Load Dataset"):
         app.set_mdata(mdata)
+        app.set_mdata_hash(mdata_hash)
         st.rerun()
 
 

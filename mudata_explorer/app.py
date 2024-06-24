@@ -414,6 +414,17 @@ def add_history(event: dict):
     set_history(history)
 
 
+def set_mdata_hash(mdata_hash: str):
+    """Record the hash of the data in the history."""
+    add_history(dict(
+        process="data_hash",
+        params=dict(
+            hash=mdata_hash
+        ),
+        timestamp=get_timestamp()
+    ))
+
+
 def get_provenance() -> Dict[str, dict]:
     if not has_mdata():
         return {}
