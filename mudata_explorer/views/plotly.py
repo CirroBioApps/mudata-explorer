@@ -566,7 +566,10 @@ class PlotlyBoxMulti(Plotly):
 
     def display(self, container: DeltaGenerator):
 
-        data: pd.DataFrame = self.params["table.data.dataframe"]
+        data: pd.DataFrame = self.params.get("table.data.dataframe")
+        if data is None:
+            container.write("Please select a data table")
+            return
         category: pd.Series = (
             self.params
             ["table.category.dataframe"]
@@ -777,7 +780,10 @@ class PlotlyCategorySummarizeValues(Plotly):
 
     def display(self, container: DeltaGenerator):
 
-        data: pd.DataFrame = self.params["table.data.dataframe"]
+        data: pd.DataFrame = self.params.get("table.data.dataframe")
+        if data is None:
+            container.write("Please select a data table")
+            return
         category: pd.Series = (
             self.params
             ["table.category.dataframe"]
