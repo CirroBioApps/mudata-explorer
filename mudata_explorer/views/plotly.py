@@ -559,6 +559,11 @@ class PlotlyBoxMulti(Plotly):
                     "label": "Number of Columns",
                     "default": 1,
                     "min_value": 1
+                },
+                "outliers": {
+                    "type": "boolean",
+                    "label": "Show Outliers",
+                    "default": True
                 }
             }
         }
@@ -591,6 +596,7 @@ class PlotlyBoxMulti(Plotly):
         # Make a long DataFrame which has all of the values
         data_long = (
             data
+            .rename_axis(columns=None)
             .reset_index()
             .melt(id_vars="index")
             .assign(
@@ -602,12 +608,21 @@ class PlotlyBoxMulti(Plotly):
             data_long,
             x="category",
             y="value",
-            facet_col="var",
+            facet_col=(
+                "variable"
+                if "variable" in data_long.columns
+                else "var"
+            ),
             boxmode="overlay",
             facet_col_wrap=int(self.params["display_options.ncols"]),
             log_y=self.params["scale_options.log_y"],
             labels=dict(
                 category=self.params["table.category.category.label"]
+            ),
+            points=(
+                "outliers"
+                if self.params["display_options.outliers"]
+                else False
             )
         )
         fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
