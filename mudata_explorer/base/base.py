@@ -275,6 +275,14 @@ class MuDataAppHelpers:
         self.render_form(container, self.schema)
 
         if self.params_editable and self.ix >= 0:
+
+            # Now make the display, catching any errors
+            try:
+                self.display(container)
+            except Exception as e:
+                # Log the full traceback of the exception
+                container.exception(e)
+
             container.button(
                 "Save Changes",
                 key=f"save-changes-{self.ix}",
