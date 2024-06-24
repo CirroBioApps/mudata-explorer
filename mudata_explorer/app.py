@@ -701,8 +701,10 @@ def join_dataframe_tables(
             modalities.values(),
             axis=not axis
         )
-    else:
+    elif len(modalities) == 1:
         df: pd.DataFrame = list(modalities.values())[0]
+    else:
+        return None
 
     # Drop any rows or columns which are missing in their entirety
     df = df.dropna(axis=0, how="all").dropna(axis=1, how="all")
