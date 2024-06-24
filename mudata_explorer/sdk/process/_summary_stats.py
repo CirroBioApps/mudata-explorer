@@ -41,6 +41,8 @@ def summary_stats(
     - 25%: 25th percentile
     - 50%: 50th percentile
     - 75%: 75th percentile
+    - prop_positive: Proportion of samples with positive values
+    - prop_negative: Proportion of samples with negative values
 
     
     """

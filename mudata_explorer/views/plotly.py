@@ -1,6 +1,7 @@
 import pandas as pd
 from mudata_explorer.base.view import View
 import plotly.express as px
+from plotly import graph_objects as go
 from streamlit.delta_generator import DeltaGenerator
 
 
@@ -638,7 +639,7 @@ class PlotlyCategorySummarizeValues(Plotly):
                 summary,
                 summary.apply(
                     lambda c: (
-                        (c - c.min()) / (c.max() - c.min()) + 0.1
+                        (c - c.min()) / (c.max() - c.min()) + 0.01
                         if c.min() < c.max()
                         else c
                     )
@@ -679,6 +680,81 @@ class PlotlyCategorySummarizeValues(Plotly):
                 category=self.params["table.category.category.label"],
                 **labels
             )
+        )
+
+        container.plotly_chart(fig)
+
+
+class PlotlyContingencyTable(Plotly):
+
+    type = "plotly-contingency-table"
+    name = "Contingency Table (Plotly)"
+    help_text = """
+Compare the number of samples which are found in each combination of
+two different columns of categories. This is a frequency table which
+shows the number of times that each unique combination of values
+is found in the data.
+
+The primary purpose of this display is to identify when there is
+a strong correlation between the values in two different columns.
+    """
+    schema = {
+        "data": {
+            "type": "dataframe",
+            "columns": {
+                "x": {"label": "Category A"},
+                "y": {"label": "Category B"}
+            },
+            "query": True,
+        },
+        "formatting": {
+            "type": "object",
+            "label": "Formatting",
+            "properties": {
+                "item_label": {
+                    "type": "string",
+                    "label": "Item Label",
+                    "help": "The label to use for the items in the table.",
+                    "default": "Samples"
+                },
+                "colorscale": {
+                    "type": "string",
+                    "label": "Color Scale",
+                    "help": "The color scale to use for the color metric.",
+                    "default": "blues",
+                    "enum": px.colors.named_colorscales()
+                }
+            }
+        }
+    }
+
+    def display(self, container: DeltaGenerator):
+
+        data: pd.DataFrame = self.params["data.dataframe"]
+
+        # Make the contingency table
+        table = pd.crosstab(
+            data["y"],
+            data["x"]
+        )
+        item_label = self.params["formatting.item_label"]
+        fig = go.Figure(
+            data=go.Heatmap(
+                z=table.values,
+                x=table.columns,
+                y=table.index,
+                hovertext=table.applymap(
+                    lambda i: (
+                        f"{i} {item_label}"
+                    )
+                ),
+                colorscale=self.params["formatting.colorscale"]
+            )
+        )
+        fig.update_layout(
+            xaxis_title=self.params["data.x.label"],
+            yaxis_title=self.params["data.y.label"],
+            legend_title="Number of Samples"
         )
 
         container.plotly_chart(fig)
