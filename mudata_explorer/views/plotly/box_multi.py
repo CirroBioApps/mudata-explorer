@@ -36,13 +36,46 @@ class PlotlyBoxMulti(Plotly):
                 }
             }
         },
-        "scale_options": {
+        "variable_options": {
             "type": "object",
-            "label": "Scale Options",
+            "label": "Variable Options",
             "properties": {
-                "log_y": {
+                "axis": {
+                    "type": "string",
+                    "label": "Show Value On",
+                    "enum": ["X-Axis", "Y-Axis"],
+                    "default": "Y-Axis",
+                },
+                "log_values": {
                     "type": "boolean",
-                    "label": "Log Scale - Y Axis"
+                    "label": "Log Scale"
+                },
+                "sort_by": {
+                    "type": "string",
+                    "enum": ["Mean", "Median", "Name"],
+                    "default": "Mean",
+                    "label": "Sort By",
+                    "help": "How to sort the variables"
+                }
+            }
+        },
+        "category_options": {
+            "type": "object",
+            "label": "Category Options",
+            "properties": {
+                "axis": {
+                    "type": "string",
+                    "enum": ["Axis", "Facet", "Color"],
+                    "default": "Axis",
+                    "label": "Show Category As",
+                    "help": "How to display the category data"
+                },
+                "sort_by": {
+                    "type": "string",
+                    "enum": ["Mean", "Median", "Name"],
+                    "default": "Mean",
+                    "label": "Sort By",
+                    "help": "How to sort the categories"
                 }
             }
         },
@@ -52,14 +85,36 @@ class PlotlyBoxMulti(Plotly):
             "properties": {
                 "ncols": {
                     "type": "integer",
-                    "label": "Number of Columns",
+                    "label": "Number of Columns (optional)",
                     "default": 1,
                     "min_value": 1
                 },
                 "outliers": {
-                    "type": "boolean",
-                    "label": "Show Outliers",
-                    "default": True
+                    "type": "object",
+                    "label": "Show Outlier Points",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "label": "Enabled",
+                            "default": True
+                        }
+                    }
+                },
+                "var_label": {
+                    "type": "string",
+                    "label": "Variable Label",
+                    "default": "Variable"
+                },
+                "val_label": {
+                    "type": "string",
+                    "label": "Value Label",
+                    "default": "Value"
+                },
+                "height": {
+                    "type": "integer",
+                    "label": "Height",
+                    "default": 500,
+                    "min_value": 100
                 }
             }
         }
@@ -71,22 +126,26 @@ class PlotlyBoxMulti(Plotly):
         if data is None:
             container.write("Please select a data table")
             return
-        category: pd.Series = (
-            self.params
-            ["table.category.dataframe"]
-            ["category"]
-        )
 
-        # Get the shared indices
-        index = data.index.intersection(category.index)
+        category = self.params.get("table.category.dataframe")
+        if category is not None:
+            category: pd.Series = category["category"]
 
-        # Make sure that there is some degree of intersection
-        msg = "No common indices found between the data and category tables."
-        assert len(index) > 0, msg
+            # Get the shared indices
+            index = data.index.intersection(category.index)
 
-        # Subset each to just those indices
-        data = data.loc[index]
-        category = category.loc[index]
+            # Make sure that there is some degree of intersection
+            msg = "No common indices found between the data and category tables."
+            assert len(index) > 0, msg
+
+            # Subset each to just those indices
+            data = data.loc[index]
+            category = category.loc[index]
+
+        # Note that at this point the category may be None, in which case
+        # we will format the plot differently
+
+        # Clean up the index name
         data.index.name = "index"
 
         # Make a long DataFrame which has all of the values
@@ -95,31 +154,92 @@ class PlotlyBoxMulti(Plotly):
             .rename_axis(columns=None)
             .reset_index()
             .melt(id_vars="index")
-            .assign(
+        )
+
+        # Set up the elements which are always the same
+        kwargs = dict(
+            y="value",
+            facet_col_wrap=int(self.params["display_options.ncols"])
+        )
+        var_name = (
+            "variable"
+            if "variable" in data_long.columns
+            else "var"
+        )
+
+        # If the category was provided
+        if category is not None:
+
+            # Add it to the table
+            data_long = data_long.assign(
                 category=lambda df: df["index"].apply(category.get)
             )
-        )
+
+            # Format the display with the category as a facet
+            if self.params["category_options.axis"] == "Facet":
+                kwargs['x'] = var_name
+                kwargs['facet_col'] = "category"
+                kwargs['boxmode'] = "overlay"
+
+            # Show the category on the x-axis
+            elif self.params["category_options.axis"] == "Axis":
+                kwargs['x'] = "category"
+                kwargs['color'] = var_name
+            else:
+                # Display as a color
+                assert self.params["category_options.axis"] == "Color"
+                kwargs['x'] = var_name
+                kwargs['color'] = "category"
+
+        # If no category was provided
+        else:
+            # Format the display with no category
+            kwargs["x"] = var_name
+
+        # If the user wants to show the variable on the x-axis
+        if self.params["variable_options.axis"] == "X-Axis":
+            kwargs["x"], kwargs["y"] = kwargs["y"], kwargs["x"]
+            kwargs["log_x"] = self.params["variable_options.log_values"]
+        else:
+            kwargs["log_y"] = self.params["variable_options.log_values"]
+
+        # Set up the ordering
+        category_orders = {
+            cname: (
+                data_long.groupby(cname)["value"].mean().sort_values().index
+                if approach == "Mean"
+                else (
+                    data_long.groupby(cname)["value"].median().sort_values().index
+                    if approach == "Median"
+                    else data_long[cname].drop_duplicates().sort_values()
+                )
+            )
+            for cname, approach in [
+                (var_name, self.params["variable_options.sort_by"])
+            ] + (
+                [("category", self.params["category_options.sort_by"])]
+                if category is not None
+                else []
+            )
+        }
 
         fig = px.box(
             data_long,
-            x="category",
-            y="value",
-            facet_col=(
-                "variable"
-                if "variable" in data_long.columns
-                else "var"
-            ),
-            boxmode="overlay",
-            facet_col_wrap=int(self.params["display_options.ncols"]),
-            log_y=self.params["scale_options.log_y"],
             labels=dict(
-                category=self.params["table.category.category.label"]
+                category=self.params["table.category.category.label"],
+                value=self.params["display_options.val_label"],
+                **{
+                    var_name: self.params["display_options.var_label"]
+                }
             ),
             points=(
                 "outliers"
-                if self.params["display_options.outliers"]
+                if self.params["display_options.outliers.enabled"]
                 else False
-            )
+            ),
+            category_orders=category_orders,
+            height=self.params["display_options.height"],
+            **kwargs
         )
         fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
         fig.update_yaxes(matches=None)

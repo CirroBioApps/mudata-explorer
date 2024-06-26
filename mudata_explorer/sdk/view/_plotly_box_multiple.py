@@ -35,9 +35,16 @@ def plotly_box_multiple(
     table_category_cols_query_query_expr='',
     table_category_cols_query_query_value='',
     table_category_transforms=[],
-    scale_options_log_y=None,
+    variable_options_axis='Y-Axis',
+    variable_options_log_values=None,
+    variable_options_sort_by='Mean',
+    category_options_axis='Axis',
+    category_options_sort_by='Mean',
     display_options_ncols=1,
-    display_options_outliers=True,
+    display_options_outliers_enabled=True,
+    display_options_var_label='Variable',
+    display_options_val_label='Value',
+    display_options_height=500,
     **extra_params
 ):
     """
@@ -86,8 +93,15 @@ def plotly_box_multiple(
             'table.category.cols_query.query.expr': extra_params.get('table_category_cols_query_query_expr', table_category_cols_query_query_expr),
             'table.category.cols_query.query.value': extra_params.get('table_category_cols_query_query_value', table_category_cols_query_query_value),
             'table.category.transforms': extra_params.get('table_category_transforms', table_category_transforms),
-            'scale_options.log_y': extra_params.get('scale_options_log_y', scale_options_log_y),
+            'variable_options.axis': extra_params.get('variable_options_axis', variable_options_axis),
+            'variable_options.log_values': extra_params.get('variable_options_log_values', variable_options_log_values),
+            'variable_options.sort_by': extra_params.get('variable_options_sort_by', variable_options_sort_by),
+            'category_options.axis': extra_params.get('category_options_axis', category_options_axis),
+            'category_options.sort_by': extra_params.get('category_options_sort_by', category_options_sort_by),
             'display_options.ncols': extra_params.get('display_options_ncols', display_options_ncols),
-            'display_options.outliers': extra_params.get('display_options_outliers', display_options_outliers)
+            'display_options.outliers.enabled': extra_params.get('display_options_outliers_enabled', display_options_outliers_enabled),
+            'display_options.var_label': extra_params.get('display_options_var_label', display_options_var_label),
+            'display_options.val_label': extra_params.get('display_options_val_label', display_options_val_label),
+            'display_options.height': extra_params.get('display_options_height', display_options_height)
         }
     )
