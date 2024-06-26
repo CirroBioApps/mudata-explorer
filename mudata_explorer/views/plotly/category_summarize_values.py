@@ -2,6 +2,7 @@ import pandas as pd
 import plotly.express as px
 from streamlit.delta_generator import DeltaGenerator
 from mudata_explorer.views.plotly.base import Plotly
+from scipy.cluster import hierarchy
 
 
 class PlotlyCategorySummarizeValues(Plotly):
@@ -70,10 +71,29 @@ class PlotlyCategorySummarizeValues(Plotly):
                     "help": "The color scale to use for the color metric.",
                     "default": "bluered",
                     "enum": px.colors.named_colorscales()
+                },
+                "sort_by": {
+                    "type": "string",
+                    "label": "Sort By",
+                    "enum": ["Labels", "Values"],
+                    "default": "Labels",
                 }
             }
         }
     }
+
+    @staticmethod
+    def sort_rows(df: pd.DataFrame) -> pd.DataFrame:
+        return df.reindex(
+            index=df.index[
+                hierarchy.leaves_list(
+                    hierarchy.linkage(
+                        df.values,
+                        method="ward"
+                    )
+                )
+            ]
+        )
 
     def display(self, container: DeltaGenerator):
 
@@ -152,6 +172,22 @@ class PlotlyCategorySummarizeValues(Plotly):
         else:
             color = None
 
+        if self.params['formatting.sort_by'] == "Labels":
+            category_orders = {
+                cname: summary.reset_index()[cname].drop_duplicates().tolist()
+                for cname in ["column", "category"]
+            }
+        else:
+            wide_df = summary.pivot_table(
+                index="category",
+                columns="column",
+                values=size
+            )
+            category_orders = dict(
+                category=self.sort_rows(wide_df).index,
+                column=self.sort_rows(wide_df.T).index
+            )
+
         fig = px.scatter(
             summary.reset_index(),
             x="column",
@@ -160,6 +196,7 @@ class PlotlyCategorySummarizeValues(Plotly):
             color=color,
             color_continuous_scale=self.params['formatting.colorscale'],
             hover_data=["Mean", "Median", "Positive", "Non-Null"],
+            category_orders=category_orders,
             labels=dict(
                 column=(
                     "Observation"

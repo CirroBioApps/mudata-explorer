@@ -38,6 +38,7 @@ def plotly_category_summarize_values(
     formatting_size='Mean',
     formatting_color='Non-Null',
     formatting_colorscale='bluered',
+    formatting_sort_by='Labels',
     **extra_params
 ):
     """
@@ -98,6 +99,7 @@ def plotly_category_summarize_values(
             'table.category.transforms': extra_params.get('table_category_transforms', table_category_transforms),
             'formatting.size': extra_params.get('formatting_size', formatting_size),
             'formatting.color': extra_params.get('formatting_color', formatting_color),
-            'formatting.colorscale': extra_params.get('formatting_colorscale', formatting_colorscale)
+            'formatting.colorscale': extra_params.get('formatting_colorscale', formatting_colorscale),
+            'formatting.sort_by': extra_params.get('formatting_sort_by', formatting_sort_by)
         }
     )
