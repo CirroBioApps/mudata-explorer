@@ -304,6 +304,12 @@ part of the training or testing set.
             weights.abs().rename(columns=lambda x: f"abs_{x}")
         ], axis=1)
 
+        # Save the maximum absolute weight, as well as the rank order
+        weights = weights.assign(
+            max_abs_weight=weights.abs().max(axis=1),
+            rank=weights.abs().mean(axis=1).rank(ascending=False)
+        )
+
         self.save_results("weights", weights, figures=figures)
 
     def score_by_permutation(self, pred, truth, n_reps=1000):
