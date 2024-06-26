@@ -42,6 +42,7 @@ def plotly_box_multiple(
     category_options_sort_by='Mean',
     display_options_ncols=1,
     display_options_outliers_enabled=True,
+    display_options_title='',
     display_options_var_label='Variable',
     display_options_val_label='Value',
     display_options_height=500,
@@ -100,6 +101,7 @@ def plotly_box_multiple(
             'category_options.sort_by': extra_params.get('category_options_sort_by', category_options_sort_by),
             'display_options.ncols': extra_params.get('display_options_ncols', display_options_ncols),
             'display_options.outliers.enabled': extra_params.get('display_options_outliers_enabled', display_options_outliers_enabled),
+            'display_options.title': extra_params.get('display_options_title', display_options_title),
             'display_options.var_label': extra_params.get('display_options_var_label', display_options_var_label),
             'display_options.val_label': extra_params.get('display_options_val_label', display_options_val_label),
             'display_options.height': extra_params.get('display_options_height', display_options_height)

@@ -100,6 +100,11 @@ class PlotlyBoxMulti(Plotly):
                         }
                     }
                 },
+                "title": {
+                    "type": "string",
+                    "label": "Title",
+                    "default": ""
+                },
                 "var_label": {
                     "type": "string",
                     "label": "Variable Label",
@@ -159,7 +164,9 @@ class PlotlyBoxMulti(Plotly):
         # Set up the elements which are always the same
         kwargs = dict(
             y="value",
-            facet_col_wrap=int(self.params["display_options.ncols"])
+            facet_col_wrap=int(self.params["display_options.ncols"]),
+            height=self.params["display_options.height"],
+            title=self.params["display_options.title"]
         )
         var_name = (
             "variable"
@@ -238,7 +245,6 @@ class PlotlyBoxMulti(Plotly):
                 else False
             ),
             category_orders=category_orders,
-            height=self.params["display_options.height"],
             **kwargs
         )
         fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
