@@ -95,6 +95,10 @@ Documentation:
             for cname, cvals in df.items()
         ]).set_index("index")
 
+        # Assign a rank order to the results such that the
+        # largest f-statistic is ranked first
+        res["rank"] = res["f_statistic"].rank(ascending=False)
+
         self.save_results("results", res)
 
     @staticmethod

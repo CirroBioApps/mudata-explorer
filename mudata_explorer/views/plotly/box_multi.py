@@ -32,7 +32,9 @@ class PlotlyBoxMulti(Plotly):
                     "type": "dataframe",
                     "label": "Category",
                     "help": "Select the column containing category labels", # noqa
-                    "columns": {"category": {"label": "Category"}}
+                    "columns": {"category": {"label": "Category"}},
+                    "optional": True,
+                    "query": ""
                 }
             }
         },

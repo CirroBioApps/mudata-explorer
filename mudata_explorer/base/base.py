@@ -59,6 +59,13 @@ class MuDataAppHelpers:
                     )
 
             elif elem["type"] == "dataframe":
+
+                if elem.get("optional", False):
+                    yield (
+                        join_kws(key, "enabled"),
+                        True
+                    )
+
                 # Each dataframe may be oriented to the obs or var
                 yield (
                     join_kws(key, "axis"),
@@ -467,6 +474,18 @@ class MuDataAppHelpers:
 
         if elem.get("help") is not None and self.params_editable:
             container.write(elem.get('help'))
+
+        # Optional column selection
+        enabled_kw = join_kws(key, "enabled")
+        if elem.get("optional", False) and self.params_editable:
+            container.checkbox(
+                "Enabled",
+                **self.input_value_kwargs(enabled_kw)
+            )
+
+        # If the column is disabled
+        if not self.params.get(enabled_kw, True):
+            return
 
         if self.params_editable and app.has_mdata() is False:
             container.write("No MuData object available.")
