@@ -4,6 +4,7 @@ import plotly.express as px
 from plotly import graph_objects as go
 from streamlit.delta_generator import DeltaGenerator
 from mudata_explorer.views.plotly.base import Plotly
+from scipy.cluster import hierarchy
 
 
 class PlotlyContingencyTable(Plotly):
@@ -57,6 +58,19 @@ The display can be used to show either:
         }
     }
 
+    @staticmethod
+    def sort_rows(df: pd.DataFrame) -> pd.DataFrame:
+        return df.reindex(
+            index=df.index[
+                hierarchy.leaves_list(
+                    hierarchy.linkage(
+                        df.values,
+                        method="ward"
+                    )
+                )
+            ]
+        )
+
     def display(self, container: DeltaGenerator):
 
         data: pd.DataFrame = self.params["data.dataframe"]
@@ -65,6 +79,11 @@ The display can be used to show either:
         table = pd.crosstab(
             data["y"],
             data["x"]
+        )
+
+        # Sort using linkage clustering
+        table = self.sort_rows(
+            self.sort_rows(table.T).T
         )
 
         # If the user has selected to display an odds ratio
