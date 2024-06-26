@@ -5,6 +5,7 @@ import json
 import muon as mu
 import numpy as np
 import pandas as pd
+import requests
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 from tempfile import NamedTemporaryFile
@@ -62,6 +63,18 @@ def sidebar_load_history():
         save_load.load_history()
 
 
+def load_url(url: str):
+    res = requests.get(url)
+    print(len(res.content))
+    with NamedTemporaryFile(suffix=".h5mu", delete=True) as tmp:
+        with open(tmp.file.name, "wb") as f:
+            f.write(res.content)
+        mdata = mu.read_h5mu(tmp.file.name)
+
+    hydrate_uns(mdata)
+    set_mdata(mdata)
+
+
 def setup_sidebar(
     edit_views=False,
     load_history=False,
@@ -72,7 +85,12 @@ def setup_sidebar(
     If edit_views is True, add a checkbox to allow the user to edit the views.
     """
     st.set_page_config("MuData Explorer", layout=page_layout)
-    # st.sidebar.title("MuData Explorer")
+
+    # If a file link is in the query params
+    if st.query_params.get("file"):
+        load_url(st.query_params["file"])
+        del st.query_params["file"]
+        # st.rerun()
 
     sidebar_page_links([
         ("tables", "Tables"),
@@ -843,7 +861,6 @@ def process_sdk_snippet(prov: dict):
     **{params_str}
 )
 """
-
 
 
 def get_supp_figs() -> List[Tuple[str, dict]]:
