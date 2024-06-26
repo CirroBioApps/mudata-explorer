@@ -10,14 +10,24 @@ from mudata_explorer.helpers.join_kws import join_kws # noqa
 import pandas as pd
 
 
-def list_resources(module):
-    return [
-        getattr(getattr(module, view_folder), view)
-        for view_folder in dir(module)
-        if not view_folder.startswith("__")
-        for view in dir(getattr(module, view_folder))
-        if hasattr(getattr(getattr(module, view_folder), view), "type")
-    ]
+def list_resources(module, iter_depth=0):
+    if iter_depth > 2:
+        return []
+    resources = []
+    for submodule in dir(module):
+        if submodule.startswith("__"):
+            continue
+        if hasattr(getattr(module, submodule), "type"):
+            if isinstance(getattr(getattr(module, submodule), "type"), str):
+                resources.append(getattr(module, submodule))
+        else:
+            resources.extend(
+                list_resources(
+                    getattr(module, submodule),
+                    iter_depth=iter_depth + 1
+                )
+            )
+    return resources
 
 
 all_views: List[View] = list_resources(views)

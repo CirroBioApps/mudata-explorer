@@ -37,6 +37,7 @@ def plotly_box_multiple(
     table_category_transforms=[],
     scale_options_log_y=None,
     display_options_ncols=1,
+    display_options_outliers=True,
     **extra_params
 ):
     """
@@ -86,6 +87,7 @@ def plotly_box_multiple(
             'table.category.cols_query.query.value': extra_params.get('table_category_cols_query_query_value', table_category_cols_query_query_value),
             'table.category.transforms': extra_params.get('table_category_transforms', table_category_transforms),
             'scale_options.log_y': extra_params.get('scale_options_log_y', scale_options_log_y),
-            'display_options.ncols': extra_params.get('display_options_ncols', display_options_ncols)
+            'display_options.ncols': extra_params.get('display_options_ncols', display_options_ncols),
+            'display_options.outliers': extra_params.get('display_options_outliers', display_options_outliers)
         }
     )
