@@ -141,6 +141,12 @@ class RunLeiden(Process):
         )
 
         # Format the results as a pandas series
-        res = adata.obs["leiden"]
+        res = (
+            adata
+            .obs["leiden"]
+            .apply(
+                lambda x: f"Cluster {x + 1}"
+            )
+        )
 
         self.save_results("res", res)

@@ -136,4 +136,8 @@ class RunDBSCAN(Process):
         # Anything with a cluster assignment of -1 was unassigned
         res = res.loc[res != '-1']
 
+        res = res.apply(
+            lambda x: f"Cluster {int(x) + 1}"
+        )
+
         self.save_results("res", res)

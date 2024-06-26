@@ -149,10 +149,14 @@ class RunKmeans(Process):
         )
         fig.add_vline(x=k, line_dash="dash", line_color="grey")
 
+        res = clusters[k].apply(
+            lambda x: f"Cluster {x + 1}"
+        )
+
         # Save the results and the figure
         self.save_results(
             "res",
-            clusters[k],
+            res,
             figures=[io.to_json(fig, validate=False)]
         )
 
