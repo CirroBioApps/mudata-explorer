@@ -145,7 +145,7 @@ class RunLeiden(Process):
             adata
             .obs["leiden"]
             .apply(
-                lambda x: f"Cluster {x + 1}"
+                lambda x: f"Cluster {int(x) + 1}"
             )
         )
 

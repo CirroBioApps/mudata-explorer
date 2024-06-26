@@ -150,7 +150,7 @@ class RunKmeans(Process):
         fig.add_vline(x=k, line_dash="dash", line_color="grey")
 
         res = clusters[k].apply(
-            lambda x: f"Cluster {x + 1}"
+            lambda x: f"Cluster {int(x) + 1}"
         )
 
         # Save the results and the figure
