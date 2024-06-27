@@ -3,10 +3,10 @@ import pandas as pd
 import plotly.express as px
 from plotly import io
 from sklearn import ensemble
-from mudata_explorer.base.process import Process
+from mudata_explorer.process.ml_classifier import MLClassifier
 
 
-class RandomForestClassifier(Process):
+class RandomForestClassifier(MLClassifier):
 
     type = "random_forest_classifier"
     name = "Random Forest Classifier"
@@ -65,6 +65,13 @@ class RandomForestClassifier(Process):
                     "default": 0.5,
                     "label": "Training Proportion",
                     "help": "Proportion of the data to use for training."
+                },
+                "balance_groups": {
+                    "type": "string",
+                    "label": "Balance Groups",
+                    "help": "Whether to select a random subset with equal numbers per class.", # noqa
+                    "enum": ["Use All Data", "Balance Groups"],
+                    "default": "Use All Data"
                 },
                 "n_estimators": {
                     "type": "integer",
@@ -140,24 +147,9 @@ class RandomForestClassifier(Process):
 
     def execute(self):
 
-        df: pd.DataFrame = self.params["table.data.dataframe"]
-        df = df.dropna()
-        assert df.shape[0] > 0, "Null values in all rows."
-
-        pred: pd.Series = (
-            self.params
-            ["table.predictor.dataframe"]
-            ["predictor"]
-            .dropna()
-        )
-
-        # Get the set of observations which have both data and predictor
-        shared = df.index.intersection(pred.index)
-
-        assert len(shared) > 0, "No shared rows between data and predictor"
-
-        df = df.loc[shared]
-        pred = pred.loc[shared]
+        # Get the data and predictor
+        # This will also balance the groups if necessary
+        df, pred = self.get_data_and_predictor()
 
         train_prop = self.params["model_params.train_prop"]
         n_estimators = self.params["model_params.n_estimators"]

@@ -859,7 +859,6 @@ class MuDataAppHelpers:
                 self.param(key, col_kw, "enabled")
             )
         }
-        print(col_data)
 
         # Build a DataFrame with no null values
         return pd.DataFrame(col_data).dropna()
