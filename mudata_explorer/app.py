@@ -746,7 +746,14 @@ def get_dataframe_column(
         axis,
         mdata=mdata
     )
-    return df[cname]
+    # Just get the column of interest
+    df = df[cname]
+
+    # If there are multiple columns with the same name
+    if len(df.shape) > 1:
+        df = df.iloc[:, 0]
+
+    return df
 
 
 def get_dat_hash(mdata: Optional[mu.MuData] = None):

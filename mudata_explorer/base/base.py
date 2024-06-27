@@ -838,7 +838,7 @@ class MuDataAppHelpers:
                     return
 
         # Get the information for each column
-        return pd.DataFrame({
+        col_data = {
             col_kw: app.get_dataframe_column(
                 mdata=self.mdata,
                 axis=axis,
@@ -858,7 +858,11 @@ class MuDataAppHelpers:
                 or
                 self.param(key, col_kw, "enabled")
             )
-        }).dropna()
+        }
+        print(col_data)
+
+        # Build a DataFrame with no null values
+        return pd.DataFrame(col_data).dropna()
 
     def filter_dataframe_cols(
         self,
@@ -1205,13 +1209,21 @@ class MuDataAppHelpers:
                     container.write("No values match the filter criteria.")
                 return df
 
+            # Get the values from the column
+            vals = table[query["cname"]]
+
+            # If there are multiple columns with the same name
+            if len(vals.shape) > 1:
+                # Only take the first one
+                vals = vals.iloc[:, 0]
+
             if query["expr"] == "in":
                 return df.loc[
-                    table[query["cname"]].isin(query["value"])
+                    vals.isin(query["value"])
                 ]
             else:
                 return df.loc[
-                    ~table[query["cname"]].isin(query["value"])
+                    ~vals.isin(query["value"])
                 ]
 
         # Apply the filter, trying both string and numeric values
