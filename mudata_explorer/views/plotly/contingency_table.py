@@ -5,6 +5,7 @@ from plotly import graph_objects as go
 from streamlit.delta_generator import DeltaGenerator
 from mudata_explorer.views.plotly.base import Plotly
 from scipy.cluster import hierarchy
+from scipy.stats import fisher_exact
 
 
 class PlotlyContingencyTable(Plotly):
@@ -86,17 +87,57 @@ The display can be used to show either:
             self.sort_rows(table.T).T
         )
 
+        # Calculate the enrichment
+        prop = table / table.sum().sum()
+        exp = pd.DataFrame({
+            col: {
+                row: prop.loc[row].sum() * prop[col].sum()
+                for row in table.index
+            }
+            for col in table.columns
+        })
+        enrichment = pd.DataFrame({
+            col: {
+                row: (prop.loc[row, col] - exp.loc[row, col]) / exp.loc[row, col]
+                for row in table.index
+            }
+            for col in table.columns
+        }) * 100
+
+        # Calculate the p-value for each cell
+        pvals = pd.DataFrame({
+            col: {
+                row: fisher_exact(
+                    [
+                        [table.loc[row, col], table.loc[row].sum() - table.loc[row, col]],
+                        [table.loc[:, col].sum() - table.loc[row, col], table.drop(columns=[col], index=[row]).sum().sum()]
+                    ]
+                )[1]
+                for row in table.index
+            }
+            for col in table.columns
+        })
+
+        # Make the text for each cell
+        disp = pd.DataFrame({
+            col: {
+                row: (
+                    f"Value: {table.loc[row, col]}<br>" +
+                    f"Expected: {table.sum().sum() * exp.loc[row, col]:.1f}<br>" +
+                    f"Enrichment: {enrichment.loc[row, col]:.2f}%<br>" +
+                    f"p-value: {pvals.loc[row, col]:.2f}"
+                ) if pvals.loc[row, col] < 0.05 else ""
+                for row in table.index
+            }
+            for col in table.columns
+        })
+
         # If the user has selected to display an odds ratio
         value_format = self.params["formatting.values"]
         if value_format == "Odds Ratio (log2)":
-            table = table / table.sum().sum()
             table = pd.DataFrame({
                 col: {
-                    row: (
-                        table.loc[row, col]
-                        /
-                        (table.loc[row].sum() * table[col].sum())
-                    )
+                    row: prop.loc[row, col] / exp.loc[row, col]
                     for row in table.index
                 }
                 for col in table.columns
@@ -107,6 +148,8 @@ The display can be used to show either:
                 z=table.values,
                 x=table.columns,
                 y=table.index,
+                text=disp.values,
+                texttemplate="%{text}",
                 hovertext=table.applymap(
                     lambda i: (
                         f"{value_format}: {i}"
