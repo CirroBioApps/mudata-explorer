@@ -137,7 +137,10 @@ class RunLeiden(Process):
         # Run Leiden clustering
         sc.tl.leiden(
             adata,
-            resolution=self.params["clustering.resolution"]
+            resolution=self.params["clustering.resolution"],
+            flavor="igraph",
+            n_iterations=2,
+            directed=False
         )
 
         # Format the results as a pandas series
