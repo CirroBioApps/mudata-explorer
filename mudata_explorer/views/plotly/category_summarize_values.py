@@ -172,9 +172,17 @@ class PlotlyCategorySummarizeValues(Plotly):
         else:
             color = None
 
+        summary.reset_index(inplace=True)
+
+        # If all of the columns start with the same prefix
+        if summary["column"].apply(lambda x: x.split(":")[0]).nunique() == 1:
+            summary["column"] = summary["column"].apply(
+                lambda x: x.split(":", 1)[1]
+            )
+
         if self.params['formatting.sort_by'] == "Labels":
             category_orders = {
-                cname: summary.reset_index()[cname].drop_duplicates().tolist()
+                cname: summary[cname].drop_duplicates().tolist()
                 for cname in ["column", "category"]
             }
         else:
@@ -189,7 +197,7 @@ class PlotlyCategorySummarizeValues(Plotly):
             )
 
         fig = px.scatter(
-            summary.reset_index(),
+            summary,
             x="column",
             y="category",
             size=size,
