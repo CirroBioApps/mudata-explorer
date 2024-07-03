@@ -122,11 +122,11 @@ The display can be used to show either:
         disp = pd.DataFrame({
             col: {
                 row: (
-                    f"Value: {table.loc[row, col]}<br>" +
+                    f"Observed: {table.loc[row, col]}<br>" +
                     f"Expected: {table.sum().sum() * exp.loc[row, col]:.1f}<br>" +
                     f"Enrichment: {enrichment.loc[row, col]:.2f}%<br>" +
                     f"p-value: {pvals.loc[row, col]:.2f}"
-                ) if pvals.loc[row, col] < 0.05 else ""
+                ) if pvals.loc[row, col] < 0.1 else ""
                 for row in table.index
             }
             for col in table.columns
