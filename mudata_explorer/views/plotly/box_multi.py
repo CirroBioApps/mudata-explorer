@@ -176,6 +176,12 @@ class PlotlyBoxMulti(Plotly):
             else "var"
         )
 
+        # If all of the columns start with the same prefix
+        if data_long[var_name].apply(lambda x: x.split(":")[0]).nunique() == 1:
+            data_long[var_name] = data_long[var_name].apply(
+                lambda x: x.split(":", 1)[1]
+            )
+
         # If the category was provided
         if category is not None:
 
