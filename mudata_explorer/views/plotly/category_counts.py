@@ -1,6 +1,7 @@
 import plotly.express as px
 from streamlit.delta_generator import DeltaGenerator
 from mudata_explorer.views.plotly.base import Plotly
+from scipy.stats import chi2_contingency
 
 
 class PlotlyCategoryCount(Plotly):
@@ -51,6 +52,20 @@ class PlotlyCategoryCount(Plotly):
                     "label": "Log Scale - Y Axis"
                 }
             }
+        },
+        "annotation_options": {
+            "type": "object",
+            "label": "Annotation Options",
+            "properties": {
+                "show_values": {
+                    "type": "boolean",
+                    "label": "Show Values"
+                },
+                "chisquare": {
+                    "type": "boolean",
+                    "label": "Chi-Square Contingency Test"
+                }
+            }
         }
     }
 
@@ -75,6 +90,13 @@ class PlotlyCategoryCount(Plotly):
             .rename("count")
             .reset_index()
         )
+        title = dict(title=None)
+        if self.params["annotation_options.chisquare"]:
+            if self.params["data.color.enabled"]:
+                chi2, p, _, _ = chi2_contingency(
+                    df.pivot(index="x", columns="color", values="count").fillna(0)
+                )
+                title = dict(title=f"Chi-Square: {chi2:.2f}, p-value: {p:.4f}")
 
         fig = px.bar(
             df,
@@ -88,7 +110,9 @@ class PlotlyCategoryCount(Plotly):
                 color=self.params["data.color.label"]
             ),
             barmode=self.params["barmode"],
-            **colorscale
+            text_auto=self.params.get("annotation_options.show_values", False),
+            **colorscale,
+            **title
         )
 
         container.plotly_chart(fig)
