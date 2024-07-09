@@ -31,6 +31,8 @@ def plotly_category_count(
     ylabel='Count',
     barmode=None,
     scale_options_log_y=None,
+    annotation_options_show_values=None,
+    annotation_options_chisquare=None,
     **extra_params
 ):
     """
@@ -75,6 +77,8 @@ def plotly_category_count(
             'data.transforms': extra_params.get('data_transforms', data_transforms),
             'ylabel': extra_params.get('ylabel', ylabel),
             'barmode': extra_params.get('barmode', barmode),
-            'scale_options.log_y': extra_params.get('scale_options_log_y', scale_options_log_y)
+            'scale_options.log_y': extra_params.get('scale_options_log_y', scale_options_log_y),
+            'annotation_options.show_values': extra_params.get('annotation_options_show_values', annotation_options_show_values),
+            'annotation_options.chisquare': extra_params.get('annotation_options_chisquare', annotation_options_chisquare)
         }
     )
