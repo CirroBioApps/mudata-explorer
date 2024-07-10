@@ -13,7 +13,8 @@ from typing import Any, List, Optional, Tuple, Union, Dict
 from mudata_explorer.helpers import get_view_by_type, all_view_types # noqa
 from mudata_explorer.helpers import get_process_by_type, all_process_types # noqa
 from mudata_explorer.helpers.join_kws import join_kws
-from mudata_explorer.helpers import mudata, plotting, save_load
+from mudata_explorer.helpers import mudata, plotting
+from mudata_explorer.helpers.save_load import load_history
 from mudata_explorer.base.slice import MuDataSlice
 from plotly import io
 
@@ -60,7 +61,7 @@ def sidebar_load_history():
         return
 
     if st.sidebar.button("Rerun Analysis"):
-        save_load.load_history()
+        load_history()
 
 
 def load_url(url: str):
@@ -97,19 +98,13 @@ def setup_sidebar(
         ("processes", "Analysis"),
         ("views", "Figures"),
         ("history", "History"),
+        ("save_load", "Save / Load"),
         ("about", "About")
     ])
     if edit_views:
         sidebar_edit_views()
     if load_history:
         sidebar_load_history()
-
-    load_cont, save_cont = st.sidebar.columns(2)
-    if has_mdata():
-        if save_cont.button("Save File", use_container_width=True):
-            save_load.download_button()
-    if load_cont.button("Load File", use_container_width=True):
-        save_load.upload_button()
 
     plotting.plot_mdata(st.sidebar)
 

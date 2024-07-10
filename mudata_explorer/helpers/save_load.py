@@ -4,8 +4,8 @@ import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 
 
-@st.experimental_dialog("Upload MuData")
-def upload_button():
+def upload_mdata():
+    st.write("#### Load Data")
     h5mu_file = st.file_uploader(
         "**Upload MuData (.h5mu)**"
     )
@@ -29,7 +29,7 @@ def upload_button():
     if st.button("Load Dataset"):
         app.set_mdata(mdata)
         app.set_mdata_hash(mdata_hash)
-        st.rerun()
+        st.page_link("pages/views.py", label="View Data")
 
 
 def show_hash(container: DeltaGenerator):
@@ -42,14 +42,14 @@ def show_hash(container: DeltaGenerator):
     container.write(f"**Unique Hash**: {hash}")
 
 
-@st.experimental_dialog("Download MuData")
-def download_button():
+def download_mdata():
 
     # Get the current dataset along with its unique hash
     dat, hash, size = app.get_dat_hash()
     if dat is None:
         return
 
+    st.write("#### Save Data")
     st.write(f"File is {size}")
     st.write(f"Unique hash: {hash}")
 
