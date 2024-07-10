@@ -96,7 +96,10 @@ class PlotlyCategoryCount(Plotly):
                 chi2, p, _, _ = chi2_contingency(
                     df.pivot(index="x", columns="color", values="count").fillna(0)
                 )
-                colorscale['title'] = f"Chi-Square: {chi2:.2f}, p-value: {p:.4f}"
+                if p > 0.001:
+                    colorscale['title'] = f"Chi-Square: {chi2:.2f}, p-value: {p:.4f}"
+                else:
+                    colorscale['title'] = f"Chi-Square: {chi2:.2f}, p-value: {p:.2E}"
 
         fig = px.bar(
             df,
