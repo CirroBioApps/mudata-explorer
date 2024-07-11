@@ -93,6 +93,7 @@ Documentation:
                 **self.run_kruskal(cvals, group)
             )
             for cname, cvals in df.items()
+            if cvals.nunique() > 1
         ]).set_index("index")
 
         # Assign a rank order to the results such that the
