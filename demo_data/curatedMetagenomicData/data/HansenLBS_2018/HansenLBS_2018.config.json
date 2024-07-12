@@ -1,0 +1,8 @@
+[
+    {
+        "dataset_name": "HansenLBS 2018",
+        "cname": "uncurated_metadata",
+        "label": "Diet",
+        "n_features": 20
+    }
+]

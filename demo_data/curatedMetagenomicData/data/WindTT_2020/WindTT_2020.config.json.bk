@@ -1,0 +1,9 @@
+[
+    {
+        "dataset_name": "WindTT 2020",
+        "cname": "age_category",
+        "label": "Age Category",
+        "n_features": 20,
+        "transform": null
+    }
+]

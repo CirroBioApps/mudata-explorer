@@ -1,0 +1,9 @@
+[
+    {
+        "dataset_name": "Bengtsson-PalmeJ 2015",
+        "cname": "travel_destination",
+        "label": "Travel Destination",
+        "n_features": 20,
+        "transform": null
+    }
+]

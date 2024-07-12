@@ -1,0 +1,9 @@
+[
+    {
+        "dataset_name": "VilaAV 2018",
+        "cname": "disease_subtype",
+        "label": "Disease Subtype",
+        "n_features": 20,
+        "transform": null
+    }
+]

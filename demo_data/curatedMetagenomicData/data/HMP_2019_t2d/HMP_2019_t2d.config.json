@@ -1,0 +1,9 @@
+[
+    {
+        "dataset_name": "HMP 2019 t2d",
+        "cname": "study_condition",
+        "label": "Condition",
+        "n_features": 20,
+        "transform": null
+    }
+]

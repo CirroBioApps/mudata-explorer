@@ -1,0 +1,9 @@
+[
+    {
+        "dataset_name": "ChngKR 2016",
+        "cname": "study_condition",
+        "label": "Study Condition",
+        "n_features": 20,
+        "transform": null
+    }
+]

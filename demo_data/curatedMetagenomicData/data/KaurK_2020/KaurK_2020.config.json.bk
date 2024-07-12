@@ -1,0 +1,9 @@
+[
+    {
+        "dataset_name": "KaurK 2020",
+        "cname": "alcohol",
+        "label": "Alcohol",
+        "n_features": 20,
+        "transform": null
+    }
+]

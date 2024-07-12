@@ -1,0 +1,9 @@
+[
+    {
+        "dataset_name": "LeChatelierE 2013",
+        "cname": "BMI",
+        "label": "BMI (Quartile)",
+        "n_features": 20,
+        "transform": "quartiles"
+    }
+]

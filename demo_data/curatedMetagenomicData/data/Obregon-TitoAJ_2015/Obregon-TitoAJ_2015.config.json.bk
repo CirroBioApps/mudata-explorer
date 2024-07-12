@@ -1,0 +1,9 @@
+[
+    {
+        "dataset_name": "Obregon-TitoAJ 2015",
+        "cname": "non_westernized",
+        "label": "Non Westernized",
+        "n_features": 20,
+        "transform": null
+    }
+]

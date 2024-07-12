@@ -1,0 +1,9 @@
+[
+    {
+        "dataset_name": "LeeKA 2022",
+        "cname": "disease",
+        "label": "Disease",
+        "n_features": 20,
+        "transform": null
+    }
+]

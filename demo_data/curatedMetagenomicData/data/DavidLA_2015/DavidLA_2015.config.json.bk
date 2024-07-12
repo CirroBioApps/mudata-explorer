@@ -1,0 +1,9 @@
+[
+    {
+        "dataset_name": "DavidLA 2015",
+        "cname": "study_condition",
+        "label": "Study Condition",
+        "n_features": 20,
+        "transform": null
+    }
+]

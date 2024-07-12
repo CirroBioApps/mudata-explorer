@@ -1,0 +1,9 @@
+[
+    {
+        "dataset_name": "LassalleF 2017",
+        "cname": "age",
+        "label": "Age (quartiles)",
+        "n_features": 20,
+        "transform": "quartiles"
+    }
+]

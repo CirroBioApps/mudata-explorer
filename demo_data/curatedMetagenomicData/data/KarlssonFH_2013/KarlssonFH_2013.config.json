@@ -1,0 +1,9 @@
+[
+    {
+        "dataset_name": "KarlssonFH 2013",
+        "cname": "study_condition",
+        "label": "Study Condition",
+        "n_features": 20,
+        "transform": null
+    }
+]

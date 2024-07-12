@@ -1,0 +1,9 @@
+[
+    {
+        "dataset_name": "ThomasAM 2018a",
+        "cname": "study_condition",
+        "label": "Study Condition",
+        "n_features": 20,
+        "transform": null
+    }
+]

@@ -1,0 +1,9 @@
+[
+    {
+        "dataset_name": "ZhuF 2020",
+        "cname": "study_condition",
+        "label": "Study Condition",
+        "n_features": 20,
+        "transform": null
+    }
+]

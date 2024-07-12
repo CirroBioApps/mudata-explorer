@@ -1,0 +1,16 @@
+[
+    {
+        "dataset_name": "LifeLinesDeep 2016",
+        "cname": "age",
+        "label": "Age (quartiles)",
+        "n_features": 20,
+        "transform": "quartiles"
+    },
+    {
+        "dataset_name": "LifeLinesDeep 2016",
+        "cname": "BMI",
+        "label": "BMI (quartiles)",
+        "n_features": 20,
+        "transform": "quartiles"
+    }
+]

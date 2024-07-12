@@ -1,0 +1,9 @@
+[
+    {
+        "dataset_name": "TettAJ 2019 b",
+        "cname": "age",
+        "label": "Age (quartiles)",
+        "n_features": 20,
+        "transform": "quartiles"
+    }
+]

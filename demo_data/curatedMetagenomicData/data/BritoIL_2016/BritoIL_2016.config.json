@@ -1,0 +1,8 @@
+[
+    {
+        "dataset_name": "BritoIL 2016",
+        "cname": "body_site",
+        "label": "Body Site",
+        "n_features": 20
+    }
+]

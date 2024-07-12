@@ -1,0 +1,9 @@
+[
+    {
+        "dataset_name": "BrooksB 2017",
+        "cname": "infant_age",
+        "label": "Infant Age (quartile)",
+        "n_features": 20,
+        "transform": "quartiles"
+    }
+]

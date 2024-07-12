@@ -1,0 +1,9 @@
+[
+    {
+        "dataset_name": "PetersBA 2019",
+        "cname": "disease",
+        "label": "Disease",
+        "n_features": 20,
+        "transform": null
+    }
+]

@@ -1,0 +1,9 @@
+[
+    {
+        "dataset_name": "KieserS 2018",
+        "cname": "study_condition",
+        "label": "Study Condition",
+        "n_features": 20,
+        "transform": null
+    }
+]

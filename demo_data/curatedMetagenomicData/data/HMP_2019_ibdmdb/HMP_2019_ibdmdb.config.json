@@ -1,0 +1,9 @@
+[
+    {
+        "dataset_name": "HMP 2019 ibdmdb",
+        "cname": "study_condition",
+        "label": "IBD",
+        "n_features": 20,
+        "transform": null
+    }
+]

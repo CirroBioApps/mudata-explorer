@@ -1,0 +1,9 @@
+[
+    {
+        "dataset_name": "ZeeviD 2015",
+        "cname": "BMI",
+        "label": "BMI (quartile)",
+        "n_features": 20,
+        "transform": "quartiles"
+    }
+]

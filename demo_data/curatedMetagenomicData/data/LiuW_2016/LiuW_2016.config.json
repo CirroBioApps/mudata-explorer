@@ -1,0 +1,9 @@
+[
+    {
+        "dataset_name": "LiuW 2016",
+        "cname": "non_westernized",
+        "label": "Non Westernized",
+        "n_features": 20,
+        "transform": null
+    }
+]

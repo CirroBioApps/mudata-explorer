@@ -1,0 +1,8 @@
+[
+    {
+        "dataset_name": "PehrssonE 2016",
+        "cname": "location",
+        "label": "Location",
+        "n_features": 20
+    }
+]

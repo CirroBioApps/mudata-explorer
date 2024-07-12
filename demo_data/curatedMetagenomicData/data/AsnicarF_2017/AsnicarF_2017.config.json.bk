@@ -1,0 +1,8 @@
+[
+    {
+        "dataset_name": "AsnicarF 2017",
+        "cname": "age_category",
+        "label": "Age (category)",
+        "n_features": 20
+    }
+]
