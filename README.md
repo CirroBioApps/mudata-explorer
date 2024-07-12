@@ -16,7 +16,7 @@ Any bug reports or inquiries should be directed to:
 
 ## Examples
 
-[**Infant Microbiome Study - Backhed, et al. 2015**](https://mudata-explorer.streamlit.app/views?file=https://github.com/CirroBioApps/mudata-explorer/raw/main/demo_data/curatedMetagenomicData/BackhedF_2015/BackhedF_2015-46226d77c19496bb.h5mu)
+[**Human Microbiome - curatedMetagenomicData**](https://github.com/CirroBioApps/mudata-explorer/tree/main/demo_data/curatedMetagenomicData/inventory#readme)
 
 ## Multimodal Data
 
