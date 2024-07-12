@@ -105,9 +105,13 @@ Documentation:
     @staticmethod
     def run_kruskal(vals, group):
 
-        res = stats.kruskal(
-            *[vals[group == g] for g in group.unique()]
-        )
+        try:
+            res = stats.kruskal(
+                *[vals[group == g] for g in group.unique()]
+            )
+        except ValueError as e:
+            print(vals)
+            raise e
         return dict(
             f_statistic=res.statistic,
             pvalue=res.pvalue
