@@ -4,9 +4,9 @@ import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 
 
-def upload_mdata():
-    st.write("#### Load Data")
-    h5mu_file = st.file_uploader(
+def upload_mdata(container: DeltaGenerator):
+    container.write("#### Load Data")
+    h5mu_file = container.file_uploader(
         "**Upload MuData (.h5mu)**"
     )
     if h5mu_file is None:
@@ -14,7 +14,7 @@ def upload_mdata():
     try:
         mdata = app.read_h5mu(h5mu_file)
     except ValueError as e:
-        st.write(
+        container.write(
             f"Could not parse file: {h5mu_file.name}\n\n{str(e)}"
         )
         return
@@ -22,14 +22,14 @@ def upload_mdata():
     mdata_hash = app.hash_dat(h5mu_file.read())
 
     if mdata_hash in h5mu_file.name:
-        st.write("**Data Validated**: Unique hash matches file name.")
+        container.write("**Data Validated**: Unique hash matches file name.")
     else:
-        st.write("Unique file hash not found in file name.")
+        container.write("Unique file hash not found in file name.")
 
-    if st.button("Load Dataset"):
+    if container.button("Load Dataset"):
         app.set_mdata(mdata)
         app.set_mdata_hash(mdata_hash)
-        st.page_link("pages/views.py", label="View Data")
+        container.page_link("pages/views.py", label="View Data")
 
 
 def show_hash(container: DeltaGenerator):
@@ -42,21 +42,21 @@ def show_hash(container: DeltaGenerator):
     container.write(f"**Unique Hash**: {hash}")
 
 
-def download_mdata():
+def download_mdata(container: DeltaGenerator):
 
     # Get the current dataset along with its unique hash
     dat, hash, size = app.get_dat_hash()
     if dat is None:
         return
 
-    st.write("#### Save Data")
-    st.write(f"File is {size}")
-    st.write(f"Unique hash: {hash}")
+    container.write("#### Save Data")
+    container.write(f"File is {size}")
+    container.write(f"Unique hash: {hash}")
 
-    name = st.text_input("File Name", "mudata")
+    name = container.text_input("File Name", "mudata")
 
     # Name the downloaded file for the hash of the data
-    if st.download_button(
+    if container.download_button(
         "Download MuData (.h5mu)",
         dat,
         name + f"-{hash}.h5mu",

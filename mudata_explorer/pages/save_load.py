@@ -8,7 +8,10 @@ def run():
     app.setup_sidebar()
 
     if app.has_mdata():
-        save_load.download_mdata()
-        st.write("---")
+        save_load.download_mdata(
+            st.container(border=True)
+        )
 
-    save_load.upload_mdata()
+    save_load.upload_mdata(
+        st.container(border=True)
+    )
