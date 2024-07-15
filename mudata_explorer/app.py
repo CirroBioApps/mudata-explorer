@@ -64,16 +64,19 @@ def sidebar_load_history():
         load_history()
 
 
-def load_url(url: str):
+@st.cache_resource
+def _load_url(url: str):
     res = requests.get(url)
-    print(len(res.content))
     with NamedTemporaryFile(suffix=".h5mu", delete=True) as tmp:
         with open(tmp.file.name, "wb") as f:
             f.write(res.content)
-        mdata = mu.read_h5mu(tmp.file.name)
+        return mu.read_h5mu(tmp.file.name)
 
+
+def load_url(url: str):
+    mdata = _load_url(url)
     hydrate_uns(mdata)
-    set_mdata(mdata)
+    set_mdata(mdata.copy())
 
 
 def setup_sidebar(
