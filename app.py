@@ -9,7 +9,7 @@ if __name__ == "__main__":
     if app.get_mdata() is None:
 
         # Let the user upload some data to get started
-        pages.tables()
+        pages.save_load()
 
     # If no observations have been uploaded
     elif len(app.list_modalities()) == 0:

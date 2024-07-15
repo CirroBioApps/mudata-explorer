@@ -97,11 +97,11 @@ def setup_sidebar(
         # st.rerun()
 
     sidebar_page_links([
+        ("save_load", "Save / Load"),
         ("tables", "Tables"),
         ("processes", "Analysis"),
         ("views", "Figures"),
         ("history", "History"),
-        ("save_load", "Save / Load"),
         ("about", "About")
     ])
     if edit_views:
