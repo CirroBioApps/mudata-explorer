@@ -1,6 +1,8 @@
+from io import BytesIO
 import anndata as ad
-from cirro import DataPortalDataset, DataPortalProject
-from cirro.sdk.file import DataPortalFile
+from cirro import DataPortalDataset
+from cirro.sdk.file import DataPortalFile # noqa
+from cirro.models.file import File
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 from tempfile import TemporaryDirectory
@@ -76,16 +78,21 @@ def select_file(
     return next(f for f in files if f.name[5:] == file)
 
 
-def sample_metadata(dataset: DataPortalDataset) -> List[dict]:
-    # Get the project which the dataset is a part of
-    project = DataPortalProject(
-        dataset._client.projects.get(
-            dataset.project_id
+def sample_metadata(dataset: DataPortalDataset) -> pd.DataFrame:
+    """Return the samplesheet saved with a dataset."""
+    access_context = dataset.list_files()[0]._file.access_context
+    return pd.read_csv(
+        BytesIO(
+            dataset._client._file_service.get_file(
+                File(
+                    relative_path="config/samplesheet.csv",
+                    size=0,
+                    access_context=access_context
+                )
+            )
         ),
-        dataset._client
+        index_col=0
     )
-    # Return the sample metadata for that project
-    return project.samples()
 
 
 @st.cache_data(hash_funcs={DataPortalFile: lambda f: f.absolute_path})
@@ -97,7 +104,7 @@ def read_h5ad(h5ad_file: DataPortalFile) -> ad.AnnData:
         return ad.read_h5ad(filename)
 
 
-def guess_if_categorical(vals: pd.Series) -> bool:
+def _guess_if_categorical(vals: pd.Series) -> bool:
     """
     Try to infer from a collection of values whether it is
     categorical or continuous in nature.
@@ -114,6 +121,53 @@ def guess_if_categorical(vals: pd.Series) -> bool:
         return True
 
     return False
+
+
+def ask_if_categorical(kw: str, vals: pd.Series) -> bool:
+    guess_is_categorical = _guess_if_categorical(vals)
+    guess_str = 'categorical' if guess_is_categorical else 'continuous'
+
+    st.write(f"""**Categorical / Continuous**
+
+The variable '{kw}' appears to be {guess_str}.
+The user may indicate whether it should be treated in this way for display.""")
+    return st.selectbox(
+        f"Variable Type ('{kw}')",
+        ["Continuous", "Categorical"],
+        index=int(guess_is_categorical)
+    ) == "Categorical"
+
+
+def run_umap(
+    mdata: MuData,
+    mod="mod",
+    metric="braycurtis",
+    n_neighbors=15,
+    min_dist=0.5,
+    dest_key="umap",
+):
+    process.umap(
+        mdata,
+        **{
+            "umap_params": {
+                "metric": metric,
+                "n_neighbors": n_neighbors,
+                "min_dist": min_dist,
+                "n_components": 2
+            },
+            "outputs": {
+                "dest_key": dest_key
+            },
+            "table": {
+                "data": {
+                    "axis": 0,
+                    "tables": [
+                        f"{mod}.data"
+                    ]
+                }
+            }
+        }
+    )
 
 
 def run_leiden(
@@ -320,9 +374,6 @@ def add_category_count(
     color_cname: str,
     color_label: str
 ):
-    if len(title) > 0:
-        view.markdown(mdata, text=title)
-
     view.plotly_category_count(
         mdata,
         **{
@@ -343,6 +394,7 @@ def add_category_count(
                 }
             },
             "barmode": "group",
+            "formatting_title": title,
             "annotation_options": {
                 "chisquare": True
             }

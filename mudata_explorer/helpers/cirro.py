@@ -6,7 +6,7 @@ from cirro.config import AppConfig, list_tenants
 from io import StringIO
 from muon import MuData
 from mudata_explorer import app
-from mudata_explorer.helpers.cirro_readers import util, mudata
+from mudata_explorer.helpers.cirro_readers import util, mudata, ampliseq
 from mudata_explorer.helpers.cirro_readers import differential_abundance
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
@@ -277,6 +277,13 @@ def _read_dataset(
             return True
         else:
             return mudata.read(dataset)
+
+    # nf-core/ampliseq datasets
+    if dataset.process_id == "process-nf-core-ampliseq-2-4-0":
+        if check_only:
+            return True
+        else:
+            return ampliseq.read(dataset)
 
     # CirroBio/nf-differential-abundance datasets
     if dataset.process_id in [

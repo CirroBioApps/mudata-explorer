@@ -43,7 +43,7 @@ def _read_mdata(dataset: DataPortalDataset) -> Optional[MuData]:
     # Get the list of files from the dataset
     files = util.list_files(
         dataset,
-        pattern="anndata/.*\.h5ad"
+        pattern="anndata/.*\.h5ad" # noqa
     )
 
     # If there is only one file
@@ -105,25 +105,15 @@ The user may provide a different label used for this variable in the display.
         params["label"] = st.text_input(
             "Variable Label",
             obs_kw.replace("_", " "),
-            help=f"String used in displays for '{obs_kw}'"
+            help=f"Label used in displays for '{obs_kw}'"
         )
 
     # Ask if the variable is categorical or continuous
     with st.container(border=1):
-        guess_is_categorical = util.guess_if_categorical(
-            mdata.mod["abund"].obs[obs_kw]
+        params["is_categorical"] = util.ask_if_categorical(
+            obs_kw,
+            mdata.obs[obs_kw]
         )
-        guess_str = 'categorical' if guess_is_categorical else 'continuous'
-
-        st.write(f"""**Categorical / Continuous**
-
-The variable '{obs_kw}' appears to be {guess_str}.
-The user may indicate whether it should be treated in this way for display.""")
-        params["is_categorical"] = st.selectbox(
-            f"Variable Type ('{obs_kw}')",
-            ["Continuous", "Categorical"],
-            index=int(guess_is_categorical)
-        ) == "Categorical"
 
     with st.container(border=1):
         st.write("""**Top Features**
@@ -335,8 +325,8 @@ Leiden algorithm (resolution: {params['leiden_res']}).
         color_table="Observation Metadata",
         cname="leiden",
         label="Cluster (leiden)",
-        is_categorical=params["is_categorical"],
-        scale="D3" if params["is_categorical"] else "bluered",
+        is_categorical=True,
+        scale="D3"
     )
 
     # Show the organisms that differentiate the leiden clusters
@@ -397,18 +387,18 @@ The distribution of the variable '{params['label']}'
 is shown across each of the clusters identified by the Leiden algorithm.
 """
 
-    if not params["is_categorical"]:
+    x_kwargs = dict(
+        table="Observation Metadata",
+        cname="leiden",
+        label="Cluster (leiden)",
+    )
+    y_kwargs = dict(
+        table="Observation Metadata",
+        cname=params["obs_kw"],
+        label=params["label"]
+    )
 
-        x_kwargs = dict(
-            table="Observation Metadata",
-            cname="leiden",
-            label="Cluster (leiden)",
-        )
-        y_kwargs = dict(
-            table="Observation Metadata",
-            cname=params["obs_kw"],
-            label=params["label"]
-        )
+    if not params["is_categorical"]:
 
         # Display as a boxplot
         util.add_boxplot(
