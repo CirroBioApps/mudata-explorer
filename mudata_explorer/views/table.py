@@ -6,7 +6,7 @@ from streamlit.delta_generator import DeltaGenerator
 class Table(View):
 
     category = "Summary"
-    type = "Table"
+    type = "table"
     name = "Table"
     help_text = "Show a table of data."
     schema = {
