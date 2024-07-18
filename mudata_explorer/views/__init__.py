@@ -13,3 +13,4 @@ from .plotly.scatter_multi import PlotlyScatterMulti # noqa
 from .seaborn import Clustermap # noqa
 from .supporting_figure import SupportingFigure # noqa
 from .group_freq import GroupFreq # noqa
+from .table import Table # noqa
