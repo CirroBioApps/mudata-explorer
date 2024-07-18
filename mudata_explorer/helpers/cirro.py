@@ -1,11 +1,13 @@
+from typing import Optional, Union
 from cirro import CirroApi, DataPortal, DataPortalProject
 from cirro import DataPortalDataset
-from cirro.sdk.file import DataPortalFile
 from cirro.auth.device_code import DeviceCodeAuth
 from cirro.config import AppConfig, list_tenants
 from io import StringIO
-from muon import read_h5mu
+from muon import MuData
 from mudata_explorer import app
+from mudata_explorer.helpers.cirro_readers import util, mudata, ampliseq
+from mudata_explorer.helpers.cirro_readers import differential_abundance
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 from streamlit.runtime.scriptrunner import script_run_context
@@ -14,9 +16,7 @@ from threading import Thread
 from time import sleep
 
 
-def setup_cirro_client(container: DeltaGenerator):
-
-    container.write("#### Cirro Login")
+def setup_cirro_client():
 
     tenant_dict = {
         tenant['displayName']: tenant['domain']
@@ -24,7 +24,7 @@ def setup_cirro_client(container: DeltaGenerator):
     }
 
     # Let the user select a tenant
-    tenant = container.selectbox(
+    tenant = st.selectbox(
         "Organization",
         ["< select for login >"] + list(tenant_dict.keys())
     )
@@ -32,7 +32,7 @@ def setup_cirro_client(container: DeltaGenerator):
     domain = tenant_dict.get(tenant)
 
     if domain:
-        _cirro_login(domain, container.empty())
+        _cirro_login(domain, st.empty())
 
 
 def _cirro_login(domain: str, container: DeltaGenerator):
@@ -80,79 +80,75 @@ def _cirro_login_sub(auth_io: StringIO, base_url: str):
     )
 
 
-def _clear_cirro_client():
-    # Wait for a second
-    sleep(1)
-    # Clear the client
-    del st.session_state["Cirro"]
-    # Let the user log in again
-    st.rerun()
+def load_from_cirro():
 
+    st.write("#### Load from Cirro")
 
-def load_from_cirro(container: DeltaGenerator):
-
-    container.write("#### Load from Cirro")
+    # If the Cirro client has not been set up,
+    # prompt the user to set it up
+    if not st.session_state.get("Cirro"):
+        setup_cirro_client()
+        return
 
     # Ask the user to select a project
-    project = _select_project(container, "load")
+    project = _select_project("load")
     if project is None:
         return
 
     # Ask the user to select a dataset
-    dataset = _select_dataset(container, project)
+    dataset = _select_dataset(project)
     if dataset is None:
         return
 
-    # Pick the file from the dataset
-    h5mu_file: DataPortalFile = _select_file(container, dataset)
-    if h5mu_file is None:
+    # Read the MuData object from the contents of the dataset
+    mdata = _read_dataset(dataset)
+
+    # If no data was read, stop
+    if mdata is None:
         return
 
-    # Download to a temporary folder
-    with TemporaryDirectory() as tmp:
-        # Download the file
-        h5mu_file.download(tmp)
-        # Path of the downloaded file
-        filename = f"{tmp}/{h5mu_file.name}"
-        # Read the MuData object
-        mdata = read_h5mu(filename)
-        # Calculate the hash of the object
-        mdata_hash = app.hash_dat(open(filename, "rb").read())
+    # Get the hash of the data
+    _, hash, _ = app.get_dat_hash(mdata)
 
-    if mdata_hash in h5mu_file.name:
-        container.write("**Data Validated**: Unique hash matches file name.")
-    else:
-        container.write("Unique file hash not found in file name.")
-
-    if container.button("Load Dataset"):
+    if st.button("Load Dataset"):
         app.hydrate_uns(mdata)
         app.set_mdata(mdata)
-        app.set_mdata_hash(mdata_hash)
-        container.page_link("pages/views.py", label="View Data")
+        app.set_mdata_hash(hash)
+        st.page_link(
+            "pages/views.py",
+            label="View Data",
+            icon=":material/insert_chart:"
+        )
 
 
-def save_to_cirro(container: DeltaGenerator):
+def save_to_cirro():
 
-    container.write("#### Save to Cirro")
+    st.write("#### Save to Cirro")
+
+    # If the Cirro client has not been set up,
+    # prompt the user to set it up
+    if not st.session_state.get("Cirro"):
+        setup_cirro_client()
+        return
 
     # Ask the user to select a project
-    project = _select_project(container, "save")
+    project = _select_project("save")
     if project is None:
         return
 
     # Ask the user to provide a name and description for the dataset
-    name = container.text_input("Name")
-    description = container.text_area("Description")
+    name = st.text_input("Name")
+    description = st.text_area("Description")
 
-    if not container.button("Save"):
+    if not st.button("Save"):
         return
 
     if not name:
-        container.error("Name is required")
+        st.error("Name is required")
         return
 
     if not description:
-        container.error("Description is required")
+        st.error("Description is required")
         return
 
     # Get the active dataset
@@ -160,7 +156,7 @@ def save_to_cirro(container: DeltaGenerator):
 
     # If there is no active dataset
     if mdata is None:
-        container.error("No dataset to save")
+        st.error("No dataset to save")
         return
 
     # Get the binary blob, hash, and file size
@@ -185,20 +181,20 @@ def save_to_cirro(container: DeltaGenerator):
                 upload_folder=tmp
             )
         except Exception as e:
-            container.error(f"Error: {e}")
+            st.error(f"Error: {e}")
             return
 
-    container.write(
+    st.write(
         f"Wrote {name} to {project.name} ({size})"
     )
 
 
-def _select_project(container: DeltaGenerator, key: str) -> DataPortalProject:
+def _select_project(key: str) -> DataPortalProject:
     """Get the list of projects available from Cirro."""
 
     portal: DataPortal = st.session_state.get("Cirro")
     if not portal:
-        _clear_cirro_client()
+        util.clear_cirro_client()
 
     # Try to get the list of projects
     try:
@@ -206,11 +202,11 @@ def _select_project(container: DeltaGenerator, key: str) -> DataPortalProject:
     # If there is an error
     except Exception as e:
         # Report it to the user
-        container.error(f"Error: {e}")
-        _clear_cirro_client()
+        st.error(f"Error: {e}")
+        util.clear_cirro_client()
 
     # Give the user the option to select a project
-    project = container.selectbox(
+    project = st.selectbox(
         "Project",
         ["< select a project >"] + [p.name for p in projects],
         key=f"{key}_project"
@@ -223,26 +219,23 @@ def _select_project(container: DeltaGenerator, key: str) -> DataPortalProject:
     return next(p for p in projects if p.name == project)
 
 
-def _select_dataset(
-    container: DeltaGenerator,
-    project: DataPortalProject
-) -> DataPortalDataset:
+def _select_dataset(project: DataPortalProject) -> DataPortalDataset:
 
     # Try to get the list of datasets in the project
     try:
         datasets = project.list_datasets()
     except Exception as e:
-        container.error(f"Error: {e}")
-        _clear_cirro_client()
+        st.error(f"Error: {e}")
+        util.clear_cirro_client()
 
     # Filter down to the datasets which have parsing configured
     datasets = [
         d for d in datasets
-        if _read_dataset(container, d, check_only=True)
+        if _read_dataset(d, check_only=True)
     ]
 
     # Give the user the option to select a dataset
-    dataset = container.selectbox(
+    dataset = st.selectbox(
         "Dataset",
         ["< select a dataset >"] + [ds.name for ds in datasets],
         key="select-dataset"
@@ -255,40 +248,10 @@ def _select_dataset(
     return next(ds for ds in datasets if ds.name == dataset)
 
 
-def _select_file(
-    container: DeltaGenerator,
-    dataset: DataPortalDataset
-) -> DataPortalFile:
-
-    # Try to get the list of files in the dataset
-    try:
-        files = dataset.list_files()
-    except Exception as e:
-        container.error(f"Error: {e}")
-        _clear_cirro_client()
-
-    # Give the user the option to select a file
-    # (strip off the 'data/' prefix)
-    file = container.selectbox(
-        "File",
-        ["< select a file >"] + [
-            ds.name[5:] for ds in files
-        ],
-        key="select-file"
-    )
-
-    if file == "< select a file >":
-        return
-
-    # Return the file object
-    return next(f for f in files if f.name[5:] == file)
-
-
 def _read_dataset(
-    container: DeltaGenerator,
     dataset: DataPortalDataset,
     check_only: bool = False
-):
+) -> Union[bool, Optional[MuData]]:
     """
     Read a dataset from Cirro.
     Report any errors that arise.
@@ -299,6 +262,24 @@ def _read_dataset(
     if dataset.process_id == "mudata-h5mu":
         if check_only:
             return True
+        else:
+            return mudata.read(dataset)
 
-    return False
 
+# def autoretry(func, retries=15, exception=Exception):
+#     def inner(*args, **kwargs):
+
+#         result = None
+#         for i in range(retries):
+#             try:
+#                 result = func(*args, **kwargs)
+#             except exception as e:
+#                 if i == (retries - 1):
+#                     raise e
+#                 else:
+#                     sleep(0.1)
+#             if result is not None:
+#                 break
+#         return result
+
+#     return inner

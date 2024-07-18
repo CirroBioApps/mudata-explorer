@@ -1,28 +1,25 @@
 from mudata_explorer import app
 import streamlit as st
-from mudata_explorer.helpers import save_load, cirro
+from mudata_explorer.helpers import save_load
 
 
 def run():
     app.setup_sidebar()
 
-    # If the Cirro client has not been set up,
-    # prompt the user to set it up
-    if not st.session_state.get("Cirro"):
-        cirro.setup_cirro_client(
-            st.container(border=True)
-        )
+    with st.container(border=1):
+        st.write("### Cirro: Save/Load")
 
-    # If it has been set up, show the save and load options
-    else:
-
-        cirro.load_from_cirro(
-            st.container(border=True)
+        st.page_link(
+            "pages/cirro_load.py",
+            label="Load Data From Cirro",
+            icon=":material/download:"
         )
 
         if app.has_mdata():
-            cirro.save_to_cirro(
-                st.container(border=True)
+            st.page_link(
+                "pages/cirro_save.py",
+                label="Save Data To Cirro",
+                icon=":material/save:"
             )
 
     if app.has_mdata():

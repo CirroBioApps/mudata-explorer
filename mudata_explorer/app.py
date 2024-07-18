@@ -29,10 +29,11 @@ def set_edit_views_flag(val: bool):
 
 
 def sidebar_page_links(page_links):
-    for path, label in page_links:
+    for path, label, icon in page_links:
         st.sidebar.page_link(
             f"pages/{path}.py",
-            label=label
+            label=label,
+            icon=icon
         )
 
 
@@ -94,15 +95,14 @@ def setup_sidebar(
     if st.query_params.get("file"):
         load_url(st.query_params["file"])
         del st.query_params["file"]
-        # st.rerun()
 
     sidebar_page_links([
-        ("save_load", "Save / Load"),
-        ("tables", "Tables"),
-        ("processes", "Analysis"),
-        ("views", "Figures"),
-        ("history", "History"),
-        ("about", "About")
+        ("save_load", "Save / Load", ":material/save:"),
+        ("tables", "Tables", ":material/table:"),
+        ("processes", "Analysis", ":material/function:"),
+        ("views", "Figures", ":material/insert_chart:"),
+        ("history", "History", ":material/history:"),
+        ("about", "About", ":material/info:")
     ])
     if edit_views:
         sidebar_edit_views()
@@ -115,8 +115,8 @@ def setup_sidebar(
 def landing_shortcuts():
 
     show_shortcuts([
-        ("tables", ":page_facing_up: Upload Tables (*.csv)"),
-        ("about", ":information_source: About")
+        ("tables", "Upload Tables (*.csv)", ":material/table:"),
+        ("about", "About", ":material/info:")
     ])
 
 
@@ -127,7 +127,7 @@ def show_shortcuts(
 ):
     cols = None
 
-    for ix, (path, label) in enumerate(shortcuts):
+    for ix, (path, label, icon) in enumerate(shortcuts):
         if ix % ncol == 0:
             cols = (
                 st.columns(ncol)
@@ -138,6 +138,7 @@ def show_shortcuts(
         cols[ix % 3].page_link(
             f"pages/{path}.py",
             label=label,
+            icon=icon,
             use_container_width=True
         )
 

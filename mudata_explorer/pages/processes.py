@@ -73,7 +73,8 @@ def run():
     if not app.has_mdata():
         container.page_link(
             "pages/tables.py",
-            label="Upload data to get started"
+            label="Upload data to get started",
+            icon=":material/table:"
         )
         return
 
