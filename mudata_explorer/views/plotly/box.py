@@ -1,4 +1,5 @@
 import plotly.express as px
+from scipy.stats import f_oneway, kruskal
 from streamlit.delta_generator import DeltaGenerator
 from mudata_explorer.views.plotly.base import Plotly
 
@@ -50,6 +51,18 @@ class PlotlyBox(Plotly):
                     "default": ""
                 }
             }
+        },
+        "statistics": {
+            "type": "object",
+            "label": "Statistics",
+            "properties": {
+                "compare_groups": {
+                    "type": "string",
+                    "label": "Compare Values Between Groups",
+                    "default": "Disabled",
+                    "enum": ["Disabled", "ANOVA", "Kruskal-Wallis"]
+                }
+            }
         }
     }
 
@@ -63,6 +76,30 @@ class PlotlyBox(Plotly):
         if "color_continuous_scale" in colorscale:
             container.error("Color scale must be categorical for box plots.")
 
+        title = self.params["formatting.title"]
+
+        method = self.params["statistics.compare_groups"]
+        if method != "Disabled":
+            vals = [d["y"].values for _, d in data.groupby("x")]
+            if method == "ANOVA":
+                res = f_oneway(*vals)
+            else:
+                assert method == "Kruskal-Wallis"
+                res = kruskal(*vals)
+            # Format the p-value as a string
+            pvalue = (
+                f"{res.pvalue:.4f}"
+                if res.pvalue > 0.0001
+                else f"{res.pvalue:.2e}"
+            )
+
+            # Add it to the title
+            formatted_result = f"{method} p-value: {pvalue}"
+            if len(title) > 0:
+                title = f"{title} ({formatted_result})"
+            else:
+                title = formatted_result
+
         fig = px.box(
             data,
             x="x",
@@ -74,7 +111,7 @@ class PlotlyBox(Plotly):
                 y=self.params["data.y.label"],
                 color=self.params["data.color.label"]
             ),
-            title=self.params["formatting.title"],
+            title=title,
             **colorscale
         )
 

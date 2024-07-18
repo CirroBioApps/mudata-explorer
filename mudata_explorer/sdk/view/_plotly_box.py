@@ -33,6 +33,7 @@ def plotly_box(
     data_transforms=[],
     scale_options_log_y=None,
     formatting_title='',
+    statistics_compare_groups='Disabled',
     **extra_params
 ):
     """
@@ -78,6 +79,7 @@ def plotly_box(
             'data.cols_query.query.value': extra_params.get('data_cols_query_query_value', data_cols_query_query_value),
             'data.transforms': extra_params.get('data_transforms', data_transforms),
             'scale_options.log_y': extra_params.get('scale_options_log_y', scale_options_log_y),
-            'formatting.title': extra_params.get('formatting_title', formatting_title)
+            'formatting.title': extra_params.get('formatting_title', formatting_title),
+            'statistics.compare_groups': extra_params.get('statistics_compare_groups', statistics_compare_groups)
         }
     )
