@@ -53,6 +53,17 @@ class PlotlyCategoryCount(Plotly):
                 }
             }
         },
+        "formatting": {
+            "type": "object",
+            "label": "Formatting",
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "label": "Title",
+                    "default": ""
+                }
+            }
+        },
         "annotation_options": {
             "type": "object",
             "label": "Annotation Options",
@@ -91,15 +102,22 @@ class PlotlyCategoryCount(Plotly):
             .reset_index()
         )
 
+        title = self.params["formatting.title"]
+
         if self.params["annotation_options.chisquare"]:
             if self.params["data.color.enabled"]:
                 chi2, p, _, _ = chi2_contingency(
                     df.pivot(index="x", columns="color", values="count").fillna(0)
                 )
                 if p > 0.001:
-                    colorscale['title'] = f"Chi-Square: {chi2:.2f}, p-value: {p:.4f}"
+                    chi2_res = f"Chi-Square: {chi2:.2f}, p-value: {p:.4f}"
                 else:
-                    colorscale['title'] = f"Chi-Square: {chi2:.2f}, p-value: {p:.2E}"
+                    chi2_res = f"Chi-Square: {chi2:.2f}, p-value: {p:.2E}"
+
+                if len(title) > 0:
+                    title = f"{title} ({chi2_res})"
+                else:
+                    title = chi2_res
 
         fig = px.bar(
             df,
@@ -114,6 +132,7 @@ class PlotlyCategoryCount(Plotly):
             ),
             barmode=self.params["barmode"],
             text_auto=self.params.get("annotation_options.show_values", False) is True,
+            title=title,
             **colorscale
         )
 
