@@ -8,6 +8,8 @@ from time import sleep
 from typing import List, Optional
 import re
 import pandas as pd
+from muon import MuData
+from mudata_explorer.sdk import process, view
 
 
 def clear_cirro_client():
@@ -112,3 +114,251 @@ def guess_if_categorical(vals: pd.Series) -> bool:
         return True
 
     return False
+
+
+def run_leiden(
+    mdata: MuData,
+    mod="mod",
+    metric="braycurtis",
+    resolution=1.0,
+    n_neighbors=15,
+    dest_key="leiden",
+):
+    process.leiden(
+        mdata,
+        **{
+            "clustering": {
+                "metric": metric,
+                "n_neighbors": n_neighbors,
+                "resolution": resolution
+            },
+            "outputs": {
+                "dest_key": dest_key
+            },
+            "table": {
+                "data": {
+                    "axis": 0,
+                    "tables": [
+                        f"{mod}.data"
+                    ]
+                }
+            }
+        }
+    )
+
+
+def run_kruskal(
+    mdata: MuData,
+    table: str,
+    dest_key: str,
+    grouping_cname: str,
+    grouping_table: str
+):
+    process.kruskal(
+        mdata,
+        **{
+            "outputs": {
+                "dest_key": dest_key
+            },
+            "table": {
+                "data": {
+                    "axis": 0,
+                    "tables": [table],
+                    "transforms": []
+                },
+                "grouping": {
+                    "axis": 0,
+                    "grouping": {
+                        "cname": grouping_cname,
+                        "label": grouping_cname,
+                        "table": [grouping_table]
+                    }
+                }
+            }
+        }
+    )
+
+
+def add_scatter(
+    mdata: MuData,
+    title: str,
+    legend: str,
+    x: str,
+    xlabel: str,
+    y: str,
+    ylabel: str,
+    table: str,
+    axis: int,
+    color_table: str,
+    cname: str,
+    label: str,
+    is_categorical: bool,
+    scale: str,
+):
+
+    view.plotly_scatter(
+        mdata,
+        formatting_title=title,
+        **{
+            "data": {
+                "axis": axis,
+                "color": {
+                    "cname": cname,
+                    "is_categorical": is_categorical,
+                    "enabled": True,
+                    "label": label,
+                    "scale": scale,
+                    "table": [color_table]
+                },
+                "size": {
+                    "enabled": False
+                },
+                "x": {
+                    "cname": x,
+                    "label": xlabel,
+                    "table": [table]
+                },
+                "y": {
+                    "cname": y,
+                    "label": ylabel,
+                    "table": [table]
+                }
+            }
+        }
+    )
+
+    view.markdown(mdata, text=legend)
+
+
+def add_table(
+    mdata: MuData,
+    title: str,
+    legend: str,
+    table: str,
+    sort_by: str,
+    axis: int,
+):
+    if len(title) > 0:
+        view.markdown(mdata, text=title)
+
+    view.table(
+        mdata,
+        **{
+            "options": {
+                "sort": {
+                    "sort_by": {
+                        "table": [table],
+                        "cname": sort_by,
+                        "label": sort_by
+                    },
+                    "axis": axis
+                }
+            },
+            "data": {
+                "table": {
+                    "axis": axis,
+                    "tables": [table]
+                }
+            }
+        }
+    )
+
+    if len(legend) > 0:
+        view.markdown(mdata, text=legend)
+
+
+def add_boxplot(
+    mdata: MuData,
+    title: str,
+    legend: str,
+    x_table: str,
+    x_cname: str,
+    x_label: str,
+    y_table: str,
+    y_cname: str,
+    y_label: str,
+):
+    view.plotly_box(
+        mdata,
+        formatting_title=title,
+        statistics_compare_groups="Kruskal-Wallis",
+        **{
+            "data": {
+                "x": {
+                    "table": [
+                        x_table
+                    ],
+                    "cname": x_cname,
+                    "label": x_label
+                },
+                "y": {
+                    "table": [
+                        y_table
+                    ],
+                    "cname": y_cname,
+                    "label": y_label
+                },
+                "color": {
+                    "enabled": False
+                }
+            }
+        }
+    )
+
+    if len(legend) > 0:
+        view.markdown(mdata, text=legend)
+
+
+def add_category_count(
+    mdata: MuData,
+    title: str,
+    legend: str,
+    x_table: str,
+    x_cname: str,
+    x_label: str,
+    color_table: str,
+    color_cname: str,
+    color_label: str
+):
+    if len(title) > 0:
+        view.markdown(mdata, text=title)
+
+    view.plotly_category_count(
+        mdata,
+        **{
+            "data": {
+                "x": {
+                    "table": [
+                        x_table
+                    ],
+                    "cname": x_cname,
+                    "label": x_label
+                },
+                "color": {
+                    "table": [
+                        color_table
+                    ],
+                    "cname": color_cname,
+                    "label": color_label
+                }
+            },
+            "barmode": "group",
+            "annotation_options": {
+                "chisquare": True
+            }
+        }
+    )
+
+    if len(legend) > 0:
+        view.markdown(mdata, text=legend)
+
+
+def format_float(f: float) -> str:
+    if f > 0.01:
+        return f"{f:.2f}"
+    elif f > 0.001:
+        return f"{f:.3f}"
+    elif f > 0.0001:
+        return f"{f:.4f}"
+    else:
+        return f"{f:.2e}"

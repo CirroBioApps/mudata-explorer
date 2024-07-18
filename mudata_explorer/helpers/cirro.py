@@ -7,6 +7,7 @@ from io import StringIO
 from muon import MuData
 from mudata_explorer import app
 from mudata_explorer.helpers.cirro_readers import util, mudata
+from mudata_explorer.helpers.cirro_readers import differential_abundance
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 from streamlit.runtime.scriptrunner import script_run_context
@@ -109,15 +110,14 @@ def load_from_cirro():
     # Get the hash of the data
     _, hash, _ = app.get_dat_hash(mdata)
 
-    if st.button("Load Dataset"):
-        app.hydrate_uns(mdata)
-        app.set_mdata(mdata)
-        app.set_mdata_hash(hash)
-        st.page_link(
-            "pages/views.py",
-            label="View Data",
-            icon=":material/insert_chart:"
-        )
+    app.hydrate_uns(mdata)
+    app.set_mdata(mdata)
+    app.set_mdata_hash(hash)
+    st.page_link(
+        "pages/views.py",
+        label="View Data",
+        icon=":material/insert_chart:"
+    )
 
 
 def save_to_cirro():
@@ -277,6 +277,26 @@ def _read_dataset(
             return True
         else:
             return mudata.read(dataset)
+
+    # CirroBio/nf-differential-abundance datasets
+    if dataset.process_id in [
+        f"differential-abundance-{suffix}"
+        for suffix in [
+            "metaphlan",
+            "ampliseq",
+            "CMD",
+            "gig-map-align-reads",
+            "table",
+            "sourmash"
+        ]
+    ]:
+        if check_only:
+            return True
+        else:
+            return differential_abundance.read(dataset)
+
+    if check_only:
+        return False
 
 
 # def autoretry(func, retries=15, exception=Exception):

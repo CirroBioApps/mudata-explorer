@@ -26,7 +26,7 @@ def upload_mdata(container: DeltaGenerator):
     else:
         container.write("Unique file hash not found in file name.")
 
-    if container.button("Load Dataset"):
+    if container.button("Load Dataset", key="load-from-file"):
         app.set_mdata(mdata)
         app.set_mdata_hash(mdata_hash)
         container.page_link(
