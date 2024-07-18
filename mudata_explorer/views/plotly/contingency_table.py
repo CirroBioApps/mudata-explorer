@@ -1,3 +1,4 @@
+from typing import Optional
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -74,7 +75,10 @@ The display can be used to show either:
 
     def display(self, container: DeltaGenerator):
 
-        data: pd.DataFrame = self.params["data.dataframe"]
+        data: Optional[pd.DataFrame] = self.params.get("data.dataframe")
+        if data is None:
+            container.write("Please select two columns to compare")
+            return
 
         # Make the contingency table
         table = pd.crosstab(
