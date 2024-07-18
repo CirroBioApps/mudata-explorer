@@ -204,6 +204,13 @@ def _select_project(key: str) -> DataPortalProject:
         st.error(f"Error: {e}")
         util.clear_cirro_client()
 
+    # If a project is supplied in the query string, use it
+    if "project_id" in st.query_params:
+        return next(
+            p for p in projects
+            if p.id == st.query_params["project_id"]
+        )
+
     # Give the user the option to select a project
     project = st.selectbox(
         "Project",
@@ -232,6 +239,13 @@ def _select_dataset(project: DataPortalProject) -> DataPortalDataset:
         d for d in datasets
         if _read_dataset(d, check_only=True)
     ]
+
+    # If a dataset is supplied in the query string, use it
+    if "dataset_id" in st.query_params:
+        return next(
+            p for p in datasets
+            if p.id == st.query_params["dataset_id"]
+        )
 
     # Give the user the option to select a dataset
     dataset = st.selectbox(
