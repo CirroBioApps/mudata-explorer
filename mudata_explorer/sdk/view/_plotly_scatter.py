@@ -38,6 +38,7 @@ def plotly_scatter(
     scale_options_log_x=None,
     scale_options_log_y=None,
     formatting_opacity=1.0,
+    formatting_title='',
     **extra_params
 ):
     """
@@ -89,6 +90,7 @@ and using a log scale for the x- and y-axes.
             'data.transforms': extra_params.get('data_transforms', data_transforms),
             'scale_options.log_x': extra_params.get('scale_options_log_x', scale_options_log_x),
             'scale_options.log_y': extra_params.get('scale_options_log_y', scale_options_log_y),
-            'formatting.opacity': extra_params.get('formatting_opacity', formatting_opacity)
+            'formatting.opacity': extra_params.get('formatting_opacity', formatting_opacity),
+            'formatting.title': extra_params.get('formatting_title', formatting_title)
         }
     )

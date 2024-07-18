@@ -56,6 +56,11 @@ and using a log scale for the x- and y-axes.
                     "min_value": 0.,
                     "max_value": 1.,
                     "step": 0.1
+                },
+                "title": {
+                    "type": "string",
+                    "label": "Figure Title",
+                    "default": ""
                 }
             }
         }
@@ -91,6 +96,7 @@ and using a log scale for the x- and y-axes.
                 color=self.params["data.color.label"],
                 size=self.params["data.size.label"]
             ),
+            title=self.params["formatting.title"],
             **colorscale
         )
 

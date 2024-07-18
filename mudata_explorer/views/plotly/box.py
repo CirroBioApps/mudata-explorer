@@ -39,6 +39,17 @@ class PlotlyBox(Plotly):
                     "label": "Log Scale - Y Axis"
                 }
             }
+        },
+        "formatting": {
+            "type": "object",
+            "label": "Formatting",
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "label": "Title",
+                    "default": ""
+                }
+            }
         }
     }
 
@@ -63,6 +74,7 @@ class PlotlyBox(Plotly):
                 y=self.params["data.y.label"],
                 color=self.params["data.color.label"]
             ),
+            title=self.params["formatting.title"],
             **colorscale
         )
 

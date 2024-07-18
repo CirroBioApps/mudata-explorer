@@ -32,6 +32,7 @@ def plotly_box(
     data_cols_query_query_value='',
     data_transforms=[],
     scale_options_log_y=None,
+    formatting_title='',
     **extra_params
 ):
     """
@@ -76,6 +77,7 @@ def plotly_box(
             'data.cols_query.query.expr': extra_params.get('data_cols_query_query_expr', data_cols_query_query_expr),
             'data.cols_query.query.value': extra_params.get('data_cols_query_query_value', data_cols_query_query_value),
             'data.transforms': extra_params.get('data_transforms', data_transforms),
-            'scale_options.log_y': extra_params.get('scale_options_log_y', scale_options_log_y)
+            'scale_options.log_y': extra_params.get('scale_options_log_y', scale_options_log_y),
+            'formatting.title': extra_params.get('formatting_title', formatting_title)
         }
     )
