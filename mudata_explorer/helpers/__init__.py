@@ -108,4 +108,4 @@ def asset_dataframe(
             help_text=getattr(asset, "help_text", None)
         )
         for asset in list_of_assets
-    )
+    ).drop_duplicates()
