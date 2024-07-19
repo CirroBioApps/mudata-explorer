@@ -18,18 +18,22 @@ from time import sleep
 
 def setup_cirro_client():
 
-    tenant_dict = {
-        tenant['displayName']: tenant['domain']
-        for tenant in list_tenants()
-    }
+    if st.query_params.get("domain") is None:
+        tenant_dict = {
+            tenant['displayName']: tenant['domain']
+            for tenant in list_tenants()
+        }
 
-    # Let the user select a tenant
-    tenant = st.selectbox(
-        "Organization",
-        ["< select for login >"] + list(tenant_dict.keys())
-    )
+        # Let the user select a tenant
+        tenant = st.selectbox(
+            "Organization",
+            ["< select for login >"] + list(tenant_dict.keys())
+        )
 
-    domain = tenant_dict.get(tenant)
+        domain = tenant_dict.get(tenant)
+
+    else:
+        domain = st.query_params["domain"]
 
     if domain:
         _cirro_login(domain, st.empty())
