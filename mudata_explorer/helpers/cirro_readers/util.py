@@ -138,6 +138,17 @@ The user may indicate whether it should be treated in this way for display.""")
     ) == "Categorical"
 
 
+def summarize_features(
+    mdata: MuData,
+    mod="mod"
+):
+    process.summary_stats(
+        mdata,
+        table_data_tables=f"{mod}.data",
+        table_data_axis=1
+    )
+
+
 def run_umap(
     mdata: MuData,
     mod="mod",
