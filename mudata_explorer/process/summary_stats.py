@@ -13,9 +13,13 @@ class SummaryStats(Process):
 
     - count: Number of non-null values
     - prop_valid: Proportion of non-null values
+    - prop_valid_rank: Rank ordering of prop_valid (highest first)
     - nunique: Number of unique values
+    - nunique_rank: Rank ordering of number of unique values (highest first)
     - median: Median value
+    - median_rank: Rank ordering of median value (highest first)
     - mean: Mean value
+    - mean_rank: Rank ordering of mean value (highest first)
     - std: Standard deviation
     - min: Minimum value
     - max: Maximum value
@@ -72,6 +76,10 @@ class SummaryStats(Process):
 
         # Calculate summary statistics
         res = df.apply(self.summary_stats, axis=1)
+
+        # Add the rank-order of various values
+        for kw in ['nunique', 'median', 'mean', 'prop_valid']:
+            res[f'{kw}_rank'] = res[kw].rank(ascending=False)
 
         # Save the results and the figure
         self.save_results(
