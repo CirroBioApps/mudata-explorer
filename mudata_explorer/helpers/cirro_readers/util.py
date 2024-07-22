@@ -374,6 +374,49 @@ def add_boxplot(
         view.markdown(mdata, text=legend)
 
 
+def add_boxplot_multi(
+    mdata: MuData,
+    mod="mod",
+    cols_query={},
+    rows_query={},
+    var_label="Feature",
+    val_label="Value",
+    title="",
+    legend=""
+):
+    view.plotly_box_multiple(
+        mdata,
+        table_category_enabled=False,
+        **{
+            "table": {
+                "data": {
+                    "tables": [
+                        f"{mod}.data"
+                    ],
+                    "cols_query": {
+                        "query": cols_query
+                    },
+                    "rows_query": {
+                        "query": rows_query
+                    }
+                }
+            },
+            "variable_options": {
+                "sort_by": "Median",
+                "axis": "X-Axis"
+            },
+            "display_options": {
+                "var_label": var_label,
+                "val_label": val_label,
+                "title": title
+            }
+        }
+    )
+
+    if len(legend) > 0:
+        view.markdown(mdata, text=legend)
+
+
 def add_category_count(
     mdata: MuData,
     title: str,
