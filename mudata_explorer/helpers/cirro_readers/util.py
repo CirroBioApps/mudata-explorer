@@ -244,6 +244,38 @@ def run_kruskal(
     )
 
 
+def run_spearman(
+    mdata: MuData,
+    table: str,
+    dest_key: str,
+    comparitor_cname: str,
+    comparitor_table: str
+):
+    process.spearman(
+        mdata,
+        **{
+            "outputs": {
+                "dest_key": dest_key
+            },
+            "table": {
+                "data": {
+                    "axis": 0,
+                    "tables": [table],
+                    "transforms": []
+                },
+                "comparitor": {
+                    "axis": 0,
+                    "comparitor": {
+                        "cname": comparitor_cname,
+                        "label": comparitor_cname,
+                        "table": [comparitor_table]
+                    }
+                }
+            }
+        }
+    )
+
+
 def add_scatter(
     mdata: MuData,
     title: str,
@@ -259,6 +291,8 @@ def add_scatter(
     label: str,
     is_categorical: bool,
     scale: str,
+    xtable=None,
+    ytable=None
 ):
 
     view.plotly_scatter(
@@ -281,12 +315,12 @@ def add_scatter(
                 "x": {
                     "cname": x,
                     "label": xlabel,
-                    "table": [table]
+                    "table": [table if xtable is None else xtable]
                 },
                 "y": {
                     "cname": y,
                     "label": ylabel,
-                    "table": [table]
+                    "table": [table if ytable is None else ytable]
                 }
             }
         }
