@@ -80,7 +80,10 @@ class PlotlyBox(Plotly):
 
         method = self.params["statistics.compare_groups"]
         if method != "Disabled":
-            vals = [d["y"].values for _, d in data.groupby("x")]
+            vals = [
+                d["y"].dropna().values for _, d in data.groupby("x")
+                if d["y"].notnull().sum() > 1
+            ]
             if method == "ANOVA":
                 res = f_oneway(*vals)
             else:
