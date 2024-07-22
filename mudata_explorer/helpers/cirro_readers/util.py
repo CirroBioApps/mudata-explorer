@@ -117,10 +117,10 @@ def _guess_if_categorical(vals: pd.Series) -> bool:
     vc = vals.value_counts()
 
     # If more than 25% of the values are singletons
-    if (vc == 1).sum() > 0.25 * vals.shape[0]:
-        return True
+    if (vc == 1).sum() > (0.25 * vals.shape[0]):
+        return False
 
-    return False
+    return True
 
 
 def ask_if_categorical(kw: str, vals: pd.Series) -> bool:
