@@ -77,6 +77,11 @@ class PlotlyCategorySummarizeValues(Plotly):
                     "label": "Sort By",
                     "enum": ["Labels", "Values"],
                     "default": "Labels",
+                },
+                "title": {
+                    "type": "string",
+                    "label": "Title",
+                    "default": ""
                 }
             }
         }
@@ -213,7 +218,8 @@ class PlotlyCategorySummarizeValues(Plotly):
                 ),
                 category=self.params["table.category.category.label"],
                 **labels
-            )
+            ),
+            title=self.params["formatting.title"]
         )
 
         container.plotly_chart(fig)

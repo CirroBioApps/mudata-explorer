@@ -32,9 +32,13 @@ def summary_stats(
 
     - count: Number of non-null values
     - prop_valid: Proportion of non-null values
+    - prop_valid_rank: Rank ordering of prop_valid (highest first)
     - nunique: Number of unique values
+    - nunique_rank: Rank ordering of number of unique values (highest first)
     - median: Median value
+    - median_rank: Rank ordering of median value (highest first)
     - mean: Mean value
+    - mean_rank: Rank ordering of mean value (highest first)
     - std: Standard deviation
     - min: Minimum value
     - max: Maximum value
