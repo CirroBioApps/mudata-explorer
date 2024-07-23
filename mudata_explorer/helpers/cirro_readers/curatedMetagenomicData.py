@@ -165,8 +165,10 @@ def _collapse_by_taxon(
     # Sum up the abundances for each taxon
     abund = (
         abund
-        .groupby(var[level], axis=1)
+        .T
+        .groupby(var[level])
         .sum()
+        .T
         .sort_index(axis=1)
         .rename(columns=_make_spaces)
     )
