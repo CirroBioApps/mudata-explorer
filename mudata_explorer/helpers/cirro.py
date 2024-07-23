@@ -211,10 +211,10 @@ def _select_project(key: str) -> DataPortalProject:
 
     # If a project is supplied in the query string, use it
     if "project_id" in st.query_params:
-        return next(
-            p for p in projects
-            if p.id == st.query_params["project_id"]
-        )
+        for p in projects:
+            if p.id == st.query_params["project_id"]:
+                return p
+        raise ValueError(f"Project {st.query_params['project_id']} not found")
 
     # Give the user the option to select a project
     project = st.selectbox(
@@ -227,7 +227,10 @@ def _select_project(key: str) -> DataPortalProject:
         return
 
     # Return the project object
-    return next(p for p in projects if p.name == project)
+    for p in projects:
+        if p.name == project:
+            return p
+    raise ValueError(f"Project '{project}' not found")
 
 
 def _select_dataset(project: DataPortalProject) -> DataPortalDataset:
@@ -247,10 +250,10 @@ def _select_dataset(project: DataPortalProject) -> DataPortalDataset:
 
     # If a dataset is supplied in the query string, use it
     if "dataset_id" in st.query_params:
-        return next(
-            p for p in datasets
-            if p.id == st.query_params["dataset_id"]
-        )
+        for p in datasets:
+            if p.id == st.query_params["dataset_id"]:
+                return p
+        raise ValueError(f"Dataset {st.query_params['dataset_id']} not found")
 
     # Give the user the option to select a dataset
     dataset = st.selectbox(
@@ -263,7 +266,10 @@ def _select_dataset(project: DataPortalProject) -> DataPortalDataset:
         return
 
     # Return the dataset object
-    return next(ds for ds in datasets if ds.name == dataset)
+    for ds in datasets:
+        if ds.name == dataset:
+            return ds
+    raise ValueError(f"Dataset '{dataset}' not found")
 
 
 def _read_dataset(
