@@ -34,11 +34,9 @@ def edit_view(view: View, container: DeltaGenerator, ix: int, n_views: int):
         view.get_data()
         return
 
-    cols = container.columns([1, 1, 1, 1, 1, 1, 8])
-
     # The first button allows the user to provide inputs
-    cols[0].button(
-        ":pencil:",
+    container.button(
+        ":pencil: Configure",
         help="Edit the inputs for this view.",
         key=f"edit-inputs-{ix}",
         on_click=make_editable,
@@ -46,40 +44,44 @@ def edit_view(view: View, container: DeltaGenerator, ix: int, n_views: int):
     )
 
     # For every view past the first
-    cols[1].button(
-        ":arrow_up_small:",
-        on_click=move_up,
-        key=f"move-up-{ix}",
-        args=(ix,),
-        help="Move this view up in the list.",
-        disabled=ix == 0
-    )
+    if ix > 0:
+        container.button(
+            ":arrow_up_small: Move Up",
+            on_click=move_up,
+            key=f"move-up-{ix}",
+            args=(ix,),
+            help="Move this view up in the list.",
+            disabled=ix == 0
+        )
 
-    if cols[2].button(
-        ":heavy_minus_sign:",
+    if container.button(
+        ":heavy_minus_sign: Delete",
         key=f"delete-view-{ix}",
         args=(ix,),
-        help="Delete this view."
+        help="Remove this view."
     ):
         app.delete_view(ix)
         st.rerun()
-    cols[3].button(
-        ":heavy_plus_sign:",
+
+    container.button(
+        ":heavy_plus_sign: Duplicate",
         on_click=app.duplicate_view,
         key=f"duplicate-view-{ix}",
         args=(ix,),
-        help="Duplicate this view."
+        help="Make a copy of this view."
     )
-    cols[4].button(
-        ":arrow_down_small:",
-        on_click=move_down,
-        key=f"move-down-{ix}",
-        args=(ix,),
-        help="Move this view down in the list.",
-        disabled=ix == (n_views - 1)
-    )
-    cols[5].button(
-        ":information_source:",
+
+    if ix < (n_views - 1):
+        container.button(
+            ":arrow_down_small: Move Down",
+            on_click=move_down,
+            key=f"move-down-{ix}",
+            args=(ix,),
+            help="Move this view down in the list."
+        )
+
+    container.button(
+        ":information_source: SDK",
         on_click=show_view_sdk_snippet,
         key=f"show-view-sdk-snippet-{ix}",
         args=(ix,),
@@ -189,10 +191,8 @@ def run():
         )
     )
 
-    container = st.container()
-
     if app.get_mdata() is None:
-        container.page_link(
+        st.page_link(
             "pages/tables.py",
             label="Upload data to get started",
             icon=":material/table:"
@@ -202,7 +202,7 @@ def run():
     # If the user has selected a view to edit, show the edit menu
     if st.query_params.get("edit-view") is not None:
 
-        run_edit_view(container)
+        run_edit_view()
 
     else:
 
@@ -210,14 +210,14 @@ def run():
         if app.get_edit_views_flag():
 
             # Show the views with edit buttons
-            view_editable(container)
+            view_editable()
 
         else:
             # Show the views with no edit buttons
-            view_non_editable(container)
+            view_non_editable()
 
 
-def run_edit_view(container: DeltaGenerator):
+def run_edit_view():
 
     # The view to edit
     edit_ix = int(st.query_params.get("edit-view"))
@@ -226,7 +226,7 @@ def run_edit_view(container: DeltaGenerator):
     views = app.get_views()
 
     if len(views) < (edit_ix + 1):
-        container.error("No views to edit.")
+        st.error("No views to edit.")
 
     # Instantiate the view to edit
     view = make_view(
@@ -238,7 +238,7 @@ def run_edit_view(container: DeltaGenerator):
     view.get_data()
 
 
-def view_editable(container: DeltaGenerator):
+def view_editable():
     """
     Show the views with edit buttons.
     """
@@ -251,22 +251,25 @@ def view_editable(container: DeltaGenerator):
 
     for ix, view in enumerate(mdata_views):
 
-        # If the settings are editable
-        if app.get_edit_views_flag():
-            # Show the name of the view
-            container.write(f"#### {ix + 1}. {view.name}")
+        # Set up two columns
+        # The controls will be shown on the left,
+        # and the display on the right
+        controls, display = st.columns([1, 2])
 
-            # Set up a set of buttons to edit the order of the view
-            edit_view(view, container, ix, len(mdata_views))
+        # Show the name of the view
+        controls.write(f"#### {ix + 1}. {view.name}")
+
+        # Set up a set of buttons to edit the order of the view
+        edit_view(view, controls, ix, len(mdata_views))
 
         # Attach the view to the display
-        view.attach(container)
+        view.attach(display)
 
     # Let the user add a new view
     button_add_view()
 
 
-def view_non_editable(container: DeltaGenerator):
+def view_non_editable():
 
     # All of the views defined in the dataset
     mdata_views = make_views(editable=False)
@@ -274,4 +277,4 @@ def view_non_editable(container: DeltaGenerator):
     for view in mdata_views:
 
         # Attach the view to the display
-        view.attach(container)
+        view.attach(st.container())
