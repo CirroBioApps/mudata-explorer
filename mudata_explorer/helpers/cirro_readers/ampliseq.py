@@ -72,33 +72,13 @@ def _read_rel_abund(
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Read the relative abundance table from a dataset."""
 
-    # Filter to only the relative abundance tables
-    abund_prefix = "data/qiime2/rel_abundance_tables/rel-table-ASV_with-"
-    abund_suffix = "-tax.tsv"
-    abund_files = [
-        f
-        for f in files
-        if f.name.startswith(abund_prefix) and f.name.endswith(abund_suffix)
-    ]
-
-    # If there are no relative abundance tables
-    if len(abund_files) == 0:
-        st.error("No relative abundance tables found.")
-        return
-    # If there is more than one relative abundance table
-    elif len(abund_files) > 1:
-        # Pick the file from the dataset
-        selected_abund = st.selectbox(
-            "Use taxonomy assigned by:",
-            [f.name[len(abund_prefix):-len(abund_suffix)] for f in abund_files]
-        )
-        abund_file = next(
-            file
-            for file in abund_files
-            if file.name == f"{abund_prefix}{selected_abund}{abund_suffix}"
-        )
-    else:
-        abund_file = abund_files[0]
+    abund_file = util.find_file_by_extension(
+        files,
+        prefix="data/qiime2/rel_abundance_tables/rel-table-ASV_with-",
+        suffix="-tax.tsv",
+        selectbox_label="Use taxonomy assigned by:",
+        none_found_msg="No relative abundance tables found."
+    )
 
     # Read in the table
     df = abund_file.read_csv(sep="\t", index_col=0)

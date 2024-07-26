@@ -46,6 +46,44 @@ def list_files(
     return files
 
 
+
+def find_file_by_extension(
+    files: List[DataPortalFile],
+    prefix="data/",
+    suffix="",
+    selectbox_label="Use file:",
+    none_found_msg="No file found"
+):
+    # Filter to only the relative abundance tables
+    files = [
+        f
+        for f in files
+        if f.name.startswith(prefix) and f.name.endswith(suffix)
+    ]
+
+    # If there are no relative abundance tables
+    if len(files) == 0:
+        st.error(none_found_msg)
+        return
+    # If there is more than one relative abundance table
+    elif len(files) > 1:
+        # Pick the file from the dataset
+        selected_abund = st.selectbox(
+            selectbox_label,
+            (
+                ["< select a file >"] + 
+                [f.name[len(prefix):-len(suffix)] for f in files]
+            )
+        )
+        if selected_abund == "< select a file >":
+            return
+        for file in files:
+            if file.name == f"{prefix}{selected_abund}{suffix}":
+                return file
+    else:
+        return files[0]
+
+
 def select_file(
     container: DeltaGenerator,
     dataset: DataPortalDataset,
