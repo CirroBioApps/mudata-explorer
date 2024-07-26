@@ -262,6 +262,37 @@ def run_leiden(
     )
 
 
+def run_kmeans(
+    mdata: MuData,
+    mod="mod",
+    metric="braycurtis",
+    k=15,
+    transforms=[],
+    dest_key="kmeans"
+):
+    process.kmeans(
+        mdata,
+        **{
+            "clustering": {
+                "metric": metric,
+                "k": k
+            },
+            "outputs": {
+                "dest_key": dest_key
+            },
+            "table": {
+                "data": {
+                    "axis": 0,
+                    "tables": [
+                        f"{mod}.data"
+                    ],
+                    "transforms": transforms
+                }
+            }
+        }
+    )
+
+
 def run_kruskal(
     mdata: MuData,
     table: str,
