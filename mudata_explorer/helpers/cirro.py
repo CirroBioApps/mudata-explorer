@@ -293,21 +293,21 @@ def _read_dataset(
             return mudata.read(dataset)
 
     # nf-core/ampliseq datasets
-    if dataset.process_id == "process-nf-core-ampliseq-2-4-0":
+    elif dataset.process_id == "process-nf-core-ampliseq-2-4-0":
         if check_only:
             return True
         else:
             return ampliseq.read(dataset)
 
     # curatedMetagenomicData datasets
-    if dataset.process_id == "curated_metagenomic_data":
+    elif dataset.process_id == "curated_metagenomic_data":
         if check_only:
             return True
         else:
             return curatedMetagenomicData.read(dataset)
 
     # CirroBio/nf-differential-abundance datasets
-    if dataset.process_id in [
+    elif dataset.process_id in [
         f"differential-abundance-{suffix}"
         for suffix in [
             "metaphlan",
@@ -323,7 +323,7 @@ def _read_dataset(
         else:
             return differential_abundance.read(dataset)
 
-    if check_only:
+    elif check_only:
         return False
 
 
