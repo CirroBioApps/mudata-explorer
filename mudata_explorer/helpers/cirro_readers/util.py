@@ -1,3 +1,4 @@
+from functools import lru_cache
 from io import BytesIO
 import anndata as ad
 from cirro import DataPortalDataset
@@ -45,6 +46,17 @@ def list_files(
 
     return files
 
+
+@lru_cache
+def process_name(process_id: str) -> str:
+    """Return the readable name of a process defined in Cirro."""
+
+    # Return the name attribute of the process with the given ID
+    return (
+        st.session_state["Cirro"]
+        .get_process_by_id(process_id)
+        .name
+    )
 
 
 def find_file_by_extension(
