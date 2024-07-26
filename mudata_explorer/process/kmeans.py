@@ -114,6 +114,10 @@ class RunKmeans(Process):
         msg = "Null values in all rows - remove invalid columns"
         assert df.shape[0] > 0, msg
 
+        # Make sure that there are enough rows to cluster the data
+        assert df.shape[0] >= max_k, \
+            f"Cannot cluster data with {df.shape[0]} rows and {max_k} clusters"
+
         # Cluster the data
         clusters = {
             n: run_clustering(
@@ -138,15 +142,19 @@ class RunKmeans(Process):
             )
 
         # Plot the silhouette scores
-        fig = px.line(
-            x=list(silhouette_scores.keys()),
-            y=list(silhouette_scores.values()),
-            labels={
-                "x": "Number of clusters",
-                "y": "Silhouette score (1=best)"
-            },
-            title="Evaluate Clustering Performance"
-        )
+        try:
+            fig = px.line(
+                x=list(silhouette_scores.keys()),
+                y=list(silhouette_scores.values()),
+                labels={
+                    "x": "Number of clusters",
+                    "y": "Silhouette score (1=best)"
+                },
+                title="Evaluate Clustering Performance"
+            )
+        except ValueError as e:
+            st.error(f"Could not plot silhouette scores: {silhouette_scores}")
+            raise e
         fig.add_vline(x=k, line_dash="dash", line_color="grey")
 
         res = clusters[k].apply(
