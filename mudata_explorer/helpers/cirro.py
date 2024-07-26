@@ -248,6 +248,9 @@ def _select_dataset(project: DataPortalProject) -> DataPortalDataset:
         if _read_dataset(d, check_only=True)
     ]
 
+    # Sort by date
+    datasets.sort(key=lambda d: d.created_at, reverse=True)
+
     # If a dataset is supplied in the query string, use it
     if "dataset_id" in st.query_params:
         for p in datasets:
