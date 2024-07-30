@@ -57,9 +57,9 @@ def all_process_types() -> List[str]:
     ]
 
 
-def make_view(type: str, **kwargs) -> View:
+def make_view(type: str, params={}, **kwargs) -> View:
     view = get_view_by_type(type)
-    return view(**kwargs)
+    return view(params=params, **kwargs)
 
 
 def get_process_by_type(process_type: str) -> Process:
