@@ -71,5 +71,13 @@ class View(MuDataAppHelpers):
         """Primary method which is executed to render the view."""
         pass
 
+    def runtime_options(self, container: DeltaGenerator):
+        """
+        Optional method which can collection options for the view.
+        The container for the view will be the sidebar which is displayed
+        when the "Edit Figures" option is enabled.
+        """
+        pass
+
     def param_key(self, kw):
         return f"view-{self.ix}-{kw}"

@@ -231,6 +231,9 @@ def view_editable():
         # Show the name of the view
         controls.write(f"#### {ix + 1}. {view.name}")
 
+        # Expose any params which can be configured in the sidebar
+        view.runtime_options(controls)
+
         # Set up a set of buttons to edit the order of the view
         edit_view(view, controls, ix, len(mdata_views))
 
