@@ -291,7 +291,15 @@ class MuDataAppHelpers:
                 container.exception(e)
 
             container.button(
-                "Save Changes",
+                ":information_source: SDK Snippet",
+                on_click=_show_view_sdk_snippet,
+                key=f"show-view-sdk-snippet-{self.ix}",
+                args=(self.ix,),
+                help="Show an example for configuration via SDK."
+            )
+
+            container.button(
+                ":page_facing_up: Save Changes",
                 key=f"save-changes-{self.ix}",
                 on_click=self.save_changes
             )
@@ -1389,3 +1397,28 @@ class MuDataAppHelpers:
             join_kws(key, "transforms"),
             transforms
         )
+
+
+@st.experimental_dialog("Figure Parameters", width='large')
+def _show_view_sdk_snippet(ix: int):
+    view = app.get_views()[ix]
+    st.code(sdk_snippet(view))
+
+
+def sdk_snippet(view: dict):
+    assert "type" in view.keys()
+    assert "params" in view.keys()
+    params = app.nest_params(view["params"])
+    params_str = (
+        json.dumps(params, indent=4)
+        .replace('false', 'False')
+        .replace('true', 'True')
+        .replace('null', 'None')
+        .replace("\n", "\n    ")
+    )
+    return f"""view.{view['type'].replace('-', '_')}(
+    mdata,
+    **{params_str}
+)
+"""
+

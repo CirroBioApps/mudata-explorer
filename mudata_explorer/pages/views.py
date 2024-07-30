@@ -33,9 +33,12 @@ def edit_view(view: View, container: DeltaGenerator, ix: int, n_views: int):
         # Instead, just set up the params for the view
         view.get_data()
         return
+    
+    # Set up an expand element for all of the rearranging options
+    expander = container.expander("Edit Position")
 
     # The first button allows the user to provide inputs
-    container.button(
+    expander.button(
         ":pencil: Configure",
         help="Edit the inputs for this view.",
         key=f"edit-inputs-{ix}",
@@ -45,7 +48,7 @@ def edit_view(view: View, container: DeltaGenerator, ix: int, n_views: int):
 
     # For every view past the first
     if ix > 0:
-        container.button(
+        expander.button(
             ":arrow_up_small: Move Up",
             on_click=move_up,
             key=f"move-up-{ix}",
@@ -54,8 +57,8 @@ def edit_view(view: View, container: DeltaGenerator, ix: int, n_views: int):
             disabled=ix == 0
         )
 
-    if container.button(
-        ":heavy_minus_sign: Delete",
+    if expander.button(
+        ":wastebasket: Delete",
         key=f"delete-view-{ix}",
         args=(ix,),
         help="Remove this view."
@@ -63,7 +66,7 @@ def edit_view(view: View, container: DeltaGenerator, ix: int, n_views: int):
         app.delete_view(ix)
         st.rerun()
 
-    container.button(
+    expander.button(
         ":heavy_plus_sign: Duplicate",
         on_click=app.duplicate_view,
         key=f"duplicate-view-{ix}",
@@ -72,45 +75,13 @@ def edit_view(view: View, container: DeltaGenerator, ix: int, n_views: int):
     )
 
     if ix < (n_views - 1):
-        container.button(
+        expander.button(
             ":arrow_down_small: Move Down",
             on_click=move_down,
             key=f"move-down-{ix}",
             args=(ix,),
             help="Move this view down in the list."
         )
-
-    container.button(
-        ":information_source: SDK",
-        on_click=show_view_sdk_snippet,
-        key=f"show-view-sdk-snippet-{ix}",
-        args=(ix,),
-        help="Show an example for configuration via SDK."
-    )
-
-
-@st.experimental_dialog("Figure Parameters", width='large')
-def show_view_sdk_snippet(ix: int):
-    view = app.get_views()[ix]
-    st.code(sdk_snippet(view))
-
-
-def sdk_snippet(view: dict):
-    assert "type" in view.keys()
-    assert "params" in view.keys()
-    params = app.nest_params(view["params"])
-    params_str = (
-        json.dumps(params, indent=4)
-        .replace('false', 'False')
-        .replace('true', 'True')
-        .replace('null', 'None')
-        .replace("\n", "\n    ")
-    )
-    return f"""view.{view['type'].replace('-', '_')}(
-    mdata,
-    **{params_str}
-)
-"""
 
 
 def button_add_view():
@@ -187,6 +158,7 @@ def run():
         page_layout=(
             "centered"
             if st.query_params.get("edit-view") is None
+            and app.get_edit_views_flag() is False
             else "wide"
         )
     )
