@@ -16,6 +16,7 @@ class View(MuDataAppHelpers):
         ix: int,
         params: dict,
         editable: bool,
+        uns={},
         **kwargs
     ):
         self.ix = ix
@@ -24,6 +25,7 @@ class View(MuDataAppHelpers):
             kw: params.get(kw, val)
             for kw, val in self.get_schema_defaults(self.schema)
         }
+        self.uns = uns
 
         # Whether the params are editable
         self.params_editable = editable
@@ -33,11 +35,13 @@ class View(MuDataAppHelpers):
         cls,
         ix=-1,
         params=dict(),
+        uns=dict(),
         editable=False
     ):
         return cls(
             ix=ix,
             params=params,
+            uns=uns,
             editable=editable
         )
 

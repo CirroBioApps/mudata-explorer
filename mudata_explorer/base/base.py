@@ -1,3 +1,4 @@
+import json
 from mudata_explorer import app
 from mudata_explorer.helpers.join_kws import join_kws
 from mudata_explorer.base import all_transforms, get_transform
@@ -12,6 +13,7 @@ class MuDataAppHelpers:
 
     ix: int
     params: dict = {}
+    uns: dict = {}
     schema: dict
     type: str
     name: str
@@ -169,6 +171,42 @@ class MuDataAppHelpers:
         # Also update the params object
         if kw in self.params:
             del self.params[kw]
+
+    def update_view_uns(self, kw, value):
+
+        # Get the element in the global mdata object for this view
+        mdata, elem = self._mdata_elem()
+
+        # Make sure that the uns key exists
+        if "uns" not in elem:
+            elem["uns"] = {}
+
+        # Modify the value of this uns for this view
+        elem["uns"][kw] = value
+
+        # Save the MuData object
+        app.set_mdata(mdata)
+
+        # Also update the params object
+        self.uns[kw] = value
+
+    def delete_view_uns(self, kw):
+        # Get the element in the global mdata object for this view
+        mdata, elem = self._mdata_elem()
+
+        # Make sure that the uns key exists
+        if "uns" not in elem:
+            elem["uns"] = {}
+
+        if kw in elem["uns"]:
+            del elem["uns"][kw]
+
+            # Save the MuData object
+            app.set_mdata(mdata)
+
+        # Also update the uns object
+        if kw in self.uns:
+            del self.uns[kw]
 
     def input_selectbox_kwargs(
         self,
