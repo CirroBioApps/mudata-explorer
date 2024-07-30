@@ -45,7 +45,7 @@ def codegen_views():
 """
 
         else:
-            elem['signature'] = "mdata: MuData"
+            elem['signature'] = "mdata: MuData, **extra_params"
 
         # Construct the signature for calling the add_view method
         elem["add_view_params"] = ",\n            ".join([
