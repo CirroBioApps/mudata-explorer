@@ -14,3 +14,4 @@ from .seaborn import Clustermap # noqa
 from .supporting_figure import SupportingFigure # noqa
 from .group_freq import GroupFreq # noqa
 from .table import Table # noqa
+from .tss_tornado import TSS_Tornado # noqa

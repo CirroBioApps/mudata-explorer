@@ -215,15 +215,20 @@ def _select_project(key: str) -> DataPortalProject:
             if p.id == st.query_params["project_id"]:
                 return p
         raise ValueError(f"Project {st.query_params['project_id']} not found")
+    
+    # Sort the projects by name
+    projects.sort(key=lambda p: p.name)
 
     # Give the user the option to select a project
     project = st.selectbox(
         "Project",
-        ["< select a project >"] + [p.name for p in projects],
-        key=f"{key}_project"
+        [p.name for p in projects],
+        key=f"{key}_project",
+        index=None,
+        placeholder="< select a project >"
     )
 
-    if project == "< select a project >":
+    if project is None:
         return
 
     # Return the project object
@@ -261,11 +266,13 @@ def _select_dataset(project: DataPortalProject) -> DataPortalDataset:
     # Give the user the option to select a dataset
     dataset = st.selectbox(
         "Dataset",
-        ["< select a dataset >"] + [ds.name for ds in datasets],
+        [ds.name for ds in datasets],
+        index=None,
+        placeholder="< select a dataset >",
         key="select-dataset"
     )
 
-    if dataset == "< select a dataset >":
+    if dataset is None:
         return
 
     # Return the dataset object

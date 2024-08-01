@@ -138,14 +138,11 @@ class MuDataAppHelpers:
         )
 
     def update_view_param(self, kw, value):
-        # Get the MuData object
-        mdata = app.get_mdata()
+        # Get the element in the global mdata object for this view
+        mdata, elem = self._mdata_elem()
 
         # Modify the value of this param for this view
-        if self.ix == -1:
-            mdata.uns["mudata-explorer-process"]["params"][kw] = value
-        else:
-            mdata.uns["mudata-explorer-views"][self.ix]["params"][kw] = value
+        elem["params"][kw] = value
 
         # Save the MuData object
         app.set_mdata(mdata)
@@ -153,20 +150,29 @@ class MuDataAppHelpers:
         # Also update the params object
         self.params[kw] = value
 
-    def delete_view_param(self, kw):
+    def _mdata_elem(self):
+        """Return the element in the MuData object corresponding to this view."""
         # Get the MuData object
         mdata = app.get_mdata()
 
-        # Delete the value of this param for this view
+        # Point to the element to modify
         if self.ix == -1:
-            params = mdata.uns["mudata-explorer-process"]["params"]
+            elem = mdata.uns["mudata-explorer-process"]
         else:
-            params = mdata.uns["mudata-explorer-views"][self.ix]["params"]
-        if kw in params:
-            del params[kw]
+            elem = mdata.uns["mudata-explorer-views"][self.ix]
+        
+        return mdata, elem
 
-        # Save the MuData object
-        app.set_mdata(mdata)
+    def delete_view_param(self, kw):
+        # Get the element in the global mdata object for this view
+        mdata, elem = self._mdata_elem()
+
+        # Delete the value of this param for this view
+        if kw in elem["params"]:
+            del elem["params"][kw]
+
+            # Save the MuData object
+            app.set_mdata(mdata)
 
         # Also update the params object
         if kw in self.params:

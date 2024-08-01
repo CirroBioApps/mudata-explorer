@@ -82,10 +82,9 @@ def find_file_by_extension(
         # Pick the file from the dataset
         selected_abund = st.selectbox(
             selectbox_label,
-            (
-                ["< select a file >"] + 
-                [f.name[len(prefix):-len(suffix)] for f in files]
-            )
+            [f.name[len(prefix):-len(suffix)] for f in files],
+            index=None,
+            placeholder="< select a file >"
         )
         if selected_abund == "< select a file >":
             return
