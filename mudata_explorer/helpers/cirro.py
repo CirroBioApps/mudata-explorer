@@ -105,6 +105,20 @@ def load_from_cirro():
     if dataset is None:
         return
 
+    # Show a link to the dataset
+    base_url = st.session_state.get("Cirro")._client.configuration.base_url
+    app_url = "https://mudata-explorer.streamlit.app"
+    query_args = "&".join([
+        f"{kw}={val}"
+        for kw, val in dict(
+            domain=base_url,
+            project_id=project.id,
+            dataset_id=dataset.id
+        ).items()
+    ])
+    url = f"{app_url}/cirro_load?{query_args}"
+    st.markdown(f"[Permalink]({url})")
+
     # Read the MuData object from the contents of the dataset
     mdata = _read_dataset(dataset)
 
