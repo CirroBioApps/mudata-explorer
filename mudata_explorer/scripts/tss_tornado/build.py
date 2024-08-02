@@ -128,7 +128,7 @@ def _calc_coverage(
     fp: Path,
     tss_coords: pd.DataFrame,
     window_size: int,
-    n_genes = 1000
+    n_genes=100
 ) -> pd.DataFrame:
 
     # Read in the bigWig file
@@ -171,15 +171,24 @@ def _calc_coverage(
     # Fill in any NaN values with zeros
     cov = cov.fillna(0)
 
-    # # Remove any rows with all zero values
-    # cov = cov.loc[(cov != 0).any(axis=1)]
     # Take the top n_genes genes
-    cov = cov.loc[cov.sum(axis=1).sort_values(ascending=False).index[:n_genes].index]
+    cov = cov.loc[
+        (
+            cov
+            .sum(axis=1)
+            .sort_values(ascending=False)
+            .head(n_genes)
+            .index
+        )
+    ]
 
     logger.info(f"Genes with Data: {cov.shape[0]:,} genes")
 
-    # Normalize to total sequencing depth
-    cov = window_size * cov / cov.sum().sum()
+    # # Normalize to total sequencing depth
+    # cov = window_size * cov / cov.sum().sum()
+
+    # Normalize to sequencing depth per-gene
+    cov = cov.apply(lambda x: x / x.sum(), axis=1)
 
     # Reformat as AnnData
     adata = ad.AnnData(X=cov, obs=filtered_tss.loc[cov.index])

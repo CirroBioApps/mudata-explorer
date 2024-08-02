@@ -33,7 +33,7 @@ def edit_view(view: View, container: DeltaGenerator, ix: int, n_views: int):
         # Instead, just set up the params for the view
         view.get_data()
         return
-    
+
     # Set up an expand element for all of the rearranging options
     expander = container.expander("Edit Position")
 
