@@ -38,7 +38,10 @@ def _read_mdata(dataset: DataPortalDataset) -> Optional[MuData]:
     # Read in the relative abundance table,
     # along with the taxonomic assignment for each feature
     with st.container(border=1):
-        tax, abund = _read_rel_abund(files)
+        rel_abund = _read_rel_abund(files)
+    if rel_abund is None:
+        return
+    tax, abund = rel_abund
 
     # Get the sample metadata
     with st.container(border=1):
@@ -79,6 +82,8 @@ def _read_rel_abund(
         selectbox_label="Use taxonomy assigned by:",
         none_found_msg="No relative abundance tables found."
     )
+    if abund_file is None:
+        return
 
     # Read in the table
     df = abund_file.read_csv(sep="\t", index_col=0)
@@ -146,6 +151,15 @@ def _collapse_by_taxon(df: pd.DataFrame):
 
 
 def _pick_level(row: pd.Series, level: str):
+
+    # If none of the levels have values
+    if all(
+        [
+            pd.isnull(row.get(l))
+            for l in levels
+        ]
+    ):
+        return "Unclassified"
 
     return (
         row[level]
@@ -221,7 +235,7 @@ def _read_sample_meta(
 
     # For this process, any samples with numeric names have "Sample_" prepended
     meta = meta.rename(
-        index=lambda i: f"Sample_{i}" if i[0] in map(str, range(10)) else i
+        index=lambda i: f"Sample_{i}" if str(i)[0] in map(str, range(10)) else i
     )
 
     st.write("""

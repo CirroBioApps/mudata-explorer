@@ -89,6 +89,8 @@ class PlotlyCategorySummarizeValues(Plotly):
 
     @staticmethod
     def sort_rows(df: pd.DataFrame) -> pd.DataFrame:
+        if df.shape[0] <= 1:
+            return df
         return df.reindex(
             index=df.index[
                 hierarchy.leaves_list(
@@ -180,7 +182,10 @@ class PlotlyCategorySummarizeValues(Plotly):
         summary.reset_index(inplace=True)
 
         # If all of the columns start with the same prefix
-        if summary["column"].apply(lambda x: x.split(":")[0]).nunique() == 1:
+        if (
+            summary["column"].apply(lambda x: ":" in x).all()
+            and summary["column"].apply(lambda x: x.split(":")[0]).nunique() == 1
+        ):
             summary["column"] = summary["column"].apply(
                 lambda x: x.split(":", 1)[1]
             )
