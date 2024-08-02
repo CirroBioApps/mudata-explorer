@@ -148,6 +148,7 @@ class TSS_Tornado(View):
             self.plot_tornado(
                 avg_coverage,
                 bins,
+                mdata.obs,
                 container,
                 title="Average Coverage"
             )
@@ -159,11 +160,12 @@ class TSS_Tornado(View):
                 self.plot_tornado(
                     avg_coverage.query(f"cluster == '{cluster}'"),
                     cluster_bins,
+                    mdata.obs.loc[ix],
                     container,
                     title=f"Average Coverage (K={self.selected_k}, {cluster})"
                 )
 
-    def plot_tornado(self, avg_coverage, bins, container, title=""):
+    def plot_tornado(self, avg_coverage, bins, obs, container, title=""):
         fig = make_subplots(
             rows=2,
             shared_xaxes=True,
@@ -188,13 +190,19 @@ class TSS_Tornado(View):
             go.Heatmap(
                 z=bins.values,
                 x=self.bin_position_labels,
-                y=bins.index,
+                y=obs.apply(
+                    lambda x: f"{x['name']} ({x['sample']})",
+                    axis=1
+                ),
                 colorscale="blues",
+                showscale=False
             ),
             row=2,
             col=1
         )
-        fig.update_layout(title_text=title)
+        fig.update_layout(
+            title_text=title
+        )
 
         container.plotly_chart(fig)
 
@@ -207,6 +215,7 @@ class TSS_Tornado(View):
             # Show all of the data
             self.plot_fingerprint(
                 bins,
+                mdata.obs,
                 container
             )
         else:
@@ -216,19 +225,24 @@ class TSS_Tornado(View):
                 cluster_bins = bins.loc[ix]
                 self.plot_fingerprint(
                     cluster_bins,
+                    mdata.obs.loc[ix],
                     container,
                     title=f"K={self.selected_k}, {cluster}"
                 )
 
-    def plot_fingerprint(self, bins, container, title=""):
+    def plot_fingerprint(self, bins, obs, container, title=""):
         fig = make_subplots()
 
         fig.add_trace(
             go.Heatmap(
                 z=bins.values,
                 x=self.bin_position_labels,
-                y=bins.index,
+                y=obs.apply(
+                    lambda x: f"{x['name']} ({x['sample']})",
+                    axis=1
+                ),
                 colorscale="blues",
+                showscale=False
             ),
             row=1,
             col=1
@@ -284,132 +298,6 @@ class TSS_Tornado(View):
             )
 
         return avg_coverage
-
-        # if disp_k is None:
-        #     container.plotly_chart(
-        #         self._plot_tornado(
-        #             mdata.uns["avg_zscore"].iloc[:, 0],
-        #             mdata.mod["bins"].to_df(),
-        #             mdata.obs["name"],
-        #             show_fingerprint
-        #         )
-        #     )
-        # else:
-        #     # Plot the umap of genes, labelled by cluster
-        #     container.write("UMAP of Genes")
-        #     container.plotly_chart(
-        #         px.scatter(
-        #             mdata.mod["bins"].obsm["umap"],
-        #             x="UMAP1",
-        #             y="UMAP2",
-        #             color=mdata.obs[f"kmeans_{disp_k}"],
-        #             title=f"UMAP of Genes (K={disp_k})",
-        #             category_orders={"color": sorted(mdata.obs[f"kmeans_{disp_k}"].unique())}
-        #         )
-        #     )
-        #     # Plot the number of genes per cluster
-        #     container.write("Number of Genes per Cluster")
-        #     container.plotly_chart(
-        #         px.histogram(
-        #             mdata.obs[f"kmeans_{disp_k}"],
-        #             title=f"Number of Genes per Cluster (K={disp_k})",
-        #             category_orders={"value": sorted(mdata.obs[f"kmeans_{disp_k}"].unique())},
-        #             labels={"value": f"Cluster (K={disp_k})", "count": "Number of Genes"}
-        #         )
-        #     )
-
-        #     # Get the table with the group means
-        #     group_means = mdata.uns[f"kmeans_{disp_k}_avg_zscore"]
-        #     for cname, vals in group_means.items():
-        #         container.write(disp_k)
-        #         container.write(cname)
-        #         subset_mdata = mdata[mdata.obs[f"kmeans_{disp_k}"] == cname]
-        #         container.plotly_chart(
-        #             self._plot_tornado(
-        #                 vals,
-        #                 subset_mdata.mod["bins"].to_df(),
-        #                 subset_mdata.obs["name"],
-        #                 show_fingerprint,
-        #                 title=f"Cluster {cname}"
-        #             )
-        #         )
-
-    def _plot_tornado(
-        self,
-        vals,
-        bins,
-        gene_names,
-        show_fingerprint,
-        title=None,
-        show_trace=True
-    ):
-        # Calculate the offset
-        window_size = vals.shape[0]
-        offset = window_size // 2
-
-        # Make subplots
-        fig = make_subplots(
-            rows=1 + int(show_fingerprint),
-            shared_xaxes=True
-        )
-        row = 1
-
-        # If the trace was selected
-        if show_trace:
-            fig.add_trace(
-                go.Scatter(
-                    x=list(range(-offset, window_size - offset)),
-                    y=vals,
-                    mode="lines",
-                    name="Trace",
-                    line=dict(color="blue")
-                ),
-                row=row,
-                col=1
-            )
-            row += 1
-
-        # If the fingerprint was requested
-        if show_fingerprint:
-            # Compute the labels to use
-            xvals = list(range(-offset, window_size - offset, window_size // bins.shape[1]))
-            assert len(xvals) == bins.shape[1]
-
-            fig.add_trace(
-                go.Heatmap(
-                    z=bins.values,
-                    x=xvals,
-                    y=gene_names,
-                    colorscale="blues",
-                ),
-                row=row,
-                col=1
-            )
-            row += 1
-
-        fig.update_layout(
-            title=title,
-            xaxis_title="Distance from TSS (bp)",
-            xaxis_anchor="free",
-            xaxis_title_standoff=30,
-            yaxis_title="Z-Score",
-            plot_bgcolor="white",
-            paper_bgcolor="white",
-            xaxis=dict(
-                tickfont=dict(color="black"),
-                titlefont=dict(color="black")
-            ),
-            yaxis=dict(
-                tickfont=dict(color="black"),
-                titlefont=dict(color="black")
-            ),
-            yaxis2=dict(
-                tickfont=dict(color="black"),
-                titlefont=dict(color="black")
-            )
-        )
-        fig.add_vline(x=0, line_dash="dash", line_color="grey")
-        return fig
 
     @property
     def selected_k(self) -> Optional[int]:
