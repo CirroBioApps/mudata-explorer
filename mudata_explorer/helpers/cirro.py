@@ -6,7 +6,7 @@ from cirro.config import AppConfig, list_tenants
 from io import StringIO
 from muon import MuData
 from mudata_explorer import app
-from mudata_explorer.helpers.cirro_readers import util, mudata, ampliseq
+from mudata_explorer.helpers.cirro_readers import util, mudata, ampliseq, biom
 from mudata_explorer.helpers.cirro_readers import differential_abundance
 from mudata_explorer.helpers.cirro_readers import curatedMetagenomicData
 import streamlit as st
@@ -319,6 +319,13 @@ def _read_dataset(
             return True
         else:
             return ampliseq.read(dataset)
+
+    # biom datasets
+    elif dataset.process_id == "ingest_biom":
+        if check_only:
+            return True
+        else:
+            return biom.read(dataset)
 
     # curatedMetagenomicData datasets
     elif dataset.process_id == "curated_metagenomic_data":
