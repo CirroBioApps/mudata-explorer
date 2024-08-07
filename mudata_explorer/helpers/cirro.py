@@ -106,17 +106,7 @@ def load_from_cirro():
         return
 
     # Show a link to the dataset
-    base_url = st.session_state.get("Cirro")._client.configuration.base_url
-    app_url = "https://mudata-explorer.streamlit.app"
-    query_args = "&".join([
-        f"{kw}={val}"
-        for kw, val in dict(
-            domain=base_url,
-            project_id=project.id,
-            dataset_id=dataset.id
-        ).items()
-    ])
-    url = f"{app_url}/cirro_load?{query_args}"
+    url = _load_dataset_url(project.id, dataset.id)
     st.markdown(f"[Permalink]({url})")
 
     # Read the MuData object from the contents of the dataset
@@ -137,6 +127,24 @@ def load_from_cirro():
         label="View Data",
         icon=":material/insert_chart:"
     )
+
+
+def _load_dataset_url(
+    project_id: str,
+    dataset_id: str
+) -> str:
+    """Get the URL to load the dataset from Cirro."""
+    base_url = st.session_state.get("Cirro")._client.configuration.base_url
+    app_url = "https://mudata-explorer.streamlit.app"
+    query_args = "&".join([
+        f"{kw}={val}"
+        for kw, val in dict(
+            domain=base_url,
+            project_id=project_id,
+            dataset_id=dataset_id
+        ).items()
+    ])
+    return f"{app_url}/cirro_load?{query_args}"
 
 
 def save_to_cirro():
@@ -192,7 +200,7 @@ def save_to_cirro():
 
         # Upload the file to Cirro
         try:
-            project.upload_dataset(
+            dataset = project.upload_dataset(
                 name=name,
                 description=description,
                 process="mudata-h5mu",
@@ -205,6 +213,9 @@ def save_to_cirro():
     st.write(
         f"Wrote {name} to {project.name} ({size})"
     )
+    # Show a link to the dataset
+    url = _load_dataset_url(project.id, dataset.id)
+    st.markdown(f"[Permalink]({url})")
 
 
 def _select_project(key: str) -> DataPortalProject:
