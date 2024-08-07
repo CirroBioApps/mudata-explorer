@@ -409,6 +409,42 @@ def add_scatter(
     view.markdown(mdata, text=legend)
 
 
+def add_stacked_bars(
+    mdata: MuData,
+    title: str,
+    yaxis_title: str,
+    min_value: float,
+    table: str,
+    category_cname: str,
+    category_label: str,
+    category_table="Observation Metadata"
+):
+    view.plotly_stacked_bars(
+        mdata,
+        **{
+            "formatting": {
+                "min_value": min_value,
+                "title": title,
+                "yaxis_title": yaxis_title
+            },
+            "table": {
+                "category": {
+                    "category": {
+                        "cname": category_cname,
+                        "is_categorical": True,
+                        "label": category_label,
+                        "table": [category_table]
+                    },
+                    "enabled": True
+                },
+                "data": {
+                    "tables": [table]
+                }
+            }
+        }
+    )
+
+
 def add_table(
     mdata: MuData,
     title: str,

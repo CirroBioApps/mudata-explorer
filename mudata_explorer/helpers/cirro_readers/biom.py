@@ -127,6 +127,9 @@ def _collapse_by_taxon(adata: AnnData) -> AnnData:
         .T
     )
 
+    # Take the proportional abundance of reads for each sample
+    abund = abund.apply(lambda r: r / r.sum(), axis=1)
+
     # Get the taxonomic assignment for each taxon
     tax = (
         adata.var
@@ -156,13 +159,7 @@ def _pick_level(row: pd.Series, pick_ix: int):
 
         # If there is a value at this level
         if not pd.isnull(row.iloc[ix]):
-            # If we're at a higher level than intended,
-            # annotate the rank
-            if ix < pick_ix:
-                return f"{row.iloc[ix]} ({levels[ix]})"
-            # If we are at the desired level, no need to label
-            else:
-                return row.iloc[ix]
+            return row.iloc[ix]
 
     # If none of the levels have values
     return "Unclassified"
@@ -293,6 +290,10 @@ any subpopulations that share similar patterns of features.
 
 def _run_processes(mdata: MuData, params: dict):
 
+    # Get summary metrics for each feature
+    with st.spinner("Calculating Feature Metrics"):
+        util.summarize_features(mdata, mod="abund")
+
     # Run UMAP
     with st.spinner("Running UMAP"):
         util.run_umap(
@@ -326,6 +327,17 @@ def _run_processes(mdata: MuData, params: dict):
 
 
 def _add_views(mdata: MuData, params: dict):
+
+    # Show some stacked bars
+    util.add_stacked_bars(
+        mdata,
+        title="Taxonomic Composition",
+        yaxis_title="Proportion of Reads",
+        min_value=0.01,
+        table="abund.data",
+        category_cname=params.get("compare_by"),
+        category_label=params.get("label")
+    )
 
     # If a metadata column was selected
     if params.get("compare_by"):

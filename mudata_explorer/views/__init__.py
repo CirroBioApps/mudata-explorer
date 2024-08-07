@@ -10,6 +10,7 @@ from .plotly.line import PlotlyLine # noqa
 from .plotly.scatter import PlotlyScatter # noqa
 from .plotly.scatter_3d import PlotlyScatter3D # noqa
 from .plotly.scatter_multi import PlotlyScatterMulti # noqa
+from .plotly.stacked_bars import PlotlyStackedBars # noqa
 from .seaborn import Clustermap # noqa
 from .supporting_figure import SupportingFigure # noqa
 from .group_freq import GroupFreq # noqa
