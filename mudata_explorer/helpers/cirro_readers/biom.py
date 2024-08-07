@@ -10,8 +10,6 @@ from typing import List, Optional
 from mudata_explorer.helpers.cirro_readers import util
 from mudata_explorer.sdk import io, view
 
-levels = ["Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species", "Species_exact"]
-
 
 def read(
     dataset: DataPortalDataset
@@ -89,7 +87,7 @@ def _read_biom_as_anndata(
 
 def _collapse_by_taxon(adata: AnnData) -> AnnData:
     # The taxonomy is in the var table. However, it is not labelled.
-    filt_levels = levels[:adata.var.shape[1]]
+    filt_levels = list(adata.var.columns.values)
     assert len(filt_levels) > 0
 
     # Let the user select which taxon to collapse by
@@ -97,6 +95,17 @@ def _collapse_by_taxon(adata: AnnData) -> AnnData:
         "Label organisms to the level of:",
         filt_levels,
         index=max(0, len(filt_levels)-2)
+    )
+
+    # Show the user the most common taxa at this level
+    st.dataframe(
+        adata
+        .var[level]
+        .fillna("Unclassified")
+        .value_counts()
+        .reset_index()
+        .rename(columns=dict(count="Number of ASVs")),
+        hide_index=True
     )
 
     # If the ASV isn't classified at that level, fill in with the
