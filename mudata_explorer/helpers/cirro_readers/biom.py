@@ -97,17 +97,6 @@ def _collapse_by_taxon(adata: AnnData) -> AnnData:
         index=max(0, len(filt_levels)-2)
     )
 
-    # Show the user the most common taxa at this level
-    st.dataframe(
-        adata
-        .var[level]
-        .fillna("Unclassified")
-        .value_counts()
-        .reset_index()
-        .rename(columns=dict(count="Number of ASVs")),
-        hide_index=True
-    )
-
     # If the ASV isn't classified at that level, fill in with the
     # next highest level
     adata.var["_group_level"] = adata.var.apply(
@@ -129,6 +118,16 @@ def _collapse_by_taxon(adata: AnnData) -> AnnData:
 
     # Take the proportional abundance of reads for each sample
     abund = abund.apply(lambda r: r / r.sum(), axis=1)
+
+    # Show the user the most abundant taxa at this level
+    st.dataframe(
+        abund
+        .mean()
+        .sort_values(ascending=False)
+        .reset_index()
+        .rename(columns={0: "Average Relative Abundance"}),
+        hide_index=True
+    )
 
     # Get the taxonomic assignment for each taxon
     tax = (
@@ -337,6 +336,41 @@ def _add_views(mdata: MuData, params: dict):
         table="abund.data",
         category_cname=params.get("compare_by"),
         category_label=params.get("label")
+    )
+
+    # Show the most abundant organisms
+    view.plotly_box_multiple(
+        mdata,
+        **{
+            "table": {
+                "category": {
+                    "enabled": False
+                },
+                "data": {
+                    "tables": ["abund.data"],
+                    "cols_query": {
+                        "query": {
+                            "cname": "mean_rank",
+                            "type": "value",
+                            "table": [
+                                "abund.varm.summary_stats"
+                            ],
+                            "expr": "<=",
+                            "value": str(params["n_top_features"])
+                        }
+                    }
+                }
+            },
+            "variable_options": {
+                "axis": "X-Axis",
+                "log_values": False
+            },
+            "display_options": {
+                "var_label": "Organisms",
+                "val_label": "Relative Abundance",
+                "title": "High Abundance Organisms"
+            }
+        }
     )
 
     # If a metadata column was selected
