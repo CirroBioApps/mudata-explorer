@@ -41,7 +41,11 @@ def read(dataset: DataPortalDataset) -> Optional[MuData]:
     # Download to a temporary folder
     with TemporaryDirectory() as tmp:
         # Download the file
-        h5mu_file.download(tmp)
+        try:
+            h5mu_file.download(tmp)
+        except Exception as e:
+            st.error(f"Error downloading file: {e}")
+            return
         # Path of the downloaded file
         filename = f"{tmp}/{h5mu_file.name}"
         # Read the MuData object
