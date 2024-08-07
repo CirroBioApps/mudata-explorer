@@ -189,7 +189,10 @@ def save_to_cirro():
     blob, hash, size = app.get_dat_hash(mdata)
 
     # Set the file name
-    fn = f"{name.replace(' ', '-').lower()}-{hash}.h5mu"
+    basename = name.replace(' ', '-').lower()
+    while "--" in basename:
+        basename = basename.replace("--", "-")
+    fn = f"{basename}-{hash}.h5mu"
 
     # Write out the dataset to a temporary file
     # and upload it to Cirro
