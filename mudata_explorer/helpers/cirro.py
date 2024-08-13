@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Optional, Union, List
 from cirro import CirroApi, DataPortal, DataPortalProject
 from cirro import DataPortalDataset
 from cirro.auth.device_code import DeviceCodeAuth
@@ -85,9 +85,10 @@ def _cirro_login_sub(auth_io: StringIO, base_url: str):
     )
 
 
-def load_from_cirro():
-
-    st.write("#### Load from Cirro")
+def load_from_cirro(
+    filter_process_ids: Optional[List[str]] = None,
+    show_link=True
+):
 
     # If the Cirro client has not been set up,
     # prompt the user to set it up
@@ -101,13 +102,14 @@ def load_from_cirro():
         return
 
     # Ask the user to select a dataset
-    dataset = _select_dataset(project)
+    dataset = _select_dataset(project, filter_process_ids=filter_process_ids)
     if dataset is None:
         return
 
     # Show a link to the dataset
-    url = _load_dataset_url(project.id, dataset.id)
-    st.markdown(f"[Permalink]({url})")
+    if show_link:
+        url = _load_dataset_url(project.id, dataset.id)
+        st.markdown(f"[Permalink]({url})")
 
     # Read the MuData object from the contents of the dataset
     mdata = _read_dataset(dataset)
@@ -122,11 +124,7 @@ def load_from_cirro():
     app.hydrate_uns(mdata)
     app.set_mdata(mdata)
     app.set_mdata_hash(hash)
-    st.page_link(
-        "pages/views.py",
-        label="View Data",
-        icon=":material/insert_chart:"
-    )
+    st.switch_page("pages/views.py")
 
 
 def _load_dataset_url(
@@ -266,7 +264,10 @@ def _select_project(key: str) -> DataPortalProject:
     raise ValueError(f"Project '{project}' not found")
 
 
-def _select_dataset(project: DataPortalProject) -> DataPortalDataset:
+def _select_dataset(
+    project: DataPortalProject,
+    filter_process_ids: Optional[List[str]] = None
+) -> DataPortalDataset:
 
     # Try to get the list of datasets in the project
     try:
@@ -276,9 +277,14 @@ def _select_dataset(project: DataPortalProject) -> DataPortalDataset:
         util.clear_cirro_client()
 
     # Filter down to the datasets which have parsing configured
+    # If filter_process_ids is provided, only those will be allowed
     datasets = [
         d for d in datasets
-        if _read_dataset(d, check_only=True)
+        if _read_dataset(
+            d,
+            check_only=True,
+            filter_process_ids=filter_process_ids
+        )
     ]
 
     # Sort by date
@@ -292,13 +298,17 @@ def _select_dataset(project: DataPortalProject) -> DataPortalDataset:
         raise ValueError(f"Dataset {st.query_params['dataset_id']} not found")
 
     # Give the user the option to select a dataset
-    dataset = st.selectbox(
-        "Dataset",
-        [ds.name for ds in datasets],
-        index=None,
-        placeholder="< select a dataset >",
-        key="select-dataset"
-    )
+    if datasets:
+        dataset = st.selectbox(
+            "Dataset",
+            [ds.name for ds in datasets],
+            index=None,
+            placeholder="< select a dataset >",
+            key="select-dataset"
+        )
+    else:
+        st.write("No datasets available")
+        return
 
     if dataset is None:
         return
@@ -312,13 +322,22 @@ def _select_dataset(project: DataPortalProject) -> DataPortalDataset:
 
 def _read_dataset(
     dataset: DataPortalDataset,
-    check_only: bool = False
+    check_only: bool = False,
+    filter_process_ids: Optional[List[str]] = None
 ) -> Union[bool, Optional[MuData]]:
     """
     Read a dataset from Cirro.
     Report any errors that arise.
     If check_only is True, only check if the dataset's type is valid
     """
+
+    # If a list of process IDs is supplied, only allow those
+    if filter_process_ids is not None:
+        if dataset.process_id not in filter_process_ids:
+            if check_only:
+                return False
+            else:
+                return None
 
     # MuData datasets
     if dataset.process_id == "mudata-h5mu":
