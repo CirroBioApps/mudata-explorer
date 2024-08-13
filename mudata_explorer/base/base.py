@@ -432,6 +432,7 @@ class MuDataAppHelpers:
                         )
 
                 if not isinstance(self.params[prefix_key], str):
+                    container.write(f"Please provide a valid string ({prefix_key}).")
                     self.params_complete = False
 
             elif elem["type"] == "float":
@@ -857,8 +858,7 @@ class MuDataAppHelpers:
         # Make a DataFrame with the selected table(s)
         selected_tables: List[str] = self.params.get(tables_kw, [])
         if len(selected_tables) == 0:
-            if self.mdata is None:
-                container.write("No tables selected.")
+            container.write("No tables selected.")
             self.params_complete = False
             return
 
