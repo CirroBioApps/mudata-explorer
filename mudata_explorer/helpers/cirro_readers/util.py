@@ -205,6 +205,7 @@ def run_umap(
     n_neighbors=15,
     min_dist=0.5,
     dest_key="umap",
+    n_components=2
 ):
     process.umap(
         mdata,
@@ -213,7 +214,7 @@ def run_umap(
                 "metric": metric,
                 "n_neighbors": n_neighbors,
                 "min_dist": min_dist,
-                "n_components": 2
+                "n_components": n_components
             },
             "outputs": {
                 "dest_key": dest_key
@@ -384,7 +385,7 @@ def add_scatter(
                 "color": {
                     "cname": cname,
                     "is_categorical": is_categorical,
-                    "enabled": True,
+                    "enabled": color_table is not None,
                     "label": label,
                     "scale": scale,
                     "table": [color_table]
@@ -413,19 +414,21 @@ def add_stacked_bars(
     mdata: MuData,
     title: str,
     yaxis_title: str,
-    min_value: float,
+    max_features: int,
     table: str,
     category_cname: str,
     category_label: str,
-    category_table="Observation Metadata"
+    category_table="Observation Metadata",
+    sort_rows_by="Values"
 ):
     view.plotly_stacked_bars(
         mdata,
         **{
             "formatting": {
-                "min_value": min_value,
+                "max_features": max_features,
                 "title": title,
-                "yaxis_title": yaxis_title
+                "yaxis_title": yaxis_title,
+                "sort_rows_by": sort_rows_by
             },
             "table": {
                 "category": {
