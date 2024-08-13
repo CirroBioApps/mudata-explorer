@@ -19,7 +19,7 @@ class PlotlyLine(Plotly):
                     "label": "Color",
                     "optional": True,
                     "colorscale": True
-                },
+                }
             },
             "query": True,
         },
@@ -29,11 +29,19 @@ class PlotlyLine(Plotly):
             "properties": {
                 "log_x": {
                     "type": "boolean",
-                    "label": "Log Scale - X Axis"
+                    "label": "Log Scale - X Axis",
+                    "sidebar": True
                 },
                 "log_y": {
                     "type": "boolean",
-                    "label": "Log Scale - Y Axis"
+                    "label": "Log Scale - Y Axis",
+                    "sidebar": True
+                },
+                "title": {
+                    "type": "string",
+                    "label": "Title",
+                    "default": "",
+                    "sidebar": True
                 }
             }
         }
@@ -61,6 +69,7 @@ class PlotlyLine(Plotly):
                 y=self.params["data.y.label"],
                 color=self.params["data.color.label"]
             ),
+            title=self.params["scale_options.title"],
             **colorscale
         )
 

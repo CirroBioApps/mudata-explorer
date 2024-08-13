@@ -222,6 +222,8 @@ def view_editable():
     mdata_views = make_views(editable=False)
 
     for ix, view in enumerate(mdata_views):
+        if ix > 0:
+            st.write("---")
 
         # Set up two columns
         # The controls will be shown on the left,
@@ -234,11 +236,23 @@ def view_editable():
         # Expose any params which can be configured in the sidebar
         view.runtime_options(controls)
 
+        # Show any sidebar parameters in the controls container
+        view.get_data(controls, sidebar=True)
+
+        # Let the user run the method, catching any errors
+        if not view.params_complete:
+            display.write("Please complete all input fields")
+            return
+
         # Set up a set of buttons to edit the order of the view
         edit_view(view, controls, ix, len(mdata_views))
 
-        # Attach the view to the display
-        view.attach(display)
+        # Now make the display, catching any errors
+        try:
+            view.display(display)
+        except Exception as e:
+            # Log the full traceback of the exception
+            display.exception(e)
 
     # Let the user add a new view
     button_add_view()

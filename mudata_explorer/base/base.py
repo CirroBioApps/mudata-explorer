@@ -304,7 +304,17 @@ class MuDataAppHelpers:
             for kw in invalidate:
                 self.delete_view_param(kw)
 
-    def get_data(self, container: Optional[DeltaGenerator] = None):
+    def get_data(
+        self,
+        container: Optional[DeltaGenerator] = None,
+        sidebar = False
+    ):
+        """
+        The sidebar flag is used to indicate whether
+        the container is the sidebar or the main container.
+        This is used to render form elements which are only shown
+        in the sidebar.
+        """
 
         if container is None and self.mdata is None:
             container = st.container()
@@ -323,7 +333,7 @@ class MuDataAppHelpers:
                 container.write(self.help_text)
 
         # Parse the form schema of the object
-        self.render_form(container, self.schema)
+        self.render_form(container, self.schema, sidebar=sidebar)
 
         if self.params_editable and self.ix >= 0:
 
@@ -355,13 +365,24 @@ class MuDataAppHelpers:
         self,
         container: Optional[DeltaGenerator],
         schema: Dict[str, dict],
-        prefix: str = None
+        prefix: str = None,
+        sidebar=False
     ):
 
         # Iterate over the form defined for this view
         for key, elem in schema.items():
 
             prefix_key = join_kws(prefix, key)
+
+            # The element will be displayed if either the global
+            # param self.params_editiable is True (indicating that
+            # the full set of parameters will be displayed), or if
+            # the element is marked to be shown in the sidebar, and
+            # the sidebar flag was passed to this function
+            show_elem = (
+                self.params_editable
+                or (sidebar and elem.get("sidebar", False))
+            )
 
             if elem["type"] == "dataframe":
 
@@ -370,30 +391,32 @@ class MuDataAppHelpers:
                     elem,
                     (
                         container.container(border=True)
-                        if self.params_editable
+                        if show_elem
                         else container
-                    )
+                    ),
+                    sidebar=sidebar
                 )
 
             elif elem["type"] == "object":
 
-                if "label" in elem and self.params_editable:
+                if "label" in elem and show_elem:
                     container.write(f"**{elem.get('label', prefix_key)}**")
 
-                if elem.get("help") is not None and self.params_editable:
+                if elem.get("help") is not None and show_elem:
                     container.write(elem.get('help'))
 
                 self.render_form(
                     container,
                     elem["properties"],
-                    prefix_key
+                    prefix_key,
+                    sidebar=sidebar
                 )
-                if self.params_editable:
+                if show_elem:
                     container.write("---")
 
             elif elem["type"] == "string":
 
-                if self.params_editable:
+                if show_elem:
                     if elem.get("enum") is not None:
                         self.params[prefix_key] = container.selectbox(
                             (
@@ -437,7 +460,7 @@ class MuDataAppHelpers:
 
             elif elem["type"] == "float":
 
-                if self.params_editable:
+                if show_elem:
                     self.params[prefix_key] = container.number_input(
                         key if elem.get("label") is None else elem["label"],
                         help=elem.get("help"),
@@ -453,7 +476,9 @@ class MuDataAppHelpers:
 
             elif elem["type"] == "integer":
 
-                if self.params_editable:
+                print(prefix_key, show_elem)
+
+                if show_elem:
                     # Make sure that the value is an integer
                     val = st.session_state.get(
                         self.param_key(prefix_key),
@@ -480,7 +505,7 @@ class MuDataAppHelpers:
 
             elif elem["type"] == "boolean":
 
-                if self.params_editable:
+                if show_elem:
                     self.params[prefix_key] = container.checkbox(
                         key if elem.get("label") is None else elem["label"],
                         help=elem.get("help"),
@@ -489,7 +514,7 @@ class MuDataAppHelpers:
 
             elif elem["type"] == "supporting_figure":
 
-                if self.params_editable:
+                if show_elem:
                     # Get the list of all supporting figures
                     all_figures = app.get_supp_figs()
 
@@ -519,18 +544,24 @@ class MuDataAppHelpers:
         self,
         key: str,
         elem: dict,
-        container: DeltaGenerator
+        container: DeltaGenerator,
+        sidebar=False
     ):
 
-        if "label" in elem and self.params_editable:
+        show_elem = (
+            self.params_editable
+            or (sidebar and elem.get("sidebar", False))
+        )
+
+        if "label" in elem and show_elem:
             container.write(f"**{elem.get('label')}**")
 
-        if elem.get("help") is not None and self.params_editable:
+        if elem.get("help") is not None and show_elem:
             container.write(elem.get('help'))
 
         # Optional column selection
         enabled_kw = join_kws(key, "enabled")
-        if elem.get("optional", False) and self.params_editable:
+        if elem.get("optional", False) and show_elem:
             container.checkbox(
                 "Enabled",
                 **self.input_value_kwargs(enabled_kw)
@@ -540,7 +571,7 @@ class MuDataAppHelpers:
         if not self.params.get(enabled_kw, True):
             return
 
-        if self.params_editable and app.has_mdata() is False:
+        if show_elem and app.has_mdata() is False:
             container.write("No MuData object available.")
             self.params_complete = False
             return
@@ -549,7 +580,7 @@ class MuDataAppHelpers:
         axis_kw = join_kws(key, "axis")
 
         # Let the user select the orientation to use
-        if self.params_editable:
+        if show_elem:
             container.selectbox(
                 "Select orientation",
                 ["Observations", "Variables"],
@@ -573,7 +604,8 @@ class MuDataAppHelpers:
                 key,
                 elem["columns"],
                 axis,
-                container
+                container,
+                sidebar=sidebar
             )
 
         # If 'columns' was not specified
@@ -583,27 +615,28 @@ class MuDataAppHelpers:
             df = self.render_dataframe_tables(
                 key,
                 axis,
-                container
+                container,
+                show_elem
             )
 
             if df is not None:
 
                 # The user can filter the data along the columns
-                df = self.filter_dataframe_cols(key, axis, df, container)
+                df = self.filter_dataframe_cols(key, axis, df, container, show_elem)
 
         if df is not None:
 
             # The user can filter the data along the rows
-            df = self.filter_dataframe_rows(key, axis, df, container)
+            df = self.filter_dataframe_rows(key, axis, df, container, show_elem)
 
             # The user can transform the values in the DataFrame
-            df = self.transform_dataframe(key, df, container)
+            df = self.transform_dataframe(key, df, container, show_elem)
 
             # Drop any columns which are entirely missing
             dropped_cols = df.shape[1] - df.dropna(axis=1, how="all").shape[1]
             df = df.dropna(axis=1, how="all")
             if dropped_cols:
-                if self.params_editable:
+                if show_elem:
                     container.write(
                         f"Removed {dropped_cols:,} columns with entirely missing values." # noqa
                     )
@@ -614,16 +647,16 @@ class MuDataAppHelpers:
                 n = df.shape[0] - df.dropna().shape[0]
                 df = df.dropna()
                 if n:
-                    if self.params_editable:
+                    if show_elem:
                         msg = f"Removed {n:,} rows with missing values."
                         container.write(msg)
 
-        if self.params_editable and (df is None or df.shape[0] == 0):
+        if show_elem and (df is None or df.shape[0] == 0):
             container.write("No data available.")
             return
 
         self.params[join_kws(key, "dataframe")] = df
-        if self.params_editable and df is not None:
+        if show_elem and df is not None:
             container.write(
                 "Selected {:,} rows and {:,} columns.".format(*df.shape)
             )
@@ -633,7 +666,8 @@ class MuDataAppHelpers:
         key: str,
         columns: dict,
         axis: int,
-        container: DeltaGenerator
+        container: DeltaGenerator,
+        sidebar=False
     ):
         # Iterate over the columns in the schema and prompt the user
         # for which data to supply for each
@@ -644,7 +678,8 @@ class MuDataAppHelpers:
                 col_kw,
                 col_elem,
                 axis,
-                container
+                container,
+                sidebar=sidebar
             )
 
         return self.build_dataframe(
@@ -659,7 +694,8 @@ class MuDataAppHelpers:
         col_kw: str,
         col_elem: dict,
         axis: int,
-        container: DeltaGenerator
+        container: DeltaGenerator,
+        sidebar=False
     ):
 
         # Set the default values
@@ -712,8 +748,8 @@ class MuDataAppHelpers:
                 self.update_view_param(cname_kw, cname_val)
                 self.update_view_param(label_kw, cname_val)
 
-        # If the views are editable
-        if self.params_editable:
+        # If the views are editable (or have been marked for the sidebar)
+        if self.params_editable or (sidebar and col_elem.get("sidebar", False)):
 
             # Print the column name
             container.write(f"**{col_elem.get('label', col_kw)}**")
@@ -820,7 +856,8 @@ class MuDataAppHelpers:
         self,
         key,
         axis: int,
-        container: DeltaGenerator
+        container: DeltaGenerator,
+        show_elem: bool
     ):
         tables_kw = join_kws(key, "tables")
 
@@ -844,7 +881,7 @@ class MuDataAppHelpers:
                 )
 
         # Let the user select one or more tables
-        if self.params_editable:
+        if show_elem:
 
             container.multiselect(
                 "Select table(s)",
@@ -920,12 +957,13 @@ class MuDataAppHelpers:
         key: str,
         axis: int,
         df: pd.DataFrame,
-        parent_container: DeltaGenerator
+        parent_container: DeltaGenerator,
+        show_elem: bool
     ) -> pd.DataFrame:
         """
         Let the user select a subset of columns for analysis.
         """
-        if parent_container is not None and self.params_editable:
+        if parent_container is not None and show_elem:
             if self.ix == -1:
                 container = parent_container.expander("Filter Columns")
             else:
@@ -938,9 +976,10 @@ class MuDataAppHelpers:
             0 if axis else 1,  # Filter the opposite axis
             1,  # Perform the filtering on the columns
             df,
-            container
+            container,
+            show_elem
         )
-        if self.params_editable and df is not None:
+        if show_elem and df is not None:
             container.write(f"Number of filtered columns: {df.shape[1]:,}")
         return df
 
@@ -949,7 +988,8 @@ class MuDataAppHelpers:
         key: str,
         axis: int,
         df: pd.DataFrame,
-        parent_container: DeltaGenerator
+        parent_container: DeltaGenerator,
+        show_elem: bool
     ) -> pd.DataFrame:
         """
         Let the user select a subset of rows for analysis.
@@ -957,7 +997,7 @@ class MuDataAppHelpers:
         if parent_container is not None:
             if self.ix == -1:
                 container = parent_container.expander("Filter Rows")
-            elif self.params_editable:
+            elif show_elem:
                 container = parent_container.container(border=True)
                 container.write("**Filter Rows**")
             else:
@@ -970,9 +1010,10 @@ class MuDataAppHelpers:
             axis,
             0,  # Perform the filtering on the rows
             df,
-            container
+            container,
+            show_elem
         )
-        if self.params_editable and df is not None:
+        if show_elem and df is not None:
             container.write(f"Number of filtered rows: {df.shape[0]:,}")
         return df
 
@@ -982,7 +1023,8 @@ class MuDataAppHelpers:
         axis: int,
         filter_axis: int,
         df: pd.DataFrame,
-        container: Optional[DeltaGenerator]
+        container: Optional[DeltaGenerator],
+        show_elem: bool
     ) -> pd.DataFrame:
 
         # Set the default values
@@ -1076,7 +1118,7 @@ class MuDataAppHelpers:
                 )
 
         # If the views are editable
-        if self.params_editable:
+        if show_elem:
 
             # First figure out whether we're selecting by value
             # or by selecting specific indices
@@ -1213,7 +1255,7 @@ class MuDataAppHelpers:
 
         # If no value is provided
         if query['value'] is None or len(query['value']) == 0:
-            if self.params_editable:
+            if show_elem:
                 container.write("Provide a value to filter samples.")
             return df
 
@@ -1242,7 +1284,7 @@ class MuDataAppHelpers:
             mdata=self.mdata
         )
         if table is None:
-            if self.params_editable:
+            if show_elem:
                 container.write("No data available for filtering.")
             return df
 
@@ -1256,7 +1298,7 @@ class MuDataAppHelpers:
                 if val in table[query["cname"]].values
             ]
             if len(query["value"]) == 0:
-                if self.params_editable:
+                if show_elem:
                     container.write("No values match the filter criteria.")
                 return df
 
@@ -1322,13 +1364,14 @@ class MuDataAppHelpers:
         self,
         key: str,
         df: pd.DataFrame,
-        parent_container: DeltaGenerator
+        parent_container: DeltaGenerator,
+        show_elem: bool
     ) -> pd.DataFrame:
 
         if parent_container is not None:
             if self.ix == -1:
                 container = parent_container.expander("Transform Values")
-            elif self.params_editable:
+            elif show_elem:
                 container = parent_container.container(border=True)
                 container.write("**Transform Values**")
             else:
@@ -1339,7 +1382,7 @@ class MuDataAppHelpers:
         # Get the list of transformations
         transforms = self.param(key, "transforms")
 
-        if self.params_editable:
+        if show_elem:
 
             # Show each of the transformations, and also allow
             # the user to remove those transformations
@@ -1374,7 +1417,7 @@ class MuDataAppHelpers:
                     container.exception(e)
                 else:
                     raise e
-            if parent_container is not None and self.params_editable:
+            if parent_container is not None and show_elem:
                 parent_container.write(f"Ran: {tr.name}")
 
         return df

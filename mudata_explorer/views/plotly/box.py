@@ -37,7 +37,8 @@ class PlotlyBox(Plotly):
             "properties": {
                 "log_y": {
                     "type": "boolean",
-                    "label": "Log Scale - Y Axis"
+                    "label": "Log Scale - Y Axis",
+                    "sidebar": True
                 }
             }
         },
@@ -48,7 +49,8 @@ class PlotlyBox(Plotly):
                 "title": {
                     "type": "string",
                     "label": "Title",
-                    "default": ""
+                    "default": "",
+                    "sidebar": True
                 }
             }
         },
@@ -60,7 +62,8 @@ class PlotlyBox(Plotly):
                     "type": "string",
                     "label": "Compare Values Between Groups",
                     "default": "Disabled",
-                    "enum": ["Disabled", "ANOVA", "Kruskal-Wallis"]
+                    "enum": ["Disabled", "ANOVA", "Kruskal-Wallis"],
+                    "sidebar": True
                 }
             }
         }

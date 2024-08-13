@@ -37,6 +37,7 @@ The display can be used to show either:
                 "y": {"label": "Category B"}
             },
             "query": True,
+            "sidebar": True
         },
         "formatting": {
             "type": "object",
@@ -54,7 +55,8 @@ The display can be used to show either:
                     "label": "Display Values",
                     "help": "The values to display in the table.",
                     "default": "Number of Items",
-                    "enum": ["Number of Items", "Odds Ratio (log2)"]
+                    "enum": ["Number of Items", "Odds Ratio (log2)"],
+                    "sidebar": True
                 }
             }
         }

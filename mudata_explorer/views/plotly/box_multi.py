@@ -47,16 +47,19 @@ class PlotlyBoxMulti(Plotly):
                     "label": "Show Value On",
                     "enum": ["X-Axis", "Y-Axis"],
                     "default": "Y-Axis",
+                    "sidebar": True,
                 },
                 "log_values": {
                     "type": "boolean",
-                    "label": "Log Scale"
+                    "label": "Log Scale",
+                    "sidebar": True,
                 },
                 "sort_by": {
                     "type": "string",
                     "enum": ["Mean", "Median", "Name"],
                     "default": "Mean",
                     "label": "Sort By",
+                    "sidebar": True,
                     "help": "How to sort the variables"
                 }
             }
@@ -98,14 +101,17 @@ class PlotlyBoxMulti(Plotly):
                         "enabled": {
                             "type": "boolean",
                             "label": "Enabled",
-                            "default": True
+                            "default": True,
+                            "sidebar": True
                         }
-                    }
+                    },
+                    "sidebar": True
                 },
                 "title": {
                     "type": "string",
                     "label": "Title",
-                    "default": ""
+                    "default": "",
+                    "sidebar": True
                 },
                 "var_label": {
                     "type": "string",

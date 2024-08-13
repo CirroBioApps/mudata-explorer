@@ -18,7 +18,8 @@ class Table(View):
                     "type": "dataframe",
                     "label": "Data",
                     "select_columns": True,
-                    "query": ""
+                    "query": "",
+                    "sidebar": True
                 }
             }
         },
@@ -32,6 +33,7 @@ class Table(View):
                         "sort_by": {"label": "sort_by"}
                     },
                     "query": True,
+                    "sidebar": True
                 }
             }
         }

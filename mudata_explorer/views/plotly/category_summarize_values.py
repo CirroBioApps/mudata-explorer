@@ -56,7 +56,8 @@ class PlotlyCategorySummarizeValues(Plotly):
                     "enum": ["Mean", "Median", "Positive", "Non-Null", "None"],
                     "default": "Mean",
                     "label": "Point Size",
-                    "help": "Metric used to scale the size of each point."
+                    "help": "Metric used to scale the size of each point.",
+                    "sidebar": True
                 },
                 "color": {
                     "type": "string",
@@ -77,11 +78,13 @@ class PlotlyCategorySummarizeValues(Plotly):
                     "label": "Sort By",
                     "enum": ["Labels", "Values"],
                     "default": "Labels",
+                    "sidebar": True
                 },
                 "title": {
                     "type": "string",
                     "label": "Title",
-                    "default": ""
+                    "default": "",
+                    "sidebar": True
                 }
             }
         }

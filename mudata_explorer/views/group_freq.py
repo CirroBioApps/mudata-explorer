@@ -44,7 +44,8 @@ Example output:
                     "type": "dataframe",
                     "label": "Data",
                     "select_columns": True,
-                    "query": ""
+                    "query": "",
+                    "sidebar": True
                 }
             }
         },
@@ -56,7 +57,8 @@ Example output:
                     "type": "string",
                     "label": "Sort By",
                     "default": "Frequency",
-                    "enum": ["Frequency", "Groupings"]
+                    "enum": ["Frequency", "Groupings"],
+                    "sidebar": True
                 }
             }
         }

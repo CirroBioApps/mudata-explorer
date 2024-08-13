@@ -15,6 +15,7 @@ class Markdown(View):
             "default": "",
             "help": "Use markdown syntax to write formatted text.",
             "multiline": True,
+            "sidebar": True
         }
     }
 

@@ -42,6 +42,7 @@ class PlotlyCategoryCount(Plotly):
             "label": "Bar Color Mode",
             "help_text": "If a color column is used, should the bars be stacked or grouped?", # noqa
             "enum": ["stack", "group"],
+            "sidebar": True
         },
         "scale_options": {
             "type": "object",
@@ -49,7 +50,8 @@ class PlotlyCategoryCount(Plotly):
             "properties": {
                 "log_y": {
                     "type": "boolean",
-                    "label": "Log Scale - Y Axis"
+                    "label": "Log Scale - Y Axis",
+                    "sidebar": True
                 }
             }
         },
@@ -60,7 +62,8 @@ class PlotlyCategoryCount(Plotly):
                 "title": {
                     "type": "string",
                     "label": "Title",
-                    "default": ""
+                    "default": "",
+                    "sidebar": True
                 }
             }
         },
@@ -74,7 +77,8 @@ class PlotlyCategoryCount(Plotly):
                 },
                 "chisquare": {
                     "type": "boolean",
-                    "label": "Chi-Square Contingency Test"
+                    "label": "Chi-Square Contingency Test",
+                    "sidebar": True
                 }
             }
         }

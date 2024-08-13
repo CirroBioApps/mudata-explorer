@@ -30,6 +30,7 @@ and using a log scale for the x- and y-axes.
                 },
             },
             "query": True,
+            "sidebar": True
         },
         "scale_options": {
             "type": "object",
@@ -37,11 +38,13 @@ and using a log scale for the x- and y-axes.
             "properties": {
                 "log_x": {
                     "type": "boolean",
-                    "label": "Log Scale - X Axis"
+                    "label": "Log Scale - X Axis",
+                    "sidebar": True
                 },
                 "log_y": {
                     "type": "boolean",
-                    "label": "Log Scale - Y Axis"
+                    "label": "Log Scale - Y Axis",
+                    "sidebar": True
                 }
             }
         },
@@ -55,12 +58,14 @@ and using a log scale for the x- and y-axes.
                     "default": 1.0,
                     "min_value": 0.,
                     "max_value": 1.,
-                    "step": 0.1
+                    "step": 0.1,
+                    "sidebar": True
                 },
                 "title": {
                     "type": "string",
                     "label": "Figure Title",
-                    "default": ""
+                    "default": "",
+                    "sidebar": True
                 }
             }
         }

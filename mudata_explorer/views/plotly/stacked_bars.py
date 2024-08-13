@@ -46,24 +46,28 @@ annotated by a single column which contains categories.
                 "max_features": {
                     "type": "integer",
                     "label": "Maximum Number of Features",
-                    "default": 10
+                    "default": 10,
+                    "sidebar": True
                 },
                 "sort_cols_by": {
                     "type": "string",
                     "label": "Sort Features By",
                     "enum": ["Labels", "Values"],
                     "default": "Labels",
+                    "sidebar": True
                 },
                 "sort_rows_by": {
                     "type": "string",
                     "label": "Sort Bars By",
                     "enum": ["Labels", "Values", "Category"],
                     "default": "Labels",
+                    "sidebar": True
                 },
                 "title": {
                     "type": "string",
                     "label": "Title",
-                    "default": ""
+                    "default": "",
+                    "sidebar": True
                 },
                 "yaxis_title": {
                     "type": "string",

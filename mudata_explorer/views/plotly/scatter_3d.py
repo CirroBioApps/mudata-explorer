@@ -20,8 +20,9 @@ class PlotlyScatter3D(Plotly):
                     "label": "Color",
                     "optional": True,
                     "colorscale": True
-                },
+                }
             },
+            "sidebar": True,
             "query": True,
         },
         "scale_options": {
@@ -30,15 +31,18 @@ class PlotlyScatter3D(Plotly):
             "properties": {
                 "log_x": {
                     "type": "boolean",
-                    "label": "Log Scale - X Axis"
+                    "label": "Log Scale - X Axis",
+                    "sidebar": True
                 },
                 "log_y": {
                     "type": "boolean",
-                    "label": "Log Scale - Y Axis"
+                    "label": "Log Scale - Y Axis",
+                    "sidebar": True
                 },
                 "log_z": {
                     "type": "boolean",
-                    "label": "Log Scale - Z Axis"
+                    "label": "Log Scale - Z Axis",
+                    "sidebar": True
                 }
             }
         }
