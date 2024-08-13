@@ -1,4 +1,5 @@
 import pandas as pd
+from numpy import log10
 from scipy import stats
 from mudata_explorer.base.process import Process
 
@@ -90,6 +91,7 @@ Documentation:
         res = pd.DataFrame([
             dict(
                 index=cname,
+                mean=cvals.mean(),
                 **self.run_kruskal(cvals, group)
             )
             for cname, cvals in df.items()
@@ -98,7 +100,10 @@ Documentation:
 
         # Assign a rank order to the results such that the
         # largest f-statistic is ranked first
-        res["rank"] = res["f_statistic"].rank(ascending=False)
+        res["rank"] = res["statistic"].rank(ascending=False)
+
+        # Calculate the -log10 pvalue
+        res["neg_log10_pvalue"] = -res["pvalue"].apply(lambda x: log10(x))
 
         self.save_results("results", res)
 
@@ -113,6 +118,6 @@ Documentation:
             print(vals)
             raise e
         return dict(
-            f_statistic=res.statistic,
+            statistic=res.statistic,
             pvalue=res.pvalue
         )

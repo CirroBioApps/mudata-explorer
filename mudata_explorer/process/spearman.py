@@ -1,4 +1,5 @@
 import pandas as pd
+from numpy import log10
 from scipy import stats
 from mudata_explorer.base.process import Process
 
@@ -92,6 +93,7 @@ Documentation:
         res = pd.DataFrame([
             dict(
                 index=cname,
+                mean=cvals.mean(),
                 **self.run_spearman(cvals, comparitor)
             )
             for cname, cvals in df.items()
@@ -100,7 +102,13 @@ Documentation:
 
         # Assign a rank order to the results such that the
         # largest f-statistic is ranked first
-        res["rank"] = res["statistic"].rank(ascending=False)
+        res["statistic_rank"] = res["statistic"].rank(ascending=False)
+
+        # Rank order by pvalue as well
+        res["pvalue_rank"] = res["pvalue"].rank()
+
+        # Calculate the -log10 pvalue
+        res["neg_log10_pvalue"] = -res["pvalue"].apply(lambda x: log10(x))
 
         self.save_results("results", res)
 
