@@ -221,10 +221,10 @@ class PlotlyBoxMulti(Plotly):
         # Set up the ordering
         category_orders = {
             cname: (
-                data_long.groupby(cname)["value"].mean().sort_values().index
+                data_long.groupby(cname)["value"].mean().sort_values(ascending=False).index
                 if approach == "Mean"
                 else (
-                    data_long.groupby(cname)["value"].median().sort_values().index
+                    data_long.groupby(cname)["value"].median(ascending=False).sort_values().index
                     if approach == "Median"
                     else data_long[cname].drop_duplicates().sort_values()
                 )
