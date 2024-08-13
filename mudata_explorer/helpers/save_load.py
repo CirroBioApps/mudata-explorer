@@ -29,11 +29,7 @@ def upload_mdata(container: DeltaGenerator):
     if container.button("Load Dataset", key="load-from-file"):
         app.set_mdata(mdata)
         app.set_mdata_hash(mdata_hash)
-        container.page_link(
-            "pages/views.py",
-            label="View Data",
-            icon=":material/insert_chart:"
-        )
+        st.switch_page("pages/views.py")
 
 
 def show_hash(container: DeltaGenerator):
