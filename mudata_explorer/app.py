@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import requests
 import streamlit as st
+from streamlit.errors import StreamlitAPIException
 from streamlit.delta_generator import DeltaGenerator
 from tempfile import NamedTemporaryFile
 from typing import Any, List, Optional, Tuple, Union, Dict
@@ -89,7 +90,10 @@ def setup_sidebar(
     Setup the sidebar with links to all of the pages.
     If edit_views is True, add a checkbox to allow the user to edit the views.
     """
-    st.set_page_config("MuData Explorer", layout=page_layout)
+    try:
+        st.set_page_config("MuData Explorer", layout=page_layout)
+    except StreamlitAPIException:
+        st.rerun()
 
     # If a file link is in the query params
     if st.query_params.get("file"):
