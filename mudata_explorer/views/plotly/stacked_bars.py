@@ -43,10 +43,10 @@ annotated by a single column which contains categories.
             "type": "object",
             "label": "Formatting",
             "properties": {
-                "min_value": {
-                    "type": "float",
-                    "label": "Minimum Average Value (per feature)",
-                    "default": 0.01
+                "max_features": {
+                    "type": "integer",
+                    "label": "Maximum Number of Features",
+                    "default": 10
                 },
                 "sort_cols_by": {
                     "type": "string",
@@ -96,12 +96,19 @@ annotated by a single column which contains categories.
         if data is None:
             container.write("Please select a data table")
             return
-        # Group together all columns which are below the threshold
-        below_threshold_ix = data.mean() < self.params['formatting.min_value']
-        if below_threshold_ix.sum() > 0:
-            below_threshold_sum = data.loc[:, below_threshold_ix].sum(axis=1)
-            data = data.loc[:, ~below_threshold_ix]
-            data = data.assign(**{self._below_threshold_label: below_threshold_sum})
+
+        # Group together all columns beyond the `max_features` threshold
+        max_features = self.params["formatting.max_features"]
+        if max_features > 0 and data.shape[1] > max_features:
+            feature_rank = data.mean().sort_values(ascending=False)
+            to_drop = feature_rank.iloc[max_features:].index
+            data = (
+                data
+                .drop(columns=to_drop)
+                .assign(**{
+                    self._below_threshold_label: data.loc[:, to_drop].sum(axis=1)
+                })
+            )
 
         # If no category was given
         if self.params.get("table.category.dataframe") is None:
@@ -180,7 +187,7 @@ annotated by a single column which contains categories.
     def _make_bars(self, data: pd.DataFrame, yaxis_title: str):
         return [
             go.Bar(
-                name=col,
+                name=str(col),
                 x=data.index,
                 y=data[col],
                 legendgroup=yaxis_title,
@@ -200,10 +207,10 @@ annotated by a single column which contains categories.
     def _make_annot(self, category: pd.Series, category_name: str):
         return [
             go.Bar(
-                name=name,
+                name=str(name),
                 x=category.index[category == name],
                 y=[1 for _ in range((category == name).sum())],
-                hovertext=name,
+                hovertext=str(name),
                 legendgroup=category_name,
                 legendgrouptitle_text=category_name
             )
