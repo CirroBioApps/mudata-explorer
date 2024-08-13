@@ -1,8 +1,8 @@
 import pandas as pd
 from mudata_explorer import app
-from mudata_explorer.helpers import asset_categories, filter_by_category
-from mudata_explorer.helpers import asset_dataframe
-from mudata_explorer.helpers import all_processes, make_process
+from mudata_explorer.helpers.assets import asset_categories, filter_by_category
+from mudata_explorer.helpers.assets import asset_dataframe
+from mudata_explorer.helpers.assets import all_processes, make_process
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 

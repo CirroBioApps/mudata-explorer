@@ -1,4 +1,4 @@
-from mudata_explorer.helpers import all_views
+from mudata_explorer.helpers.assets import all_views
 
 
 for view in all_views:

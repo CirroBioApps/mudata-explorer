@@ -1,9 +1,9 @@
 import json
 from mudata_explorer import app
 from mudata_explorer.base.view import View
-from mudata_explorer.helpers import all_views, make_view
-from mudata_explorer.helpers import asset_categories, asset_dataframe
-from mudata_explorer.helpers import filter_by_category
+from mudata_explorer.helpers.assets import all_views, make_view
+from mudata_explorer.helpers.assets import asset_categories, asset_dataframe
+from mudata_explorer.helpers.assets import filter_by_category
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 

@@ -143,7 +143,7 @@ def codegen_processes():
 
 from mudata_explorer import app
 from mudata_explorer.sdk.helpers import collapse_params
-from mudata_explorer.helpers import make_process
+from mudata_explorer.helpers.assets import make_process
 from muon import MuData
 
 
