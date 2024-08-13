@@ -154,7 +154,7 @@ def show_table(
         upload_csv_modal(slice, kw)
 
 
-@st.experimental_dialog("Upload New Table", width="large")
+@st.dialog("Upload New Table", width="large")
 def upload_csv_modal(slice: MuDataSlice, kw: str):
 
     # Let the user upload a new version
@@ -240,7 +240,7 @@ def show_modality(mod_name: str):
             )
 
 
-@st.experimental_dialog("New Measurement Data", width="large")
+@st.dialog("New Measurement Data", width="large")
 def add_modality_modal():
 
     # Let the user upload a new version

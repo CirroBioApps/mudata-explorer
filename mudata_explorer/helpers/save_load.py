@@ -1,5 +1,5 @@
 from mudata_explorer import app
-from mudata_explorer.helpers import make_process
+from mudata_explorer.helpers.assets import make_process
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 
@@ -70,7 +70,7 @@ def download_mdata(container: DeltaGenerator):
         st.rerun()
 
 
-@st.experimental_dialog("Select Previous Analysis", width="large")
+@st.dialog("Select Previous Analysis", width="large")
 def load_history():
     """Let the user select a previously run process to copy settings from."""
 

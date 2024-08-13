@@ -1394,7 +1394,7 @@ class MuDataAppHelpers:
             transforms
         )
 
-    @st.experimental_dialog("Add Transformation")
+    @st.dialog("Add Transformation")
     def _add_transform_popup(self, key):
         st.selectbox(
             "Select Transformation",
@@ -1443,7 +1443,7 @@ class MuDataAppHelpers:
         )
 
 
-@st.experimental_dialog("Figure Parameters", width='large')
+@st.dialog("Figure Parameters", width='large')
 def _show_view_sdk_snippet(ix: int):
     view = app.get_views()[ix]
     st.code(sdk_snippet(view))
