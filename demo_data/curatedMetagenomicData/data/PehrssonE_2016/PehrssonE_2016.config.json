@@ -1,8 +1,10 @@
 [
     {
         "dataset_name": "PehrssonE 2016",
-        "cname": "location",
-        "label": "Location",
-        "n_features": 20
+        "compare_by": "age",
+        "label": "Age",
+        "n_top_features": 20,
+        "is_categorical": false,
+        "leiden_res": 1.0
     }
 ]

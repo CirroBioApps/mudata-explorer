@@ -1,9 +1,10 @@
 [
     {
         "dataset_name": "KeohaneDM 2020",
-        "cname": "alcohol",
+        "compare_by": "alcohol",
         "label": "Alcohol",
-        "n_features": 20,
-        "transform": null
+        "n_top_features": 20,
+        "is_categorical": true,
+        "leiden_res": 1.0
     }
 ]

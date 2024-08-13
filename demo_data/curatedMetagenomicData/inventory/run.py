@@ -47,24 +47,24 @@ def n_samples(config: dict, df: pd.DataFrame) -> str:
 
 
 def metadata(config: dict, df: pd.DataFrame) -> str:
-    assert config["cname"] in df.columns, \
-        f"Column {config['cname']} not found in {df.columns}"
-    vals = df[config["cname"]].dropna()
+    assert config["compare_by"] in df.columns, \
+        f"Column {config['compare_by']} not found in {df.columns}"
+    vals = df[config["compare_by"]].dropna()
 
-    if config.get('transform') == "quartiles":
-        vals = pd.qcut(vals, q=4, labels=[f"Q{i+1}" for i in range(4)])
+    if config.get('is_categorical'):
+        vc = vals.value_counts()
 
-    vc = vals.value_counts()
+        if vc.shape[0] > 5:
+            n_other = vc.iloc[5:].sum()
+            vc = vc.iloc[:5]
+            vc["Other"] = n_other
 
-    if vc.shape[0] > 5:
-        n_other = vc.iloc[5:].sum()
-        vc = vc.iloc[:5]
-        vc["Other"] = n_other
-
-    counts = ", ".join(
-        [f"{k}: {v:,}" for k, v in vc.items()]
-    )
-    return f"{config['label']} - {counts}"
+        counts = ", ".join(
+            [f"{k}: {v:,}" for k, v in vc.items()]
+        )
+        return f"{config['label']} - {counts}"
+    else:
+        return config['label']
 
 
 def write(inventory: pd.DataFrame):

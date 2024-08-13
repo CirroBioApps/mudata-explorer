@@ -1,9 +1,10 @@
 [
     {
         "dataset_name": "BrooksB 2017",
-        "cname": "infant_age",
-        "label": "Infant Age (quartile)",
-        "n_features": 20,
-        "transform": "quartiles"
+        "compare_by": "study_condition",
+        "label": "Study Condition",
+        "n_top_features": 20,
+        "is_categorical": true,
+        "leiden_res": 1.0
     }
 ]

@@ -1,9 +1,10 @@
 [
     {
         "dataset_name": "PasolliE 2019",
-        "cname": "age",
-        "label": "Age (quartiles)",
-        "n_features": 20,
-        "transform": "quartiles"
+        "compare_by": "age",
+        "label": "Age",
+        "n_top_features": 20,
+        "is_categorical": false,
+        "leiden_res": 1.0
     }
 ]
