@@ -5,6 +5,7 @@ from mudata_explorer.helpers import cirro
 
 app.setup_sidebar()
 
+st.write("#### Load from Cirro")
 cirro.load_from_cirro()
 
 st.page_link(
