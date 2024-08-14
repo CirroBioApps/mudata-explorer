@@ -6,10 +6,10 @@ from pathlib import Path
 from pandas import read_csv, DataFrame
 from muon import MuData
 from mudata_explorer.sdk import view, io, process
-from mudata_explorer.helpers.parsers.curatedMetagenomicData import read_tsv
-from mudata_explorer.helpers.parsers.microbiome import MicrobiomeParams
-from mudata_explorer.helpers.parsers.microbiome import _run_processes
-from mudata_explorer.helpers.parsers.microbiome import _add_views
+from mudata_explorer.parsers.curatedMetagenomicData import read_tsv
+from mudata_explorer.parsers.microbiome import MicrobiomeParams
+from mudata_explorer.parsers.microbiome import _run_processes
+from mudata_explorer.parsers.microbiome import _add_views
 import logging
 from scipy.spatial.distance import pdist
 from scipy.stats import spearmanr
