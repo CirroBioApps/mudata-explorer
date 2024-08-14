@@ -1,7 +1,8 @@
 from typing import List
-from mudata_explorer import app
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
+from mudata_explorer.app.mdata import get_history
+from mudata_explorer.app.sidebar import setup_sidebar
 
 
 def print_history(history: List[dict], container: DeltaGenerator):
@@ -17,13 +18,13 @@ def print_history(history: List[dict], container: DeltaGenerator):
 
 def run():
 
-    app.setup_sidebar()
+    setup_sidebar()
 
     container = st.container()
 
     container.write("#### History")
 
-    history = app.get_history()
+    history = get_history()
 
     if len(history) == 0:
         container.write("No history to display.")

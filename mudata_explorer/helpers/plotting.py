@@ -1,5 +1,5 @@
-from mudata_explorer import app
 from streamlit.delta_generator import DeltaGenerator
+from mudata_explorer.app.mdata import has_mdata, get_mdata
 from plotly import graph_objects as go
 
 
@@ -8,10 +8,10 @@ def plot_mdata(
     hspace=10,
     vspace=10
 ):
-    if not app.has_mdata():
+    if not has_mdata():
         return
 
-    mdata = app.get_mdata()
+    mdata = get_mdata()
 
     # Set up a figure
     fig = go.Figure()

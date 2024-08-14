@@ -1,7 +1,11 @@
-from mudata_explorer import app
 from mudata_explorer.helpers.assets import make_process
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
+from mudata_explorer.app.mdata import set_mdata
+from mudata_explorer.helpers.io import read_h5mu
+from mudata_explorer.app.mdata import get_history
+from mudata_explorer.app.process import set_process
+from mudata_explorer.app.hash import get_dat_hash, set_mdata_hash, hash_dat
 
 
 def upload_mdata(container: DeltaGenerator):
@@ -12,14 +16,14 @@ def upload_mdata(container: DeltaGenerator):
     if h5mu_file is None:
         return
     try:
-        mdata = app.read_h5mu(h5mu_file)
+        mdata = read_h5mu(h5mu_file)
     except ValueError as e:
         container.write(
             f"Could not parse file: {h5mu_file.name}\n\n{str(e)}"
         )
         return
 
-    mdata_hash = app.hash_dat(h5mu_file.read())
+    mdata_hash = hash_dat(h5mu_file.read())
 
     if mdata_hash in h5mu_file.name:
         container.write("**Data Validated**: Unique hash matches file name.")
@@ -27,15 +31,15 @@ def upload_mdata(container: DeltaGenerator):
         container.write("Unique file hash not found in file name.")
 
     if container.button("Load Dataset", key="load-from-file"):
-        app.set_mdata(mdata)
-        app.set_mdata_hash(mdata_hash)
+        set_mdata(mdata)
+        set_mdata_hash(mdata_hash)
         st.switch_page("pages/views.py")
 
 
 def show_hash(container: DeltaGenerator):
 
     # Get the current dataset along with its unique hash
-    dat, hash, _ = app.get_dat_hash()
+    dat, hash, _ = get_dat_hash()
     if dat is None:
         return
 
@@ -45,7 +49,7 @@ def show_hash(container: DeltaGenerator):
 def download_mdata(container: DeltaGenerator):
 
     # Get the current dataset along with its unique hash
-    dat, hash, size = app.get_dat_hash()
+    dat, hash, size = get_dat_hash()
     if dat is None:
         return
 
@@ -71,7 +75,7 @@ def load_history():
     """Let the user select a previously run process to copy settings from."""
 
     # Get the list of previous analyses
-    history = app.get_history(exclude=['add_data', 'add_view', 'data_hash'])
+    history = get_history(exclude=['add_data', 'add_view', 'data_hash'])
 
     if len(history) == 0:
         st.write("No previous analyses found.")
@@ -97,7 +101,7 @@ def load_history():
     if st.button("Load settings from selected analysis"):
         selected_ix = display_names.index(selected_name)
         proc = options[selected_ix]
-        app.set_process(dict(
+        set_process(dict(
             type=proc.type,
             category=proc.category,
             params=proc.params

@@ -257,7 +257,8 @@ class MuDataSlice:
         # If writing a column, simply add to the existing table
         if self.attr is not None:
             assert isinstance(dat, pd.Series)
-            mdata.obs[self.attr] = dat
+            mdata.obs = mdata.obs.assign(**{self.attr: dat})
+            assert self.attr in mdata.obs.columns, (self.attr, mdata, dat)
 
         # If writing a DataFrame
         else:

@@ -1,7 +1,11 @@
 import json
-from mudata_explorer import app
 from mudata_explorer.helpers.join_kws import join_kws
 from mudata_explorer.base import all_transforms, get_transform
+from mudata_explorer.app.mdata import get_mdata, set_mdata, has_mdata
+from mudata_explorer.app.mdata import get_supp_figs
+from mudata_explorer.app.mdata import tree_tables, list_cnames, join_dataframe_tables, get_dataframe_column
+from mudata_explorer.helpers.views import get_views
+from mudata_explorer.app.process import nest_params
 from typing import Dict, List, Optional
 import pandas as pd
 import plotly.express as px
@@ -145,7 +149,7 @@ class MuDataAppHelpers:
         elem["params"][kw] = value
 
         # Save the MuData object
-        app.set_mdata(mdata)
+        set_mdata(mdata)
 
         # Also update the params object
         self.params[kw] = value
@@ -153,7 +157,7 @@ class MuDataAppHelpers:
     def _mdata_elem(self):
         """Return the element in the MuData object corresponding to this view."""
         # Get the MuData object
-        mdata = app.get_mdata()
+        mdata = get_mdata()
 
         # Point to the element to modify
         if self.ix == -1:
@@ -172,7 +176,7 @@ class MuDataAppHelpers:
             del elem["params"][kw]
 
             # Save the MuData object
-            app.set_mdata(mdata)
+            set_mdata(mdata)
 
         # Also update the params object
         if kw in self.params:
@@ -191,7 +195,7 @@ class MuDataAppHelpers:
         elem["uns"][kw] = value
 
         # Save the MuData object
-        app.set_mdata(mdata)
+        set_mdata(mdata)
 
         # Also update the params object
         self.uns[kw] = value
@@ -208,7 +212,7 @@ class MuDataAppHelpers:
             del elem["uns"][kw]
 
             # Save the MuData object
-            app.set_mdata(mdata)
+            set_mdata(mdata)
 
         # Also update the uns object
         if kw in self.uns:
@@ -476,8 +480,6 @@ class MuDataAppHelpers:
 
             elif elem["type"] == "integer":
 
-                print(prefix_key, show_elem)
-
                 if show_elem:
                     # Make sure that the value is an integer
                     val = st.session_state.get(
@@ -516,7 +518,7 @@ class MuDataAppHelpers:
 
                 if show_elem:
                     # Get the list of all supporting figures
-                    all_figures = app.get_supp_figs()
+                    all_figures = get_supp_figs()
 
                     if len(all_figures) == 0:
                         container.write("No supporting figures available.")
@@ -571,7 +573,7 @@ class MuDataAppHelpers:
         if not self.params.get(enabled_kw, True):
             return
 
-        if show_elem and app.has_mdata() is False:
+        if show_elem and has_mdata() is False:
             container.write("No MuData object available.")
             self.params_complete = False
             return
@@ -703,7 +705,7 @@ class MuDataAppHelpers:
         if self.mdata is None:
 
             # Get the list of tables available for this orientation
-            all_tables = app.tree_tables(axis)
+            all_tables = tree_tables(axis)
 
             # Table selection
             # Only select tables which are valid for this axis
@@ -724,7 +726,7 @@ class MuDataAppHelpers:
                 )
 
             # Get all of the columns for the selected table
-            all_cnames = app.list_cnames(
+            all_cnames = list_cnames(
                 self.params[table_kw],
                 axis=axis
             )
@@ -782,7 +784,7 @@ class MuDataAppHelpers:
                     return
 
                 # Get the list of possible columns
-                all_cnames = app.list_cnames(
+                all_cnames = list_cnames(
                     self.params[table_kw],
                     axis=axis
                 )
@@ -863,7 +865,7 @@ class MuDataAppHelpers:
 
         if self.mdata is None:
 
-            all_tables = app.tree_tables(axis)
+            all_tables = tree_tables(axis)
 
             # If any invalid tables were selected
             if any([
@@ -899,7 +901,7 @@ class MuDataAppHelpers:
             self.params_complete = False
             return
 
-        return app.join_dataframe_tables(
+        return join_dataframe_tables(
             selected_tables,
             axis,
             mdata=self.mdata
@@ -928,7 +930,7 @@ class MuDataAppHelpers:
 
         # Get the information for each column
         col_data = {
-            col_kw: app.get_dataframe_column(
+            col_kw: get_dataframe_column(
                 mdata=self.mdata,
                 axis=axis,
                 **{
@@ -1041,7 +1043,7 @@ class MuDataAppHelpers:
                 )
 
             # Get the list of tables available for all modalities
-            all_tables = app.tree_tables(axis)
+            all_tables = tree_tables(axis)
 
             # Table selection
             table_kw = join_kws(key, "query", "table")
@@ -1061,7 +1063,7 @@ class MuDataAppHelpers:
                 )
 
             # Get the list of possible columns
-            all_cnames = app.list_cnames(
+            all_cnames = list_cnames(
                 self.params[table_kw],
                 axis=axis
             )
@@ -1159,7 +1161,7 @@ class MuDataAppHelpers:
                     return df
 
                 # Get the list of possible columns
-                all_cnames = app.list_cnames(
+                all_cnames = list_cnames(
                     self.params[table_kw],
                     axis=axis
                 )
@@ -1192,7 +1194,7 @@ class MuDataAppHelpers:
 
                     # Let the user select specific values, selecting
                     # from the values in the table
-                    value_options = app.get_dataframe_column(
+                    value_options = get_dataframe_column(
                         None,
                         axis,
                         self.params[table_kw],
@@ -1278,7 +1280,7 @@ class MuDataAppHelpers:
         # If we are filtering by value
 
         # Get the table
-        table = app.join_dataframe_tables(
+        table = join_dataframe_tables(
             query["table"],
             axis,
             mdata=self.mdata
@@ -1488,14 +1490,14 @@ class MuDataAppHelpers:
 
 @st.dialog("Figure Parameters", width='large')
 def _show_view_sdk_snippet(ix: int):
-    view = app.get_views()[ix]
+    view = get_views()[ix]
     st.code(sdk_snippet(view))
 
 
 def sdk_snippet(view: dict):
     assert "type" in view.keys()
     assert "params" in view.keys()
-    params = app.nest_params(view["params"])
+    params = nest_params(view["params"])
     params_str = (
         json.dumps(params, indent=4)
         .replace('false', 'False')

@@ -5,7 +5,9 @@ from cirro.auth.device_code import DeviceCodeAuth
 from cirro.config import AppConfig, list_tenants
 from io import StringIO
 from muon import MuData
-from mudata_explorer import app
+from mudata_explorer.app.mdata import get_mdata, set_mdata
+from mudata_explorer.app.hash import get_dat_hash, set_mdata_hash
+from mudata_explorer.helpers.io import hydrate_uns
 from mudata_explorer.helpers.cirro_readers import util, mudata, ampliseq, biom
 from mudata_explorer.helpers.cirro_readers import differential_abundance
 from mudata_explorer.helpers.cirro_readers import curatedMetagenomicData
@@ -119,11 +121,11 @@ def load_from_cirro(
         return
 
     # Get the hash of the data
-    _, hash, _ = app.get_dat_hash(mdata)
+    _, hash, _ = get_dat_hash(mdata)
 
-    app.hydrate_uns(mdata)
-    app.set_mdata(mdata)
-    app.set_mdata_hash(hash)
+    hydrate_uns(mdata)
+    set_mdata(mdata)
+    set_mdata_hash(hash)
     st.switch_page("pages/views.py")
 
 
@@ -176,7 +178,7 @@ def save_to_cirro():
         return
 
     # Get the active dataset
-    mdata = app.get_mdata()
+    mdata = get_mdata()
 
     # If there is no active dataset
     if mdata is None:
@@ -184,7 +186,7 @@ def save_to_cirro():
         return
 
     # Get the binary blob, hash, and file size
-    blob, hash, size = app.get_dat_hash(mdata)
+    blob, hash, size = get_dat_hash(mdata)
 
     # Set the file name
     basename = name.replace(' ', '-').lower()
@@ -254,12 +256,12 @@ def _select_project(key: str) -> DataPortalProject:
         placeholder="< select a project >"
     )
 
-    if project is None:
+    if st.session_state.get(f"{key}_project") is None:
         return
 
     # Return the project object
     for p in projects:
-        if p.name == project:
+        if p.name == st.session_state.get(f"{key}_project"):
             return p
     raise ValueError(f"Project '{project}' not found")
 

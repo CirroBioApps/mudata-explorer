@@ -1,6 +1,7 @@
-from mudata_explorer import app
 from mudata_explorer.base.slice import MuDataSlice
-from mudata_explorer.helpers import mudata
+from mudata_explorer.app.sidebar import setup_sidebar
+from mudata_explorer.helpers.join_kws import join_kws
+from mudata_explorer.app.mdata import has_mdata, setup_mdata, get_mdata, set_mdata, add_modality, list_modalities
 import pandas as pd
 from streamlit.delta_generator import DeltaGenerator
 import streamlit as st
@@ -110,7 +111,7 @@ def show_table(
 ):
     """Show the user a table and let them upload a new version."""
 
-    kw = app.join_kws(mod, slot, attr)
+    kw = join_kws(mod, slot, attr)
 
     st.write(f"#### {label}")
 
@@ -121,7 +122,7 @@ def show_table(
         axis=slot.startswith("var"),
         attr=attr
     )
-    df = slice.dataframe(app.get_mdata())
+    df = slice.dataframe(get_mdata())
     if isinstance(df, str):
         st.write(df)
         return
@@ -193,14 +194,14 @@ def upload_csv_modal(slice: MuDataSlice, kw: str):
             )
 
             # If there is no data, set it up
-            if not app.has_mdata():
+            if not has_mdata():
                 # A new dataset can only be set up with observation metadata
                 # or a new set of observation data
                 assert slice.slot == "obs", slice.slot
-                app.setup_mdata()
+                setup_mdata()
 
             # Get the MuData object
-            mdata = app.get_mdata()
+            mdata = get_mdata()
 
             # Add the new data
             slice.write(
@@ -208,7 +209,7 @@ def upload_csv_modal(slice: MuDataSlice, kw: str):
                 new_df
             )
 
-            app.set_mdata(mdata)
+            set_mdata(mdata)
             st.rerun()
 
 
@@ -231,7 +232,7 @@ def show_modality(mod_name: str):
 
     # For any other tables which have been added
     for slot in ["varm", "varp", "obsm", "obsp"]:
-        for attr in getattr(app.get_mdata().mod[mod_name], slot).keys():
+        for attr in getattr(get_mdata().mod[mod_name], slot).keys():
             show_table(
                 label=f"{mod_name}: {slot}[{attr}]",
                 slot=slot,
@@ -251,8 +252,8 @@ def add_modality_modal():
     )
 
     # Find the number of observations which overlap with the existing .obs
-    if new_df is not None and app.has_mdata():
-        obs = app.get_mdata().obs
+    if new_df is not None and has_mdata():
+        obs = get_mdata().obs
         overlap = set(obs.index).intersection(set(new_df.index))
         if len(overlap) > 0:
             st.write(
@@ -269,7 +270,7 @@ def add_modality_modal():
         st.error("The measurement name cannot contain a period.")
         return
 
-    if app.has_mdata() and mod_name in app.list_modalities():
+    if has_mdata() and mod_name in list_modalities():
         st.write("A measurement with this name already exists.")
         return
 
@@ -299,15 +300,15 @@ def add_modality_modal():
                 new_df = new_df.reindex(columns=subset_columns)
 
             # Add the new modality
-            mdata = app.get_mdata()
-            mdata = mudata.add_modality(
+            mdata = get_mdata()
+            mdata = add_modality(
                 mdata,
                 mod_name,
                 new_df
             )
 
             # Add to the global scope
-            app.set_mdata(mdata)
+            set_mdata(mdata)
 
             # Rerun the page
             st.rerun()
@@ -316,7 +317,7 @@ def add_modality_modal():
 def run():
     """Display the page used to upload and modify data tables."""
 
-    app.setup_sidebar()
+    setup_sidebar()
 
     st.write("### MuData Contents")
 
@@ -327,7 +328,7 @@ def run():
     )
 
     # Show each of the measurement modalities
-    for mod_name in app.list_modalities():
+    for mod_name in list_modalities():
         show_modality(mod_name)
         st.write("---")
 

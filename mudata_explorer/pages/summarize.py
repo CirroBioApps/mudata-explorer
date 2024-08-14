@@ -2,20 +2,21 @@ import anndata as ad
 import pandas as pd
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
-from mudata_explorer import app
 from mudata_explorer.helpers import join_kws
+from mudata_explorer.app.mdata import get_mdata, has_mdata, get_provenance
+from mudata_explorer.app.sidebar import setup_sidebar
 
 
 def summarize_mdata(container: DeltaGenerator):
 
     container.write("**Current MuData**")
 
-    mdata = app.get_mdata()
-    if not app.has_mdata():
+    mdata = get_mdata()
+    if not has_mdata():
         container.write("No data loaded.")
         return
 
-    provenance = app.get_provenance()
+    provenance = get_provenance()
 
     for mod_name, mod in mdata.mod.items():
         shape = mod.to_df().shape
@@ -45,8 +46,8 @@ def show_provenance(
 def display_table(container: DeltaGenerator):
     """Allow the user to display a table of the data."""
 
-    mdata = app.get_mdata()
-    if not app.has_mdata():
+    mdata = get_mdata()
+    if not has_mdata():
         return
 
     container.write("#### Display Table")
@@ -89,7 +90,7 @@ def display_table(container: DeltaGenerator):
 
 
 def run():
-    app.setup_sidebar()
+    setup_sidebar()
 
     st.write("#### Summarize")
 

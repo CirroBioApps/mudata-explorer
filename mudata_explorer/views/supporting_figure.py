@@ -1,6 +1,6 @@
 from mudata_explorer.base.view import View
+from mudata_explorer.app.mdata import query_provenance
 from streamlit.delta_generator import DeltaGenerator
-from mudata_explorer import app
 from mudata_explorer.base.slice import MuDataSlice
 from plotly import io as pio
 
@@ -30,7 +30,7 @@ class SupportingFigure(View):
         ix = int(ix)
 
         # Get the provenance from the specified location
-        provenance = app.query_provenance(
+        provenance = query_provenance(
             MuDataSlice.hydrate(loc)
         )
 

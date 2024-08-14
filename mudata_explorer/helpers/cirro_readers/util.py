@@ -260,6 +260,7 @@ def run_leiden(
             }
         }
     )
+    assert dest_key in mdata.obs.columns, mdata
 
 
 def run_kmeans(

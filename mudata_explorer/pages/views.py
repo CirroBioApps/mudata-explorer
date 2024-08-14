@@ -1,5 +1,7 @@
-import json
-from mudata_explorer import app
+from mudata_explorer.helpers.views import get_views, set_views, delete_view, duplicate_view
+from mudata_explorer.helpers.add_view import add_view
+from mudata_explorer.app.sidebar import get_edit_views_flag, setup_sidebar
+from mudata_explorer.app.mdata import get_mdata
 from mudata_explorer.base.view import View
 from mudata_explorer.helpers.assets import all_views, make_view
 from mudata_explorer.helpers.assets import asset_categories, asset_dataframe
@@ -10,7 +12,7 @@ from streamlit.delta_generator import DeltaGenerator
 
 def make_views(editable=False):
 
-    views = app.get_views()
+    views = get_views()
 
     return [
         make_view(
@@ -29,7 +31,7 @@ def make_editable(ix: int):
 def edit_view(view: View, container: DeltaGenerator, ix: int, n_views: int):
 
     # If the views are not editable, don't show the edit buttons
-    if not app.get_edit_views_flag():
+    if not get_edit_views_flag():
         # Instead, just set up the params for the view
         view.get_data()
         return
@@ -63,12 +65,12 @@ def edit_view(view: View, container: DeltaGenerator, ix: int, n_views: int):
         args=(ix,),
         help="Remove this view."
     ):
-        app.delete_view(ix)
+        delete_view(ix)
         st.rerun()
 
     expander.button(
         ":heavy_plus_sign: Duplicate",
-        on_click=app.duplicate_view,
+        on_click=duplicate_view,
         key=f"duplicate-view-{ix}",
         args=(ix,),
         help="Make a copy of this view."
@@ -123,12 +125,12 @@ def button_add_view():
 
 
 def button_add_view_callback(selected_type: str):
-    app.add_view(selected_type)
-    st.query_params["edit-view"] = len(app.get_views()) - 1
+    add_view(selected_type)
+    st.query_params["edit-view"] = len(get_views()) - 1
 
 
 def move_up(ix: int):
-    views = app.get_views()
+    views = get_views()
     (
         views[ix - 1],
         views[ix]
@@ -136,11 +138,11 @@ def move_up(ix: int):
         views[ix],
         views[ix - 1]
     )
-    app.set_views(views)
+    set_views(views)
 
 
 def move_down(ix: int):
-    views = app.get_views()
+    views = get_views()
     (
         views[ix + 1],
         views[ix]
@@ -148,22 +150,22 @@ def move_down(ix: int):
         views[ix],
         views[ix + 1]
     )
-    app.set_views(views)
+    set_views(views)
 
 
 def run():
 
-    app.setup_sidebar(
+    setup_sidebar(
         edit_views=True,
         page_layout=(
             "centered"
             if st.query_params.get("edit-view") is None
-            and app.get_edit_views_flag() is False
+            and get_edit_views_flag() is False
             else "wide"
         )
     )
 
-    if app.get_mdata() is None:
+    if get_mdata() is None:
         st.page_link(
             "pages/tables.py",
             label="Upload data to get started",
@@ -179,7 +181,7 @@ def run():
     else:
 
         # If the views are editable
-        if app.get_edit_views_flag():
+        if get_edit_views_flag():
 
             # Show the views with edit buttons
             view_editable()
@@ -195,7 +197,7 @@ def run_edit_view():
     edit_ix = int(st.query_params.get("edit-view"))
 
     # Get the list of all views defined in the dataset
-    views = app.get_views()
+    views = get_views()
 
     if len(views) < (edit_ix + 1):
         st.error("No views to edit.")
@@ -215,7 +217,7 @@ def view_editable():
     Show the views with edit buttons.
     """
 
-    if not app.get_edit_views_flag():
+    if not get_edit_views_flag():
         st.rerun()
 
     # All of the views defined in the dataset

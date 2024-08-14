@@ -1,7 +1,7 @@
 from anndata import AnnData
 import logging
-from mudata_explorer.helpers.mudata import add_mdata_uns
-from mudata_explorer.app import get_dat_hash
+from mudata_explorer.app.mdata import add_mdata_uns
+from mudata_explorer.app.hash import get_dat_hash
 from muon import MuData
 from pandas import DataFrame
 from typing import Dict, Optional, Union

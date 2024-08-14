@@ -1,10 +1,10 @@
 from cirro import DataPortalDataset
 from muon import MuData
-from mudata_explorer import app
 import streamlit as st
 from tempfile import TemporaryDirectory
 from typing import Optional
 from mudata_explorer.helpers.cirro_readers import util
+from mudata_explorer.app.hash import hash_dat
 from muon import read_h5mu
 
 
@@ -51,7 +51,7 @@ def read(dataset: DataPortalDataset) -> Optional[MuData]:
         # Read the MuData object
         mdata = read_h5mu(filename)
         # Calculate the hash of the object
-        mdata_hash = app.hash_dat(open(filename, "rb").read())
+        mdata_hash = hash_dat(open(filename, "rb").read())
 
     if mdata_hash in h5mu_file.name:
         st.write("**Data Validated**: Unique hash matches file name.")

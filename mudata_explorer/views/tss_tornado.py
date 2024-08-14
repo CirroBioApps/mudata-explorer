@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from mudata_explorer.base.view import View
-from mudata_explorer import app
+from mudata_explorer.app.mdata import get_mdata
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 from typing import List, Optional
@@ -53,7 +53,7 @@ class TSS_Tornado(View):
             self.display_trace_fingerprint(container)
 
     def display_umap(self, container: DeltaGenerator):
-        mdata = app.get_mdata()
+        mdata = get_mdata()
         # Get the UMAP coordinates
         umap = (
             mdata
@@ -140,7 +140,7 @@ class TSS_Tornado(View):
 
         avg_coverage = self.avg_coverage()
         # Get the binned abundances
-        mdata = app.get_mdata()
+        mdata = get_mdata()
         bins = mdata.mod["binned_coverage"].to_df()
 
         if self.selected_k is None:
@@ -208,7 +208,7 @@ class TSS_Tornado(View):
 
     def display_fingerprint(self, container: DeltaGenerator):
         # Get the binned abundances
-        mdata = app.get_mdata()
+        mdata = get_mdata()
         bins = mdata.mod["binned_coverage"].to_df()
 
         if self.selected_k is None:
@@ -254,7 +254,7 @@ class TSS_Tornado(View):
     @property
     def bin_position_labels(self):
         """Return the positions of the bins."""
-        mdata = app.get_mdata()
+        mdata = get_mdata()
         window_size = mdata.uns["avg_coverage"].shape[0]
         half_window = window_size // 2
         return np.arange(
@@ -267,7 +267,7 @@ class TSS_Tornado(View):
         """Return the average coverage for the selected data slice."""
 
         # Get the mdata object
-        mdata = app.get_mdata()
+        mdata = get_mdata()
 
         # If we're showing for unclustered data
         if self.selected_k is None:
@@ -379,7 +379,7 @@ class TSS_Tornado(View):
             return []
         # Get the clusters which are available
         options = (
-            app.get_mdata()
+            get_mdata()
             .mod["binned_coverage"]
             .obsm["kmeans"]
             [str(self.selected_k)]
@@ -451,7 +451,7 @@ class TSS_Tornado(View):
     @property
     def all_samples(self) -> List[str]:
         # Get the MuData object
-        mdata = app.get_mdata()
+        mdata = get_mdata()
         if mdata is None:
             return []
 
@@ -463,7 +463,7 @@ class TSS_Tornado(View):
     @property
     def all_k(self) -> List[int]:
         # Get the MuData object
-        mdata = app.get_mdata()
+        mdata = get_mdata()
         if mdata is None:
             return []
 

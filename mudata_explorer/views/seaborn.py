@@ -1,5 +1,4 @@
 import pandas as pd
-from mudata_explorer import app
 from mudata_explorer.base.view import View
 import seaborn as sns
 from streamlit.delta_generator import DeltaGenerator
@@ -47,10 +46,6 @@ class Clustermap(Seaborn):
                 if vals.std() == 0
             ]
             if len(drop_rows) > 0:
-                if app.get_edit_views_flag():
-                    container.write(
-                        f"Dropping {len(drop_rows):,} rows with no variance."
-                    )
                 data = data.drop(drop_rows)
 
         elif self.params["z_score"] == "column":
@@ -59,12 +54,6 @@ class Clustermap(Seaborn):
                 if vals.std() == 0
             ]
             if len(drop_cols) > 0:
-                if app.get_edit_views_flag():
-                    container.write(
-                        "Dropping {:,} columns with no variance.".format(
-                            len(drop_cols)
-                        )
-                    )
                 data = data.drop(drop_cols, axis=1)
 
         g = sns.clustermap(

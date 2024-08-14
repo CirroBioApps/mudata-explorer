@@ -1,15 +1,18 @@
 import pandas as pd
-from mudata_explorer import app
 from mudata_explorer.helpers.assets import asset_categories, filter_by_category
 from mudata_explorer.helpers.assets import asset_dataframe
 from mudata_explorer.helpers.assets import all_processes, make_process
+from mudata_explorer.app.process import get_process, update_process, update_process_on_change
+from mudata_explorer.app.sidebar import setup_sidebar
+from mudata_explorer.app.provenance import show_provenance
+from mudata_explorer.app.mdata import has_mdata
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 
 
 def update_process_kwargs(kw):
     return dict(
-        on_change=app.update_process_on_change,
+        on_change=update_process_on_change,
         key=f"process-{kw}",
         args=(kw,)
     )
@@ -20,7 +23,7 @@ def update_process_type(df: pd.DataFrame):
     selected_process = df["type"].values[
         df["name"].tolist().index(selected_name)
     ]
-    app.update_process("type", selected_process)
+    update_process("type", selected_process)
 
 
 def _get_selected_process(container: DeltaGenerator, process_def: dict):
@@ -28,7 +31,7 @@ def _get_selected_process(container: DeltaGenerator, process_def: dict):
     # Let the user select the type of process to add
     all_categories = asset_categories(all_processes)
     if process_def.get("category") not in all_categories:
-        app.update_process("category", all_categories[0])
+        update_process("category", all_categories[0])
 
     selected_category = container.selectbox(
         "Select a category",
@@ -44,7 +47,7 @@ def _get_selected_process(container: DeltaGenerator, process_def: dict):
     df = asset_dataframe(filtered_processes)
 
     if process_def.get("type") not in df["type"].values:
-        app.update_process("type", df["type"].values[0])
+        update_process("type", df["type"].values[0])
 
     selected_name = container.selectbox(
         "Select a process to run",
@@ -61,16 +64,16 @@ def _get_selected_process(container: DeltaGenerator, process_def: dict):
 
 def run():
 
-    app.setup_sidebar(load_history=True, page_layout="wide")
+    setup_sidebar(load_history=True, page_layout="wide")
 
     container = st.container()
 
     # Get the setup of the current process
-    process_def = app.get_process()
+    process_def = get_process()
 
     container.write("#### Analyze Data")
 
-    if not app.has_mdata():
+    if not has_mdata():
         container.page_link(
             "pages/tables.py",
             label="Upload data to get started",
@@ -110,7 +113,7 @@ def run():
     # Check if the data already exists in the destination key
     if any([
         # Report to the user if data already exists in the destination key
-        app.show_provenance(loc, container)
+        show_provenance(loc, container)
         # For each of the destination modalities
         for loc in output_locs
     ]):

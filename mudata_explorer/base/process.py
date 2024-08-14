@@ -1,7 +1,8 @@
 from typing import Dict, List, Optional, Union, Generator
 import numpy as np
 import pandas as pd
-from mudata_explorer import app
+from mudata_explorer.app.mdata import get_mdata, set_mdata
+from mudata_explorer.app.mdata import save_annot
 from mudata_explorer.base.base import MuDataAppHelpers
 from mudata_explorer.base.slice import MuDataSlice
 from streamlit.delta_generator import DeltaGenerator
@@ -151,7 +152,7 @@ class Process(MuDataAppHelpers):
 
         # Get the MuData object
         if self.mdata is None:
-            mdata = app.get_mdata()
+            mdata = get_mdata()
         else:
             mdata = self.mdata
 
@@ -160,7 +161,7 @@ class Process(MuDataAppHelpers):
             assert isinstance(loc, MuDataSlice)
 
             # Save the results to the MuData object
-            app.save_annot(
+            save_annot(
                 mdata,
                 loc,
                 res,
@@ -177,7 +178,7 @@ class Process(MuDataAppHelpers):
 
     def update_view_param(self, kw, value):
         # Get the MuData object
-        mdata = app.get_mdata()
+        mdata = get_mdata()
 
         # Modify the value of this param for this view
         if "params" not in mdata.uns["mudata-explorer-process"]:
@@ -187,7 +188,7 @@ class Process(MuDataAppHelpers):
         mdata.uns["mudata-explorer-process"]["params"][kw] = value
 
         # Save the MuData object
-        app.set_mdata(mdata)
+        set_mdata(mdata)
 
         # Also update the params object
         self.params[kw] = value
