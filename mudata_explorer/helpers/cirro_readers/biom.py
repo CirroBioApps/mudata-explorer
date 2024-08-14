@@ -6,7 +6,7 @@ from muon import MuData
 import streamlit as st
 from typing import Optional
 from mudata_explorer.helpers.cirro_readers import util
-from mudata_explorer.helpers.parsers.microbiome import parse_adata
+from mudata_explorer.parsers.microbiome import parse_adata
 
 
 def read(

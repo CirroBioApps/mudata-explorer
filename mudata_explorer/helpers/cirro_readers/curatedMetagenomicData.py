@@ -4,9 +4,8 @@ from muon import MuData
 import streamlit as st
 from typing import Optional
 from mudata_explorer.helpers.cirro_readers import util
-from mudata_explorer.helpers.parsers import curatedMetagenomicData
-from mudata_explorer.helpers.parsers import microbiome
-from io import BytesIO
+from mudata_explorer.parsers import curatedMetagenomicData
+from mudata_explorer.parsers import microbiome
 
 levels = ["Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"]
 

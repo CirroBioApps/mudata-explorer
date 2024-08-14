@@ -1,16 +1,34 @@
 from anndata import AnnData
-from cirro.sdk.file import DataPortalFile
+from dataclasses import dataclass
 from mudata_explorer.sdk import io, view
+from mudata_explorer.helpers.cirro_readers import util
+from mudata_explorer.sdk import view, io
 from muon import MuData
 import pandas as pd
 from typing import Optional
 import streamlit as st
-from mudata_explorer.helpers.cirro_readers import util
 
 
-def parse_adata(adata: AnnData) -> Optional[MuData]:
+@dataclass
+class MicrobiomeParams:
+    """Configuration for the analysis."""
+    # Name of the dataset, to be used in the title
+    dataset_name: str = "Microbiome Analysis"
+    # Column name to use for comparison
+    compare_by: Optional[str] = None
+    # Label to use when describing those comparison groups
+    label: Optional[str] = None
+    # Number of features to use in the analysis and plots
+    n_top_features: int = 20
+    # Whether the comparison variable is categorical
+    is_categorical: Optional[str] = None
+    # Resolution for the Leiden clustering
+    leiden_res: float = 1.0
+
+
+def parse_adata(adata: AnnData, groupby_var=False) -> Optional[MuData]:
     
-    mdata = _parse_adata(adata)
+    mdata = _parse_adata(adata, groupby_var=groupby_var)
 
     params = _get_params(mdata)
     if params is None:
@@ -23,11 +41,19 @@ def parse_adata(adata: AnnData) -> Optional[MuData]:
         return mdata
 
 
-def _parse_adata(adata: AnnData) -> MuData:
+def _parse_adata(adata: AnnData, groupby_var=False) -> MuData:
 
-    # Pick a taxonomic level to collapse by
-    with st.container(border=1):
-        adata = _collapse_by_taxon(adata)
+    # Filter out any samples with 0 counts
+    adata = adata[adata.to_df().sum(axis=1) > 0]
+    assert adata.shape[0] > 0, "No samples with non-zero counts."
+
+    # Make sure that every row sums to 1
+    adata.X = adata.to_df().apply(lambda r: r / r.sum(), axis=1).values
+
+    if groupby_var:
+        # Pick a taxonomic level to collapse by
+        with st.container(border=1):
+            adata = _collapse_by_taxon(adata)
 
     # Get the sample metadata
     with st.container(border=1):
@@ -77,9 +103,6 @@ def _collapse_by_taxon(adata: AnnData) -> AnnData:
         .rename_axis(index=level)
         .T
     )
-
-    # Take the proportional abundance of reads for each sample
-    abund = abund.apply(lambda r: r / r.sum(), axis=1)
 
     # Show the user the most abundant taxa at this level
     st.dataframe(
@@ -180,7 +203,7 @@ To modify or augment this information, download as a CSV and upload a new copy.
     return adata
 
 
-def _get_params(mdata: MuData) -> Optional[dict]:
+def _get_params(mdata: MuData) -> Optional[MicrobiomeParams]:
 
     params = dict()
 
@@ -246,10 +269,16 @@ any subpopulations that share similar patterns of features.
             value=1.0,
             step=0.1
         )
-    return params
+
+    params["dataset_name"] = st.text_input(
+        "Dataset Name",
+        "Microbiome Dataset"
+    )
+
+    return MicrobiomeParams(**params)
 
 
-def _run_processes(mdata: MuData, params: dict):
+def _run_processes(mdata: MuData, params: MicrobiomeParams):
 
     # Get summary metrics for each feature
     with st.spinner("Calculating Feature Metrics"):
@@ -270,7 +299,7 @@ def _run_processes(mdata: MuData, params: dict):
         util.run_leiden(
             mdata,
             mod="abund",
-            resolution=params["leiden_res"],
+            resolution=params.leiden_res,
             metric="braycurtis",
             n_neighbors=15,
             dest_key="leiden"
@@ -286,18 +315,48 @@ def _run_processes(mdata: MuData, params: dict):
             grouping_table="Observation Metadata"
         )
 
+    # If the user selected a metadata column
+    if params.compare_by:
 
-def _add_views(mdata: MuData, params: dict):
+        # If the metadata is categorical
+        if params.is_categorical:
+                
+            # Run Kruskal to find the features which vary across groups
+            with st.spinner("Running Kruskal"):
+                util.run_kruskal(
+                    mdata,
+                    table="abund.data",
+                    dest_key=f"kruskal_{params.compare_by}",
+                    grouping_cname=params.compare_by,
+                    grouping_table="Observation Metadata"
+                )
+
+        # If the metadata is continuous
+        else:
+
+            # Run Spearman to find the
+            # features which correlate with the variable
+            with st.spinner("Running Spearman"):
+                util.run_spearman(
+                    mdata,
+                    table="abund.data",
+                    dest_key=f"spearman_{params.compare_by}",
+                    comparitor_cname=params.compare_by,
+                    comparitor_table="Observation Metadata"
+                )
+
+
+def _add_views(mdata: MuData, params: MicrobiomeParams):
 
     # Show some stacked bars
     util.add_stacked_bars(
         mdata,
         title="Taxonomic Composition",
         yaxis_title="Proportion of Reads",
-        min_value=0.01,
+        max_features=params.n_top_features,
         table="abund.data",
-        category_cname=params.get("compare_by"),
-        category_label=params.get("label")
+        category_cname=params.compare_by if params.is_categorical else None,
+        category_label=params.label
     )
 
     # Show the most abundant organisms
@@ -318,7 +377,7 @@ def _add_views(mdata: MuData, params: dict):
                                 "abund.varm.summary_stats"
                             ],
                             "expr": "<=",
-                            "value": str(params["n_top_features"])
+                            "value": str(params.n_top_features)
                         }
                     }
                 }
@@ -336,17 +395,17 @@ def _add_views(mdata: MuData, params: dict):
     )
 
     # If a metadata column was selected
-    if params.get("compare_by"):
+    if params.compare_by:
 
         # Show a UMAP, coloring by the variable of interest
         util.add_scatter(
             mdata,
-            title=f"Map of Sample Similarity - Colored by {params['label']}",
+            title=f"Map of Sample Similarity - Colored by {params.label}",
             legend=f"""
 Each point represents a single sample.
 The samples are arranged in a two-dimensional space using the UMAP algorithm
 such that samples with similar patterns of features are closer together.
-The samples are colored based on the annotated value of '{params['label']}'.
+The samples are colored based on the annotated value of '{params.label}'.
     """,
             table="abund.obsm.umap",
             axis=0,
@@ -355,10 +414,10 @@ The samples are colored based on the annotated value of '{params['label']}'.
             y="UMAP 2",
             ylabel="UMAP 2",
             color_table="Observation Metadata",
-            cname=params["compare_by"],
-            label=params["label"],
-            is_categorical=params["is_categorical"],
-            scale="D3" if params["is_categorical"] else "bluered",
+            cname=params.compare_by,
+            label=params.label,
+            is_categorical=params.is_categorical,
+            scale="D3" if params.is_categorical else "bluered",
         )
 
     # Scatter plot with leiden clusters
@@ -370,7 +429,7 @@ Each point represents a single sample.
 The samples are arranged in a two-dimensional space using the UMAP algorithm
 such that samples with similar patterns of features are closer together.
 The samples are colored based on unsupervised clustering with the
-Leiden algorithm (resolution: {params['leiden_res']}).
+Leiden algorithm (resolution: {params.leiden_res}).
 """,
         table="abund.obsm.umap",
         axis=0,
@@ -386,7 +445,7 @@ Leiden algorithm (resolution: {params['leiden_res']}).
     )
 
     # Show the organisms that differentiate the leiden clusters
-    view.markdown(mdata, text="**Top Features by Cluster**")
+    view.markdown(mdata, text="**Top Organisms by Cluster**")
 
     view.plotly_category_summarize_values(
         mdata,
@@ -413,7 +472,7 @@ Leiden algorithm (resolution: {params['leiden_res']}).
                                 "abund.varm.kruskal_leiden"
                             ],
                             "expr": "<=",
-                            "value": str(params["n_top_features"])
+                            "value": str(params.n_top_features)
                         }
                     },
                     "transforms": [
@@ -437,13 +496,12 @@ To account for different scales of abundance, the values have been transformed
 to z-scores.""")
 
     # If a metadata column was selected
-    if params.get("compare_by"):
+    if params.compare_by:
 
         # Comparison of the variable of interest across clusters
-        title = f"Distribution of {params['label']} across Clusters"
-        legend = f"""
-    The distribution of the variable '{params['label']}'
-    is shown across each of the clusters identified by the Leiden algorithm.
+        title = f"Distribution of {params.label} across Clusters"
+        legend = f"""The distribution of the variable '{params.label}'
+is shown across each of the clusters identified by the Leiden algorithm.
     """
 
         x_kwargs = dict(
@@ -453,11 +511,11 @@ to z-scores.""")
         )
         y_kwargs = dict(
             table="Observation Metadata",
-            cname=params["compare_by"],
-            label=params["label"]
+            cname=params.compare_by,
+            label=params.label
         )
 
-        if not params["is_categorical"]:
+        if not params.is_categorical:
 
             # Display as a boxplot
             util.add_boxplot(
@@ -483,4 +541,113 @@ to z-scores.""")
                     for prefix, kwargs in [("x", x_kwargs), ("color", y_kwargs)]
                     for kw, val in kwargs.items()
                 }
+            )
+
+        # Summarize the association of individual organisms with the variable
+        
+        if params.is_categorical:
+            stats_table = f"abund.varm.kruskal_{params.compare_by}"
+            stats_name = "Kruskal-Wallis H-test"
+        else:
+            stats_table = f"abund.varm.spearman_{params.compare_by}"
+            stats_name = "Spearman Rank Correlation"
+
+        view.markdown(mdata, text=f"""
+    **Top Organisms Associated with {params.label}**
+                    
+The table below shows the top features which are most strongly associated with
+the variable of interest ({params.label}).
+{stats_name} was used to identify the features which are most strongly
+associated with the variable.""")
+
+        view.table(
+            mdata,
+            **{
+                "options": {
+                    "sort": {
+                        "sort_by": {
+                            "table": [stats_table],
+                            "cname": "pvalue",
+                            "label": "pvalue"
+                        },
+                        "axis": 1
+                    }
+                },
+                "data": {
+                    "table": {
+                        "axis": 1,
+                        "tables": [stats_table],
+                        "cols_query": {
+                            "query": {
+                                "cname": "",
+                                "type": "index",
+                                "expr": "in",
+                                "value": [
+                                    "statistic",
+                                    "pvalue",
+                                    "neg_log10_pvalue",
+                                    "mean"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        )
+
+        util.add_scatter(
+            mdata,
+            title=f"Association with {params.label} ({stats_name})",
+            legend="""
+Each point represents a single microbe.
+The vertical position (y-axis) of each point shows the degree of association using the -log10(p-value).
+The x-axis shows the mean abundance of the microbe among the samples.""",
+            x="mean",
+            xlabel="Mean Abundance",
+            y="neg_log10_pvalue",
+            ylabel="-log10(p-value)",
+            table=stats_table,
+            axis=1,
+            color_table=None,
+            cname=None,
+            label=None,
+            is_categorical=False,
+            scale=None
+        )
+
+        # Plot the most strongly associated organism
+        org = mdata.mod["abund"].varm[stats_table.split(".")[-1]]["neg_log10_pvalue"].idxmax()
+        if params.is_categorical:
+            util.add_boxplot(
+                mdata,
+                title="",
+                legend=f"""The distribution of abundances for a single organism are shown
+across the different groups identified by '{params.label}'.""",
+                x_table="Observation Metadata",
+                x_cname=params.compare_by,
+                x_label=params.label,
+                y_table="abund.data",
+                y_cname=org,
+                y_label=org
+            )
+        else:
+            util.add_scatter(
+                mdata,
+                title="",
+                legend=f"""The abundance of a single organism is shown across the samples.
+The x-axis shows the value of {params.label} for each sample.
+The y-axis shows the relative abundance of a single organism.""",
+                x=params.compare_by,
+                xlabel=params.label,
+                y=org,
+                ylabel=org,
+                table=None,
+                axis=0,
+                color_table=None,
+                cname=None,
+                label=None,
+                is_categorical=False,
+                scale=None,
+                xtable="Observation Metadata",
+                ytable="abund.data"
             )
