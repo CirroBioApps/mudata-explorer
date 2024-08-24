@@ -1,6 +1,6 @@
 import plotly.express as px
 from scipy.stats import f_oneway, kruskal
-from streamlit.delta_generator import DeltaGenerator
+import streamlit as st
 from mudata_explorer.views.plotly.base import Plotly
 
 
@@ -69,15 +69,15 @@ class PlotlyBox(Plotly):
         }
     }
 
-    def display(self, container: DeltaGenerator):
+    def display(self):
 
         data, colorscale = self.fetch_dataframe("data")
         if data is None:
-            container.write("Please select a data table")
+            st.write("Please select a data table")
             return
 
         if "color_continuous_scale" in colorscale:
-            container.error("Color scale must be categorical for box plots.")
+            st.error("Color scale must be categorical for box plots.")
 
         title = self.params["formatting.title"]
 
@@ -121,4 +121,4 @@ class PlotlyBox(Plotly):
             **colorscale
         )
 
-        container.plotly_chart(fig)
+        st.plotly_chart(fig)

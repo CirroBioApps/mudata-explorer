@@ -4,13 +4,14 @@ from mudata_explorer.base import all_transforms, get_transform
 from mudata_explorer.app.mdata import get_mdata, set_mdata, has_mdata
 from mudata_explorer.app.mdata import get_supp_figs
 from mudata_explorer.app.mdata import tree_tables, list_cnames, join_dataframe_tables, get_dataframe_column
+from mudata_explorer.app.sidebar import get_edit_views_flag
 from mudata_explorer.helpers.views import get_views
 from mudata_explorer.app.process import nest_params
 from typing import Dict, List, Optional
 import pandas as pd
 import plotly.express as px
-from streamlit.delta_generator import DeltaGenerator
 import streamlit as st
+from streamlit.delta_generator import DeltaGenerator
 
 
 class MuDataAppHelpers:
@@ -44,6 +45,12 @@ class MuDataAppHelpers:
             # Join the prefix and key
             key = join_kws(prefix, elem_key)
 
+            # By default, nothing is in the sidebar
+            yield (
+                join_kws(key, "sidebar"),
+                False
+            )
+
             if elem["type"] == "object":
                 yield from self.get_schema_defaults(elem["properties"], key)
 
@@ -63,6 +70,10 @@ class MuDataAppHelpers:
                         join_kws(key, "enabled"),
                         True
                     )
+                    yield (
+                        join_kws(key, "enabled", "sidebar"),
+                        False
+                    )
 
             elif elem["type"] == "dataframe":
 
@@ -71,18 +82,31 @@ class MuDataAppHelpers:
                         join_kws(key, "enabled"),
                         True
                     )
+                    yield (
+                        join_kws(key, "enabled", "sidebar"),
+                        False
+                    )
 
                 # Each dataframe may be oriented to the obs or var
                 yield (
                     join_kws(key, "axis"),
                     elem.get("axis", 0)
                 )
+                yield (
+                    join_kws(key, "axis", "sidebar"),
+                    False
+                )
+
                 # If column selection is not enabled,
                 # the user will select >= 1 tables
                 if len(elem.get("columns", {})) == 0:
                     yield (
                         join_kws(key, "tables"),
                         elem.get("tables", [])
+                    )
+                    yield (
+                        join_kws(key, "tables", "sidebar"),
+                        False
                     )
 
                 # Add any columns specified in the schema
@@ -92,11 +116,21 @@ class MuDataAppHelpers:
                             join_kws(key, col_kw, kw),
                             col_elem.get(kw, None)
                         )
+                        yield (
+                            join_kws(key, col_kw, kw, "sidebar"),
+                            False
+                        )
+
                     if col_elem.get("optional", False):
                         yield (
                             join_kws(key, col_kw, "enabled"),
                             True
                         )
+                        yield (
+                            join_kws(key, col_kw, "enabled", "sidebar"),
+                            False
+                        )
+
                     if col_elem.get("colorscale", False):
                         # Use a flag to indicate whether the values
                         # in the column are categorical
@@ -104,6 +138,11 @@ class MuDataAppHelpers:
                             join_kws(key, col_kw, "is_categorical"),
                             col_elem.get("is_categorical", False)
                         )
+                        yield (
+                            join_kws(key, col_kw, "is_categorical", "sidebar"),
+                            False
+                        )
+
                         # Use a flag for the color scale to use
                         yield (
                             join_kws(key, col_kw, "scale"),
@@ -112,6 +151,10 @@ class MuDataAppHelpers:
                                 if col_elem.get("is_categorical", False)
                                 else "Viridis"
                             )
+                        )
+                        yield (
+                            join_kws(key, col_kw, "scale", "sidebar"),
+                            False
                         )
 
                 # Filtering of the rows and columns
@@ -124,11 +167,19 @@ class MuDataAppHelpers:
                         "value"   # Either the value or the specific indices
                     ]:
                         yield (join_kws(key, axis_kw, "query", attr), "")
+                        yield (
+                            join_kws(key, axis_kw, "query", "sidebar"),
+                            False
+                        )
 
                 # Transforming the values
                 yield (
                     join_kws(key, "transforms"),
                     elem.get("transforms", [])
+                )
+                yield (
+                    join_kws(key, "transforms", "sidebar"),
+                    False
                 )
 
     def input_value_kwargs(self, kw, copy_to=None):
@@ -166,7 +217,7 @@ class MuDataAppHelpers:
             elem = mdata.uns["mudata-explorer-views"][self.ix]
         
         return mdata, elem
-
+    
     def delete_view_param(self, kw):
         # Get the element in the global mdata object for this view
         mdata, elem = self._mdata_elem()
@@ -217,6 +268,108 @@ class MuDataAppHelpers:
         # Also update the uns object
         if kw in self.uns:
             del self.uns[kw]
+
+    def _input_container(self, kw: str) -> DeltaGenerator:
+        """
+        Return a container which can be used for an input element.
+        If we're in the menu where all params are editable, then
+        a checkbox will be displayed to the side which will toggle
+        whether the param will be displayed in the sidebar.
+        """
+        # If we're in the menu where all params are editable
+        if self.params_editable:
+            # Set up two columns, one for the input and one to toggle
+            # whether this param is viewable in the sidebar
+            input, toggle = st.columns([2, 1])
+        else:
+            input = st.container()
+
+        if self.params_editable:
+            with toggle:
+                self.toggle_sidebar(kw)
+
+        return input
+
+    def selectbox(
+        self,
+        label: str,
+        options: list,
+        kw: str,
+        display_options: Optional[list]=None,
+        copy_to=None,
+        invalidate=[],
+        help=None
+    ):
+        display_options = display_options if display_options else options
+
+        return self._input_container(kw).selectbox(
+            label,
+            display_options,
+            help=help,
+            **self.input_selectbox_kwargs(
+                kw,
+                options,
+                display_options,
+                copy_to=copy_to,
+                invalidate=invalidate
+            )
+        )
+
+    def multiselect(
+        self,
+        label: str,
+        options: list,
+        kw: str,
+        copy_to=None,
+        help=None
+    ):
+
+        return self._input_container(kw).multiselect(
+            label,
+            options=options,
+            help=help,
+            **self.input_multiselect_kwargs(
+                kw,
+                options,
+                copy_to=copy_to
+            )
+        )
+
+    def checkbox(self, label, kw, **kwargs):
+
+        return self._input_container(kw).checkbox(label, **kwargs)
+
+    def number_input(
+        self,
+        label: str,
+        kw: str,
+        help=None,
+        copy_to=None,
+        **kwargs
+    ):
+
+        return self._input_container(kw).number_input(
+            label,
+            help=help,
+            **self.input_value_kwargs(kw, copy_to=copy_to),
+            **kwargs
+        )
+
+    def text_input(self, label: str, kw: str, help=None, copy_to=None):
+
+        return self._input_container(kw).text_input(
+            label,
+            help=help,
+            **self.input_value_kwargs(kw, copy_to=copy_to)
+        )
+
+    def text_area(self, label: str, kw: str, help=None, copy_to=None):
+
+        return self._input_container(kw).text_area(
+            label,
+            help=help,
+            **self.input_value_kwargs(kw, copy_to=copy_to)
+        )
 
     def input_selectbox_kwargs(
         self,
@@ -308,47 +461,34 @@ class MuDataAppHelpers:
             for kw in invalidate:
                 self.delete_view_param(kw)
 
-    def get_data(
-        self,
-        container: Optional[DeltaGenerator] = None,
-        sidebar = False
-    ):
-        """
-        The sidebar flag is used to indicate whether
-        the container is the sidebar or the main container.
-        This is used to render form elements which are only shown
-        in the sidebar.
-        """
-
-        if container is None and self.mdata is None:
-            container = st.container()
+    def get_data(self):
 
         # By default, params are complete until proven otherwise
         self.params_complete = True
 
         if self.params_editable:
             # Show the name of the view
-            container.write(
+            st.write(
                 f"#### {self.ix + 1}. {self.name}"
                 if self.ix != -1
                 else f"#### {self.name}"
             )
             if st.query_params.get("edit-view"):
-                container.write(self.help_text)
+                st.write(self.help_text)
 
         # Parse the form schema of the object
-        self.render_form(container, self.schema, sidebar=sidebar)
+        self.render_form(self.schema)
 
         if self.params_editable and self.ix >= 0:
 
             # Now make the display, catching any errors
             try:
-                self.display(container)
+                self.display()
             except Exception as e:
                 # Log the full traceback of the exception
-                container.exception(e)
+                st.exception(e)
 
-            container.button(
+            st.button(
                 ":information_source: SDK Snippet",
                 on_click=_show_view_sdk_snippet,
                 key=f"show-view-sdk-snippet-{self.ix}",
@@ -356,7 +496,7 @@ class MuDataAppHelpers:
                 help="Show an example for configuration via SDK."
             )
 
-            container.button(
+            st.button(
                 ":page_facing_up: Save Changes",
                 key=f"save-changes-{self.ix}",
                 on_click=self.save_changes
@@ -367,10 +507,8 @@ class MuDataAppHelpers:
 
     def render_form(
         self,
-        container: Optional[DeltaGenerator],
         schema: Dict[str, dict],
-        prefix: str = None,
-        sidebar=False
+        prefix: str = None
     ):
 
         # Iterate over the form defined for this view
@@ -378,97 +516,77 @@ class MuDataAppHelpers:
 
             prefix_key = join_kws(prefix, key)
 
-            # The element will be displayed if either the global
+            # The element will be displayed if the global
             # param self.params_editiable is True (indicating that
-            # the full set of parameters will be displayed), or if
-            # the element is marked to be shown in the sidebar, and
-            # the sidebar flag was passed to this function
-            show_elem = (
-                self.params_editable
-                or (sidebar and elem.get("sidebar", False))
-            )
+            # the full set of parameters will be displayed)
 
             if elem["type"] == "dataframe":
 
-                self.render_dataframe(
-                    prefix_key,
-                    elem,
-                    (
-                        container.container(border=True)
-                        if show_elem
-                        else container
-                    ),
-                    sidebar=sidebar
-                )
+                self.render_dataframe(prefix_key, elem)
 
             elif elem["type"] == "object":
 
-                if "label" in elem and show_elem:
-                    container.write(f"**{elem.get('label', prefix_key)}**")
+                if "label" in elem and self.show_param(prefix_key):
+                    st.write(f"**{elem.get('label', prefix_key)}**")
 
-                if elem.get("help") is not None and show_elem:
-                    container.write(elem.get('help'))
+                if elem.get("help") is not None and self.show_param(prefix_key):
+                    st.write(elem.get('help'))
 
                 self.render_form(
-                    container,
                     elem["properties"],
-                    prefix_key,
-                    sidebar=sidebar
+                    prefix_key
                 )
-                if show_elem:
-                    container.write("---")
+                if self.show_param(prefix_key):
+                    st.write("---")
 
             elif elem["type"] == "string":
 
-                if show_elem:
+                if self.show_param(prefix_key):
                     if elem.get("enum") is not None:
-                        self.params[prefix_key] = container.selectbox(
-                            (
+                        self.params[prefix_key] = self.selectbox(
+                            label=(
                                 key
                                 if elem.get("label") is None
                                 else elem["label"]
                             ),
-                            elem["enum"],
+                            options=elem["enum"],
                             help=elem.get("help"),
-                            **self.input_selectbox_kwargs(
-                                prefix_key,
-                                elem["enum"]
-                            )
+                            kw=prefix_key
                         )
 
                     elif elem.get("multiline", False):
-                        self.params[prefix_key] = container.text_area(
-                            (
+                        self.params[prefix_key] = self.text_area(
+                            label=(
                                 key
                                 if elem.get("label") is None
                                 else elem["label"]
                             ),
-                            help=elem.get("help"),
-                            **self.input_value_kwargs(prefix_key)
+                            kw=prefix_key,
+                            help=elem.get("help")
                         )
 
                     else:
-                        self.params[prefix_key] = container.text_input(
-                            (
+                        self.params[prefix_key] = self.text_input(
+                            label=(
                                 key
                                 if elem.get("label") is None
                                 else elem["label"]
                             ),
-                            help=elem.get("help"),
-                            **self.input_value_kwargs(prefix_key)
+                            kw=prefix_key,
+                            help=elem.get("help")
                         )
 
                 if not isinstance(self.params[prefix_key], str):
-                    container.write(f"Please provide a valid string ({prefix_key}).")
+                    st.write(f"Please provide a valid string ({prefix_key}).")
                     self.params_complete = False
 
             elif elem["type"] == "float":
 
-                if show_elem:
-                    self.params[prefix_key] = container.number_input(
-                        key if elem.get("label") is None else elem["label"],
+                if self.show_param(prefix_key):
+                    self.params[prefix_key] = self.number_input(
+                        label=key if elem.get("label") is None else elem["label"],
                         help=elem.get("help"),
-                        **self.input_value_kwargs(prefix_key),
+                        kw=prefix_key,
                         **{
                             kw: float(elem[kw])
                             for kw in ["min_value", "max_value"]
@@ -480,7 +598,7 @@ class MuDataAppHelpers:
 
             elif elem["type"] == "integer":
 
-                if show_elem:
+                if self.show_param(prefix_key):
                     # Make sure that the value is an integer
                     val = st.session_state.get(
                         self.param_key(prefix_key),
@@ -493,11 +611,11 @@ class MuDataAppHelpers:
                         # Update the value
                         self.update_view_param(prefix_key, int(val))
 
-                    self.params[prefix_key] = container.number_input(
-                        key if elem.get("label") is None else elem["label"],
+                    self.params[prefix_key] = self.number_input(
+                        label=key if elem.get("label") is None else elem["label"],
+                        kw=prefix_key,
                         help=elem.get("help"),
                         step=1,
-                        **self.input_value_kwargs(prefix_key),
                         **{
                             kw: int(elem[kw])
                             for kw in ["min_value", "max_value"]
@@ -507,36 +625,34 @@ class MuDataAppHelpers:
 
             elif elem["type"] == "boolean":
 
-                if show_elem:
-                    self.params[prefix_key] = container.checkbox(
+                if self.show_param(prefix_key):
+                    self.params[prefix_key] = self.checkbox(
                         key if elem.get("label") is None else elem["label"],
+                        kw=prefix_key,
                         help=elem.get("help"),
                         **self.input_value_kwargs(prefix_key)
                     )
 
             elif elem["type"] == "supporting_figure":
 
-                if show_elem:
+                if self.show_param(prefix_key):
                     # Get the list of all supporting figures
                     all_figures = get_supp_figs()
 
                     if len(all_figures) == 0:
-                        container.write("No supporting figures available.")
+                        st.write("No supporting figures available.")
                         self.params_complete = False
 
                     else:
                         # Let the user select a supporting figure
-                        self.params[prefix_key] = container.selectbox(
-                            (
+                        self.params[prefix_key] = self.selectbox(
+                            label=(
                                 key if elem.get("label") is None
                                 else elem["label"]
                             ),
-                            all_figures,
+                            options=all_figures,
                             help=elem.get("help"),
-                            **self.input_selectbox_kwargs(
-                                prefix_key,
-                                all_figures
-                            )
+                            kw=prefix_key
                         )
 
             else:
@@ -545,27 +661,21 @@ class MuDataAppHelpers:
     def render_dataframe(
         self,
         key: str,
-        elem: dict,
-        container: DeltaGenerator,
-        sidebar=False
+        elem: dict
     ):
 
-        show_elem = (
-            self.params_editable
-            or (sidebar and elem.get("sidebar", False))
-        )
+        if "label" in elem and self.show_param(key):
+            st.write(f"**{elem.get('label')}**")
 
-        if "label" in elem and show_elem:
-            container.write(f"**{elem.get('label')}**")
-
-        if elem.get("help") is not None and show_elem:
-            container.write(elem.get('help'))
+        if elem.get("help") is not None and self.show_param(key):
+            st.write(elem.get('help'))
 
         # Optional column selection
         enabled_kw = join_kws(key, "enabled")
-        if elem.get("optional", False) and show_elem:
-            container.checkbox(
+        if elem.get("optional", False) and self.show_param(enabled_kw):
+            self.checkbox(
                 "Enabled",
+                kw=enabled_kw,
                 **self.input_value_kwargs(enabled_kw)
             )
 
@@ -573,8 +683,8 @@ class MuDataAppHelpers:
         if not self.params.get(enabled_kw, True):
             return
 
-        if show_elem and has_mdata() is False:
-            container.write("No MuData object available.")
+        if self.show_param(enabled_kw) and has_mdata() is False:
+            st.write("No MuData object available.")
             self.params_complete = False
             return
 
@@ -582,16 +692,14 @@ class MuDataAppHelpers:
         axis_kw = join_kws(key, "axis")
 
         # Let the user select the orientation to use
-        if show_elem:
-            container.selectbox(
-                "Select orientation",
-                ["Observations", "Variables"],
-                **self.input_selectbox_kwargs(
-                    axis_kw,
-                    [0, 1],
-                    ["Observations", "Variables"]
-                )
+        if self.show_param(axis_kw):
+            self.selectbox(
+                label="Select orientation",
+                options=[0, 1],
+                kw=axis_kw,
+                display_options=["Observations", "Variables"]
             )
+
         axis = self.params[axis_kw]
         assert axis in [0, 1], f"Invalid axis: {axis}"
 
@@ -605,9 +713,7 @@ class MuDataAppHelpers:
             df = self.render_dataframe_columns(
                 key,
                 elem["columns"],
-                axis,
-                container,
-                sidebar=sidebar
+                axis
             )
 
         # If 'columns' was not specified
@@ -616,30 +722,28 @@ class MuDataAppHelpers:
             # Build the DataFrame from the selected tables
             df = self.render_dataframe_tables(
                 key,
-                axis,
-                container,
-                show_elem
+                axis
             )
 
             if df is not None:
 
                 # The user can filter the data along the columns
-                df = self.filter_dataframe_cols(key, axis, df, container, show_elem)
+                df = self.filter_dataframe_cols(key, axis, df)
 
         if df is not None:
 
             # The user can filter the data along the rows
-            df = self.filter_dataframe_rows(key, axis, df, container, show_elem)
+            df = self.filter_dataframe_rows(key, axis, df)
 
             # The user can transform the values in the DataFrame
-            df = self.transform_dataframe(key, df, container, show_elem)
+            df = self.transform_dataframe(key, df)
 
             # Drop any columns which are entirely missing
             dropped_cols = df.shape[1] - df.dropna(axis=1, how="all").shape[1]
             df = df.dropna(axis=1, how="all")
             if dropped_cols:
-                if show_elem:
-                    container.write(
+                if self.show_param(key):
+                    st.write(
                         f"Removed {dropped_cols:,} columns with entirely missing values." # noqa
                     )
 
@@ -649,17 +753,17 @@ class MuDataAppHelpers:
                 n = df.shape[0] - df.dropna().shape[0]
                 df = df.dropna()
                 if n:
-                    if show_elem:
+                    if self.show_param(key):
                         msg = f"Removed {n:,} rows with missing values."
-                        container.write(msg)
+                        st.write(msg)
 
-        if show_elem and (df is None or df.shape[0] == 0):
-            container.write("No data available.")
+        if self.show_param(key) and (df is None or df.shape[0] == 0):
+            st.write("No data available.")
             return
 
         self.params[join_kws(key, "dataframe")] = df
-        if show_elem and df is not None:
-            container.write(
+        if self.show_param(key) and df is not None:
+            st.write(
                 "Selected {:,} rows and {:,} columns.".format(*df.shape)
             )
 
@@ -667,21 +771,16 @@ class MuDataAppHelpers:
         self,
         key: str,
         columns: dict,
-        axis: int,
-        container: DeltaGenerator,
-        sidebar=False
+        axis: int
     ):
         # Iterate over the columns in the schema and prompt the user
         # for which data to supply for each
         for col_kw, col_elem in columns.items():
 
             self.render_dataframe_column(
-                key,
-                col_kw,
+                join_kws(key, col_kw),
                 col_elem,
-                axis,
-                container,
-                sidebar=sidebar
+                axis
             )
 
         return self.build_dataframe(
@@ -692,16 +791,19 @@ class MuDataAppHelpers:
 
     def render_dataframe_column(
         self,
-        key: str,
         col_kw: str,
         col_elem: dict,
-        axis: int,
-        container: DeltaGenerator,
-        sidebar=False
+        axis: int
     ):
+        # Set up the kw elements for this column
+        table_kw = join_kws(col_kw, "table")
+        label_kw = join_kws(col_kw, "label")
+        cname_kw = join_kws(col_kw, "cname")
+        enabled_kw = join_kws(col_kw, "enabled")
+        is_categorical_kw = join_kws(col_kw, "is_categorical")
+        colorscale_kw = join_kws(col_kw, "scale")
 
         # Set the default values
-
         if self.mdata is None:
 
             # Get the list of tables available for this orientation
@@ -709,7 +811,6 @@ class MuDataAppHelpers:
 
             # Table selection
             # Only select tables which are valid for this axis
-            table_kw = join_kws(key, col_kw, "table")
             if self.params.get(table_kw) is None:
                 self.update_view_param(table_kw, [])
             if any([
@@ -732,7 +833,6 @@ class MuDataAppHelpers:
             )
 
             # Column label selection
-            label_kw = join_kws(key, col_kw, "label")
             if self.params.get(label_kw) is None:
                 self.update_view_param(
                     label_kw,
@@ -740,7 +840,6 @@ class MuDataAppHelpers:
                 )
 
             # Column name selection
-            cname_kw = join_kws(key, col_kw, "cname")
             if self.params.get(cname_kw) not in all_cnames:
                 cname_val = (
                     all_cnames[0]
@@ -750,116 +849,102 @@ class MuDataAppHelpers:
                 self.update_view_param(cname_kw, cname_val)
                 self.update_view_param(label_kw, cname_val)
 
-        # If the views are editable (or have been marked for the sidebar)
-        if self.params_editable or (sidebar and col_elem.get("sidebar", False)):
+        # If any of the input elements for this selector are viewable
+        if self.show_param(col_kw, enabled_kw, table_kw, label_kw, cname_kw):
 
             # Print the column name
-            container.write(f"**{col_elem.get('label', col_kw)}**")
+            st.write(f"**{col_elem.get('label', col_kw)}**")
 
-            # Optional column selection
-            enabled_kw = join_kws(key, col_kw, "enabled")
-            if col_elem.get("optional", False):
-                container.checkbox(
+        # Optional column selection
+        if col_elem.get("optional", False):
+            if self.show_param(enabled_kw):
+                self.checkbox(
                     "Enabled",
+                    kw=enabled_kw,
                     **self.input_value_kwargs(enabled_kw)
                 )
 
-            # If the column is enabled
-            if self.params.get(enabled_kw, True):
+        # If the column is enabled
+        if self.params.get(enabled_kw, True):
 
-                # Select the table of interest
-                container.multiselect(
-                    "Table",
-                    all_tables,
-                    **self.input_multiselect_kwargs(
-                        table_kw,
-                        all_tables
-                    )
+            # Select the table of interest
+            if self.show_param(table_kw):
+                self.multiselect(
+                    label="Table",
+                    options=all_tables,
+                    kw=table_kw,
+                    help="Select the table(s) containing input data"
                 )
 
                 # If no tables have been selected
                 if len(self.params.get(table_kw, [])) == 0:
-                    container.write("No tables selected.")
+                    st.write("No tables selected.")
                     self.params_complete = False
                     return
 
-                # Get the list of possible columns
-                all_cnames = list_cnames(
-                    self.params[table_kw],
-                    axis=axis
+            # Get the list of possible columns
+            all_cnames = list_cnames(
+                self.params[table_kw],
+                axis=axis
+            )
+
+            # Select the column name
+            if self.show_param(cname_kw):
+                self.selectbox(
+                    label="Column",
+                    options=all_cnames,
+                    kw=cname_kw,
+                    copy_to=label_kw
                 )
 
-                # Select the column name
-                container.selectbox(
-                    "Column",
-                    all_cnames,
-                    **self.input_selectbox_kwargs(
-                        cname_kw,
-                        all_cnames,
-                        copy_to=label_kw
-                    )
-                )
+            # Input the column label
+            if self.show_param(label_kw):
+                self.text_input(label="Label", kw=label_kw)
 
-                # Input the column label
-                container.text_input(
-                    "Label",
-                    **self.input_value_kwargs(label_kw)
-                )
+            # If the column is a color column
+            if col_elem.get("colorscale", False):
 
-                # If the column is a color column
-                if col_elem.get("colorscale", False):
 
-                    # Let the user select whether the colors are categorical
-                    is_categorical_kw = join_kws(
-                        key,
-                        col_kw,
-                        "is_categorical"
-                    )
+                # Select a pallete for the colors
 
-                    # Select a pallete for the colors
-                    colorscale_kw = join_kws(key, col_kw, "scale")
-
-                    container.checkbox(
+                # Let the user select whether the colors are categorical
+                if self.show_param(is_categorical_kw):
+                    self.checkbox(
                         "Categorical Values",
+                        kw=is_categorical_kw,
                         help="Color scales may either be categorical or continuous.", # noqa
                         **self.input_value_kwargs(is_categorical_kw)
                     )
 
-                    if self.params[is_categorical_kw]:
-                        colors_qualitative = [
-                            cname for cname in dir(px.colors.qualitative)
-                            if (
-                                not cname.startswith("_")
-                                and cname != "swatches"
-                            )
-                        ]
+                if self.params[is_categorical_kw]:
+                    colors_qualitative = [
+                        cname for cname in dir(px.colors.qualitative)
+                        if (
+                            not cname.startswith("_")
+                            and cname != "swatches"
+                        )
+                    ]
 
-                        container.selectbox(
-                            "Select color scale",
-                            colors_qualitative,
-                            **self.input_selectbox_kwargs(
-                                colorscale_kw,
-                                colors_qualitative
-                            )
+                    if self.show_param(colorscale_kw):
+                        self.selectbox(
+                            label="Select color scale",
+                            options=colors_qualitative,
+                            kw=colorscale_kw
                         )
 
-                    else:
+                else:
 
-                        container.selectbox(
-                            "Select color scale",
-                            px.colors.named_colorscales(),
-                            **self.input_selectbox_kwargs(
-                                colorscale_kw,
-                                px.colors.named_colorscales()
-                            )
+                    if self.show_param(colorscale_kw):
+                        self.selectbox(
+                            label="Select color scale",
+                            options=px.colors.named_colorscales(),
+                            kw=colorscale_kw
                         )
 
     def render_dataframe_tables(
         self,
         key,
-        axis: int,
-        container: DeltaGenerator,
-        show_elem: bool
+        axis: int
     ):
         tables_kw = join_kws(key, "tables")
 
@@ -883,21 +968,18 @@ class MuDataAppHelpers:
                 )
 
         # Let the user select one or more tables
-        if show_elem:
+        if self.show_param(tables_kw):
 
-            container.multiselect(
-                "Select table(s)",
-                all_tables,
-                **self.input_multiselect_kwargs(
-                    tables_kw,
-                    all_tables
-                )
+            self.multiselect(
+                label="Select table(s)",
+                options=all_tables,
+                kw=tables_kw
             )
 
         # Make a DataFrame with the selected table(s)
         selected_tables: List[str] = self.params.get(tables_kw, [])
         if len(selected_tables) == 0:
-            container.write("No tables selected.")
+            st.write("No tables selected.")
             self.params_complete = False
             return
 
@@ -958,64 +1040,61 @@ class MuDataAppHelpers:
         self,
         key: str,
         axis: int,
-        df: pd.DataFrame,
-        parent_container: DeltaGenerator,
-        show_elem: bool
+        df: pd.DataFrame
     ) -> pd.DataFrame:
         """
         Let the user select a subset of columns for analysis.
         """
-        if parent_container is not None and show_elem:
+        cols_query_kw = join_kws(key, "cols_query")
+        if self.show_param(cols_query_kw):
             if self.ix == -1:
-                container = parent_container.expander("Filter Columns")
+                container = st.expander("Filter Columns")
             else:
-                container = parent_container.container(border=True)
+                container = st.container(border=True)
                 container.write("**Filter Columns**")
         else:
-            container = parent_container
-        df = self.render_query(
-            join_kws(key, "cols_query"),
-            0 if axis else 1,  # Filter the opposite axis
-            1,  # Perform the filtering on the columns
-            df,
-            container,
-            show_elem
-        )
-        if show_elem and df is not None:
+            container = st.container()
+
+        with container:
+            df = self.render_query(
+                cols_query_kw,
+                0 if axis else 1,  # Filter the opposite axis
+                1,  # Perform the filtering on the columns
+                df
+            )
+
+        if self.show_param(cols_query_kw) and df is not None:
             container.write(f"Number of filtered columns: {df.shape[1]:,}")
+
         return df
 
     def filter_dataframe_rows(
         self,
         key: str,
         axis: int,
-        df: pd.DataFrame,
-        parent_container: DeltaGenerator,
-        show_elem: bool
+        df: pd.DataFrame
     ) -> pd.DataFrame:
         """
         Let the user select a subset of rows for analysis.
         """
-        if parent_container is not None:
-            if self.ix == -1:
-                container = parent_container.expander("Filter Rows")
-            elif show_elem:
-                container = parent_container.container(border=True)
-                container.write("**Filter Rows**")
-            else:
-                container = parent_container
+        rows_query_kw = join_kws(key, "rows_query")
+        if self.ix == -1:
+            container = st.expander("Filter Rows")
+        elif self.show_param(rows_query_kw):
+            container = st.container(border=True)
+            container.write("**Filter Rows**")
         else:
-            container = parent_container
+            container = st.container()
 
-        df = self.render_query(
-            join_kws(key, "rows_query"),
-            axis,
-            0,  # Perform the filtering on the rows
-            df,
-            container,
-            show_elem
-        )
-        if show_elem and df is not None:
+        with container:
+            df = self.render_query(
+                rows_query_kw,
+                axis,
+                0,  # Perform the filtering on the rows
+                df
+            )
+
+        if self.show_param(rows_query_kw) and df is not None:
             container.write(f"Number of filtered rows: {df.shape[0]:,}")
         return df
 
@@ -1024,17 +1103,15 @@ class MuDataAppHelpers:
         key: str,
         axis: int,
         filter_axis: int,
-        df: pd.DataFrame,
-        container: Optional[DeltaGenerator],
-        show_elem: bool
+        df: pd.DataFrame
     ) -> pd.DataFrame:
 
-        # Set the default values
+        type_kw = join_kws(key, "query", "type")
 
+        # Set the default values
         if self.mdata is None:
 
             # Type of selection, either by value or by index
-            type_kw = join_kws(key, "query", "type")
             if self.params.get(type_kw) is None:
                 # By default, select by value
                 self.update_view_param(
@@ -1120,7 +1197,7 @@ class MuDataAppHelpers:
                 )
 
         # If the views are editable
-        if show_elem:
+        if self.show_param(type_kw):
 
             # First figure out whether we're selecting by value
             # or by selecting specific indices
@@ -1131,33 +1208,27 @@ class MuDataAppHelpers:
                 )
             ]
             values = ["value", "index"]
-            container.selectbox(
-                "Select by:",
-                names,
-                **self.input_selectbox_kwargs(
-                    type_kw,
-                    values,
-                    names,
-                    invalidate=[value_kw]
-                )
+            self.selectbox(
+                label="Select by:",
+                options=values,
+                display_options=names,
+                kw=type_kw,
+                invalidate=[value_kw]
             )
 
             # If we're selecting by value
             if self.params[type_kw] == "value":
 
                 # Select the table of interest
-                container.multiselect(
-                    "Table",
-                    all_tables,
-                    **self.input_multiselect_kwargs(
-                        table_kw,
-                        all_tables
-                    )
+                self.multiselect(
+                    label="Table",
+                    options=all_tables,
+                    kw=table_kw
                 )
 
                 # If no tables have been selected
                 if len(self.params.get(table_kw, [])) == 0:
-                    container.write("No tables selected.")
+                    st.write("No tables selected.")
                     return df
 
                 # Get the list of possible columns
@@ -1167,13 +1238,10 @@ class MuDataAppHelpers:
                 )
 
                 # Select the column name
-                container.selectbox(
-                    "Column",
-                    all_cnames,
-                    **self.input_selectbox_kwargs(
-                        cname_kw,
-                        all_cnames
-                    )
+                self.selectbox(
+                    label="Column",
+                    options=all_cnames,
+                    kw=cname_kw
                 )
                 operators = [">=", "<=", "==", "!=", ">", "<", "in", "not in"]
 
@@ -1181,10 +1249,10 @@ class MuDataAppHelpers:
                 operators = ["in", "not in"]
 
             # Input the comparison operator
-            container.selectbox(
-                "Keep items which are:",
-                operators,
-                **self.input_selectbox_kwargs(expr_kw, operators)
+            self.selectbox(
+                label="Keep items which are:",
+                options=operators,
+                kw=expr_kw
             )
 
             if self.params[expr_kw] in ["in", "not in"]:
@@ -1212,23 +1280,20 @@ class MuDataAppHelpers:
                     )
 
                 # Input the comparison value directly
-                container.multiselect(
-                    "Value",
-                    value_options,
+                self.multiselect(
+                    label="Value",
+                    options=value_options,
                     help="Select the values for filtering",
-                    **self.input_multiselect_kwargs(
-                        value_kw,
-                        value_options
-                    )
+                    kw=value_kw
                 )
 
             else:
 
                 # Input the comparison value directly
-                container.text_input(
-                    "Value",
-                    help="Enter a value to filter samples on.",
-                    **self.input_value_kwargs(value_kw)
+                self.text_input(
+                    label="Value",
+                    kw=value_kw,
+                    help="Enter a value to filter samples on."
                 )
 
         # Get the values for the query
@@ -1257,8 +1322,8 @@ class MuDataAppHelpers:
 
         # If no value is provided
         if query['value'] is None or len(query['value']) == 0:
-            if show_elem:
-                container.write("Provide a value to filter samples.")
+            if self.show_param(type_kw):
+                st.write("Provide a value to filter samples.")
             return df
 
         # If the user is selecting certain indices
@@ -1286,8 +1351,8 @@ class MuDataAppHelpers:
             mdata=self.mdata
         )
         if table is None:
-            if show_elem:
-                container.write("No data available for filtering.")
+            if self.params_editable:
+                st.write("No data available for filtering.")
             return df
 
         msg = f"Column {query['cname']} not found in table."
@@ -1300,8 +1365,8 @@ class MuDataAppHelpers:
                 if val in table[query["cname"]].values
             ]
             if len(query["value"]) == 0:
-                if show_elem:
-                    container.write("No values match the filter criteria.")
+                if self.params_editable:
+                    st.write("No values match the filter criteria.")
                 return df
 
             # Get the values from the column
@@ -1325,8 +1390,8 @@ class MuDataAppHelpers:
         filtered_table = self._filter_table(table, query)
 
         # If no values are returned
-        if filtered_table is None and container is not None:
-            container.write("No samples match the filter criteria.")
+        if filtered_table is None:
+            st.write("No samples match the filter criteria.")
             return df
 
         # Subset the larger table by the filtered table
@@ -1365,26 +1430,24 @@ class MuDataAppHelpers:
     def transform_dataframe(
         self,
         key: str,
-        df: pd.DataFrame,
-        parent_container: DeltaGenerator,
-        show_elem: bool
+        df: pd.DataFrame
     ) -> pd.DataFrame:
 
-        if parent_container is not None:
-            if self.ix == -1:
-                container = parent_container.expander("Transform Values")
-            elif show_elem:
-                container = parent_container.container(border=True)
-                container.write("**Transform Values**")
-            else:
-                container = parent_container
+        # Get the list of transformations
+        transforms_kw = join_kws(key, "transforms")
+
+        if self.ix == -1:
+            container = st.expander("Transform Values")
+        elif self.show_param(key):
+            container = st.container(border=True)
+            container.write("**Transform Values**")
         else:
-            container = parent_container
+            container = st.container()
 
         # Get the list of transformations
-        transforms = self.param(key, "transforms")
+        transforms = self.param(transforms_kw)
 
-        if show_elem:
+        if self.show_param(transforms_kw):
 
             # Show each of the transformations, and also allow
             # the user to remove those transformations
@@ -1419,8 +1482,8 @@ class MuDataAppHelpers:
                     container.exception(e)
                 else:
                     raise e
-            if parent_container is not None and show_elem:
-                parent_container.write(f"Ran: {tr.name}")
+            if self.show_param(transforms_kw):
+                container.write(f"Ran: {tr.name}")
 
         return df
 
@@ -1487,6 +1550,47 @@ class MuDataAppHelpers:
             transforms
         )
 
+    def display(self):
+        pass
+
+    def toggle_sidebar(self, kw):
+        """Show a checkbox to toggle the sidebar."""
+        sidebar_kw = join_kws(kw, "sidebar")
+        sidebar_param_key = self.param_key(sidebar_kw)
+
+        st.checkbox(
+            "Show in sidebar",
+            self.param_in_sidebar(kw),
+            key=sidebar_param_key,
+            help="Optionally display this input menu item in the sidebar",
+            on_change=self._toggle_sidebar,
+            args=(kw,)
+        )
+        if st.session_state[sidebar_param_key] != self.param(sidebar_kw):
+            self.update_view_param(sidebar_kw, st.session_state[sidebar_param_key])
+
+    def _toggle_sidebar(self, kw):
+        sidebar_param_key = self.param_key(join_kws(kw, "sidebar"))
+        value = st.session_state[sidebar_param_key]
+        # If this is different than the params
+        if value != self.param(kw, "sidebar"):
+            # Update the view in the mdata object
+            self.update_view_param(join_kws(kw, "sidebar"), value)
+
+    def param_in_sidebar(self, kw):
+        return self.param(kw, "sidebar", default=False)
+
+    def show_param(self, *kws: List[str]) -> bool:
+        """Show a param if ?editable=True and either self.params_editable or param_in_sidebar."""
+        if not get_edit_views_flag():
+            return False
+
+        if self.params_editable:
+            return True
+        for kw in kws:
+            if self.params_editable or self.param_in_sidebar(kw):
+                return True
+        return False
 
 @st.dialog("Figure Parameters", width='large')
 def _show_view_sdk_snippet(ix: int):

@@ -4,6 +4,7 @@ from typing import Union, List
 from mudata_explorer.app.mdata import get_mdata
 from mudata_explorer.app.url import load_url
 from mudata_explorer.app.mdata import has_history
+from mudata_explorer.app.query_params import get_edit_views_flag, update_edit_views
 from mudata_explorer.helpers.save_load import load_history
 from mudata_explorer.helpers.plotting import plot_mdata
 from streamlit.delta_generator import DeltaGenerator
@@ -28,21 +29,6 @@ def sidebar_edit_views():
         on_change=update_edit_views,
         key="sidebar_edit_views"
     )
-
-
-def get_edit_views_flag() -> bool:
-    return st.session_state.get("_edit_views_flag", False)
-
-
-def set_edit_views_flag(val: bool):
-    assert isinstance(val, bool)
-    st.session_state["_edit_views_flag"] = val
-
-
-def update_edit_views():
-    flag = st.session_state["sidebar_edit_views"]
-    if flag != get_edit_views_flag():
-        set_edit_views_flag(flag)
 
 
 def sidebar_load_history():

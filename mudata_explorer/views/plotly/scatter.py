@@ -1,5 +1,5 @@
 import plotly.express as px
-from streamlit.delta_generator import DeltaGenerator
+import streamlit as st
 from mudata_explorer.views.plotly.base import Plotly
 
 
@@ -71,11 +71,11 @@ and using a log scale for the x- and y-axes.
         }
     }
 
-    def display(self, container: DeltaGenerator):
+    def display(self):
 
         data, colorscale = self.fetch_dataframe("data")
         if data is None:
-            container.write("Please select a data table")
+            st.write("Please select a data table")
             return
         try:
             opacity = float(self.params["formatting.opacity"])
@@ -105,4 +105,4 @@ and using a log scale for the x- and y-axes.
             **colorscale
         )
 
-        container.plotly_chart(fig)
+        st.plotly_chart(fig)

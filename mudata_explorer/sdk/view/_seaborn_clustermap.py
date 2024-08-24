@@ -7,19 +7,26 @@ from muon import MuData
 
 def seaborn_clustermap(
     mdata: MuData,
+    data_sidebar=False,
     data_axis=0,
+    data_axis_sidebar=False,
     data_tables=[],
+    data_tables_sidebar=False,
     data_rows_query_query_type='',
+    data_rows_query_query_sidebar=False,
     data_rows_query_query_table='',
     data_rows_query_query_cname='',
     data_rows_query_query_expr='',
     data_rows_query_query_value='',
     data_cols_query_query_type='',
+    data_cols_query_query_sidebar=False,
     data_cols_query_query_table='',
     data_cols_query_query_cname='',
     data_cols_query_query_expr='',
     data_cols_query_query_value='',
     data_transforms=[],
+    data_transforms_sidebar=False,
+    z_score_sidebar=False,
     z_score='None',
     **extra_params
 ):
@@ -34,19 +41,26 @@ def seaborn_clustermap(
         'seaborn-clustermap',
         mdata,
         params={
+            'data.sidebar': extra_params.get('data_sidebar', data_sidebar),
             'data.axis': extra_params.get('data_axis', data_axis),
+            'data.axis.sidebar': extra_params.get('data_axis_sidebar', data_axis_sidebar),
             'data.tables': extra_params.get('data_tables', data_tables),
+            'data.tables.sidebar': extra_params.get('data_tables_sidebar', data_tables_sidebar),
             'data.rows_query.query.type': extra_params.get('data_rows_query_query_type', data_rows_query_query_type),
+            'data.rows_query.query.sidebar': extra_params.get('data_rows_query_query_sidebar', data_rows_query_query_sidebar),
             'data.rows_query.query.table': extra_params.get('data_rows_query_query_table', data_rows_query_query_table),
             'data.rows_query.query.cname': extra_params.get('data_rows_query_query_cname', data_rows_query_query_cname),
             'data.rows_query.query.expr': extra_params.get('data_rows_query_query_expr', data_rows_query_query_expr),
             'data.rows_query.query.value': extra_params.get('data_rows_query_query_value', data_rows_query_query_value),
             'data.cols_query.query.type': extra_params.get('data_cols_query_query_type', data_cols_query_query_type),
+            'data.cols_query.query.sidebar': extra_params.get('data_cols_query_query_sidebar', data_cols_query_query_sidebar),
             'data.cols_query.query.table': extra_params.get('data_cols_query_query_table', data_cols_query_query_table),
             'data.cols_query.query.cname': extra_params.get('data_cols_query_query_cname', data_cols_query_query_cname),
             'data.cols_query.query.expr': extra_params.get('data_cols_query_query_expr', data_cols_query_query_expr),
             'data.cols_query.query.value': extra_params.get('data_cols_query_query_value', data_cols_query_query_value),
             'data.transforms': extra_params.get('data_transforms', data_transforms),
+            'data.transforms.sidebar': extra_params.get('data_transforms_sidebar', data_transforms_sidebar),
+            'z_score.sidebar': extra_params.get('z_score_sidebar', z_score_sidebar),
             'z_score': extra_params.get('z_score', z_score)
         }
     )

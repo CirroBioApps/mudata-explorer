@@ -1,6 +1,6 @@
 from mudata_explorer.base.view import View
 from mudata_explorer.app.mdata import query_provenance
-from streamlit.delta_generator import DeltaGenerator
+import streamlit as st
 from mudata_explorer.base.slice import MuDataSlice
 from plotly import io as pio
 
@@ -17,7 +17,7 @@ class SupportingFigure(View):
         }
     }
 
-    def display(self, container: DeltaGenerator):
+    def display(self):
 
         # Get the location and index position of the figure
         loc_ix: str = self.params.get("input")
@@ -35,15 +35,15 @@ class SupportingFigure(View):
         )
 
         if provenance is None:
-            container.write("Data not found.")
+            st.write("Data not found.")
 
         # Get the figure from the provenance
         figures = provenance.get("figures", [])
 
         if len(figures) < (ix + 1):
-            container.write("Figure not found.")
+            st.write("Figure not found.")
 
         # Show the figure
-        container.plotly_chart(
+        st.plotly_chart(
             pio.from_json(figures[ix])
         )

@@ -1,6 +1,6 @@
 import pandas as pd
 from mudata_explorer.base.view import View
-from streamlit.delta_generator import DeltaGenerator
+import streamlit as st
 
 
 class Table(View):
@@ -39,18 +39,18 @@ class Table(View):
         }
     }
 
-    def display(self, container: DeltaGenerator):
+    def display(self):
 
         data: pd.DataFrame = self.params.get("data.table.dataframe")
 
         if data is None or data.shape[1] < 1:
-            container.write("Please select at least one column")
+            st.write("Please select at least one column")
             return
 
         # Sort by the column specified in the sort_by column
         sort_by: pd.DataFrame = self.params.get("options.sort.dataframe")
         if sort_by is None or sort_by.shape[1] < 1:
-            container.write("Please select a column to sort by")
+            st.write("Please select a column to sort by")
             return
 
         # If the sort column is transposed, fix it
@@ -60,4 +60,4 @@ class Table(View):
         # Sort the data by the column specified in the sort_by column
         data = data.reindex(sort_by.sort_values(by="sort_by").index)
 
-        container.dataframe(data)
+        st.dataframe(data)

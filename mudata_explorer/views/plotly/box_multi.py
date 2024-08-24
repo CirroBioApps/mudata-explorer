@@ -1,6 +1,6 @@
 import pandas as pd
 import plotly.express as px
-from streamlit.delta_generator import DeltaGenerator
+import streamlit as st
 from mudata_explorer.views.plotly.base import Plotly
 
 
@@ -133,11 +133,11 @@ class PlotlyBoxMulti(Plotly):
         }
     }
 
-    def display(self, container: DeltaGenerator):
+    def display(self):
 
         data: pd.DataFrame = self.params.get("table.data.dataframe")
         if data is None:
-            container.write("Please select a data table")
+            st.write("Please select a data table")
             return
 
         category = self.params.get("table.category.dataframe")
@@ -264,4 +264,4 @@ class PlotlyBoxMulti(Plotly):
         fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
         fig.update_yaxes(matches=None)
 
-        container.plotly_chart(fig)
+        st.plotly_chart(fig)

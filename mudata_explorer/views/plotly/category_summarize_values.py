@@ -1,8 +1,9 @@
 import pandas as pd
 import plotly.express as px
-from streamlit.delta_generator import DeltaGenerator
+import streamlit as st
 from mudata_explorer.views.plotly.base import Plotly
 from scipy.cluster import hierarchy
+from typing import Optional
 
 
 class PlotlyCategorySummarizeValues(Plotly):
@@ -105,11 +106,11 @@ class PlotlyCategorySummarizeValues(Plotly):
             ]
         )
 
-    def display(self, container: DeltaGenerator):
+    def display(self):
 
-        data: pd.DataFrame = self.params.get("table.data.dataframe")
+        data: Optional[pd.DataFrame] = self.params.get("table.data.dataframe")
         if data is None:
-            container.write("Please select a data table")
+            st.write("Please select a data table")
             return
         category: pd.Series = (
             self.params
@@ -230,4 +231,4 @@ class PlotlyCategorySummarizeValues(Plotly):
             title=self.params["formatting.title"]
         )
 
-        container.plotly_chart(fig)
+        st.plotly_chart(fig)

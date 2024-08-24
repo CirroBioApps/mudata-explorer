@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 from plotly import graph_objects as go
-from streamlit.delta_generator import DeltaGenerator
+import streamlit as st
 from mudata_explorer.views.plotly.base import Plotly
 from scipy.cluster import hierarchy
 from scipy.stats import fisher_exact
@@ -75,11 +75,11 @@ The display can be used to show either:
             ]
         )
 
-    def display(self, container: DeltaGenerator):
+    def display(self):
 
         data: Optional[pd.DataFrame] = self.params.get("data.dataframe")
         if data is None:
-            container.write("Please select two columns to compare")
+            st.write("Please select two columns to compare")
             return
 
         # Make the contingency table
@@ -171,4 +171,4 @@ The display can be used to show either:
             yaxis_title=self.params["data.y.label"]
         )
 
-        container.plotly_chart(fig)
+        st.plotly_chart(fig)

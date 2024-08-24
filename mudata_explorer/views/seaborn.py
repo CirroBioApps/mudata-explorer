@@ -1,7 +1,7 @@
 import pandas as pd
 from mudata_explorer.base.view import View
 import seaborn as sns
-from streamlit.delta_generator import DeltaGenerator
+import streamlit as st
 
 
 class Seaborn(View):
@@ -29,7 +29,7 @@ class Clustermap(Seaborn):
         }
     }
 
-    def display(self, container: DeltaGenerator):
+    def display(self):
 
         data: pd.DataFrame = self.params.get("data.dataframe")
 
@@ -37,7 +37,7 @@ class Clustermap(Seaborn):
             return
 
         if data.shape[1] < 2:
-            container.write("Please select at least two columns")
+            st.write("Please select at least two columns")
             return
 
         if self.params["z_score"] == "row":
@@ -68,4 +68,4 @@ class Clustermap(Seaborn):
                 )
             )
         )
-        container.pyplot(g)
+        st.pyplot(g)

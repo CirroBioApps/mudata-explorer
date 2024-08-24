@@ -1,9 +1,10 @@
 import pandas as pd
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
-from streamlit.delta_generator import DeltaGenerator
+import streamlit as st
 from mudata_explorer.views.plotly.base import Plotly
 from scipy.cluster import hierarchy
+from typing import Optional
 
 
 class PlotlyStackedBars(Plotly):
@@ -99,11 +100,11 @@ annotated by a single column which contains categories.
             ]
         )
 
-    def display(self, container: DeltaGenerator):
+    def display(self):
 
-        data: pd.DataFrame = self.params.get("table.data.dataframe")
+        data: Optional[pd.DataFrame] = self.params.get("table.data.dataframe")
         if data is None:
-            container.write("Please select a data table")
+            st.write("Please select a data table")
             return
 
         # Group together all columns beyond the `max_features` threshold
@@ -195,7 +196,7 @@ annotated by a single column which contains categories.
         # Change the bar mode and add titles
         fig.update_layout(**layout_args)
 
-        container.plotly_chart(fig)
+        st.plotly_chart(fig)
 
     def _make_bars(self, data: pd.DataFrame, yaxis_title: str):
         return [

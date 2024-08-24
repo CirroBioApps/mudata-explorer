@@ -1,4 +1,7 @@
+from typing import List
 from mudata_explorer.base.base import MuDataAppHelpers
+from mudata_explorer.app.mdata import set_mdata
+import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 
 
@@ -9,7 +12,6 @@ class View(MuDataAppHelpers):
     help_text: str
     editable: bool
     defaults: dict = {}
-    view_container: DeltaGenerator
 
     def __init__(
         self,
@@ -45,22 +47,22 @@ class View(MuDataAppHelpers):
             editable=editable
         )
 
-    def attach(self, container: DeltaGenerator):
+    def attach(self):
 
         # Set up the parameters for viewing
-        self.get_data(container)
+        self.get_data()
 
         # Let the user run the method, catching any errors
         if not self.params_complete:
-            container.write("Please complete all input fields")
+            st.write("Please complete all input fields")
             return
 
         # Now make the display, catching any errors
         try:
-            self.display(container)
+            self.display()
         except Exception as e:
             # Log the full traceback of the exception
-            container.exception(e)
+            st.exception(e)
 
     @classmethod
     def template(cls):
@@ -75,7 +77,7 @@ class View(MuDataAppHelpers):
         """Primary method which is executed to render the view."""
         pass
 
-    def runtime_options(self, container: DeltaGenerator):
+    def runtime_options(self):
         """
         Optional method which can collection options for the view.
         The container for the view will be the sidebar which is displayed

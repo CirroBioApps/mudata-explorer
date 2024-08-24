@@ -1,5 +1,5 @@
 import plotly.express as px
-from streamlit.delta_generator import DeltaGenerator
+import streamlit as st
 from mudata_explorer.views.plotly.base import Plotly
 from scipy.stats import chi2_contingency
 
@@ -84,15 +84,15 @@ class PlotlyCategoryCount(Plotly):
         }
     }
 
-    def display(self, container: DeltaGenerator):
+    def display(self):
 
         data, colorscale = self.fetch_dataframe("data")
         if data is None:
-            container.write("Please select a data table")
+            st.write("Please select a data table")
             return
 
         if "color_continuous_scale" in colorscale:
-            container.error("Color scale must be categorical for this display")
+            st.error("Color scale must be categorical for this display")
 
         # Count up the number of rows for each unique value
         df = (
@@ -140,4 +140,4 @@ class PlotlyCategoryCount(Plotly):
             **colorscale
         )
 
-        container.plotly_chart(fig)
+        st.plotly_chart(fig)

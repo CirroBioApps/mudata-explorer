@@ -1,6 +1,6 @@
 import pandas as pd
 from mudata_explorer.base.view import View
-from streamlit.delta_generator import DeltaGenerator
+import streamlit as st
 
 
 class GroupFreq(View):
@@ -64,12 +64,12 @@ Example output:
         }
     }
 
-    def display(self, container: DeltaGenerator):
+    def display(self):
 
         data: pd.DataFrame = self.params.get("data.table.dataframe")
 
         if data is None or data.shape[1] < 1:
-            container.write("Please select at least one column")
+            st.write("Please select at least one column")
             return
 
         freq = (
@@ -85,4 +85,4 @@ Example output:
         else:
             freq = freq.sort_values(list(data.columns))
 
-        container.dataframe(freq, hide_index=True)
+        st.dataframe(freq, hide_index=True)

@@ -1,5 +1,5 @@
 from mudata_explorer.base.view import View
-from streamlit.delta_generator import DeltaGenerator
+import streamlit as st
 
 
 class HelloWorld(View):
@@ -10,12 +10,12 @@ class HelloWorld(View):
     category = "Testing"
     defaults = {"name": "World"}
 
-    def display(self, container: DeltaGenerator):
+    def display(self):
         if self.params_editable:
-            self.params["name"] = container.text_input(
+            self.params["name"] = st.text_input(
                 "Name",
                 help="Enter your name here.",
                 **self.input_value_kwargs("name")
             )
 
-        container.write(f"Hello, {self.params['name']}!")
+        st.write(f"Hello, {self.params['name']}!")

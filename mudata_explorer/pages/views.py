@@ -236,10 +236,12 @@ def view_editable():
         controls.write(f"#### {ix + 1}. {view.name}")
 
         # Expose any params which can be configured in the sidebar
-        view.runtime_options(controls)
+        with controls:
+            view.runtime_options()
 
         # Show any sidebar parameters in the controls container
-        view.get_data(controls, sidebar=True)
+        with controls:
+            view.get_data()
 
         # Let the user run the method, catching any errors
         if not view.params_complete:
@@ -251,7 +253,8 @@ def view_editable():
 
         # Now make the display, catching any errors
         try:
-            view.display(display)
+            with display:
+                view.display()
         except Exception as e:
             # Log the full traceback of the exception
             display.exception(e)
@@ -268,4 +271,4 @@ def view_non_editable():
     for view in mdata_views:
 
         # Attach the view to the display
-        view.attach(st.container())
+        view.attach()

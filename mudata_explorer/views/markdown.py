@@ -1,5 +1,5 @@
 from mudata_explorer.base.view import View
-from streamlit.delta_generator import DeltaGenerator
+import streamlit as st
 
 
 class Markdown(View):
@@ -19,8 +19,8 @@ class Markdown(View):
         }
     }
 
-    def display(self, container: DeltaGenerator):
+    def display(self):
 
         text = self.params.get('text')
         if text is not None and len(text) > 0:
-            container.write(text)
+            st.write(text)

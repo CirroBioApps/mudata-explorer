@@ -7,6 +7,7 @@ from muon import MuData
 
 def supporting_figure(
     mdata: MuData,
+    input_sidebar=False,
     input=None,
     **extra_params
 ):
@@ -21,6 +22,7 @@ def supporting_figure(
         'supporting_figure',
         mdata,
         params={
+            'input.sidebar': extra_params.get('input_sidebar', input_sidebar),
             'input': extra_params.get('input', input)
         }
     )

@@ -1,5 +1,5 @@
 import plotly.express as px
-from streamlit.delta_generator import DeltaGenerator
+import streamlit as st
 from mudata_explorer.views.plotly.base import Plotly
 
 
@@ -47,13 +47,10 @@ class PlotlyLine(Plotly):
         }
     }
 
-    def display(
-        self,
-        container: DeltaGenerator
-    ):
+    def display(self):
         data, colorscale = self.fetch_dataframe("data")
         if data is None:
-            container.write("Please select a data table")
+            st.write("Please select a data table")
             return
         data.sort_values("sort_by", inplace=True)
 
@@ -73,4 +70,4 @@ class PlotlyLine(Plotly):
             **colorscale
         )
 
-        container.plotly_chart(fig)
+        st.plotly_chart(fig)

@@ -18,41 +18,41 @@ class TSS_Tornado(View):
     category = None
     schema = {}
 
-    def runtime_options(self, container: DeltaGenerator):
+    def runtime_options(self):
         # Ask the user which display to show
-        self._ask_view_type(container)
+        self._ask_view_type()
 
         # Ask the user whether to show the grouped TSS Tornado plot,
         # and if so, which value of K to show
-        self._ask_selected_k(container)
+        self._ask_selected_k()
 
         # Ask the user which clusters to display
-        self._ask_selected_clusters(container)
+        self._ask_selected_clusters()
 
         # Ask the user which samples to display
-        self._ask_samples(container)
+        self._ask_samples()
 
-    def display(self, container: DeltaGenerator):
+    def display(self):
 
         if self.selected_k is not None:
             if len(self.selected_clusters) == 0:
-                container.write("Please select >= 1 cluster to display")
+                st.write("Please select >= 1 cluster to display")
                 return
 
         if not self.samples or len(self.samples) == 0:
-            container.write("Please select >= 1 sample to display")
+            st.write("Please select >= 1 sample to display")
             return
 
         if self.view_type == "UMAP":
-            self.display_umap(container)
+            self.display_umap()
         elif self.view_type == "Fingerprint":
-            self.display_fingerprint(container)
+            self.display_fingerprint()
         elif self.view_type == "Trace":
-            self.display_trace(container)
+            self.display_trace()
         elif self.view_type == "Trace + Fingerprint":
-            self.display_trace_fingerprint(container)
+            self.display_trace_fingerprint()
 
-    def display_umap(self, container: DeltaGenerator):
+    def display_umap(self):
         mdata = get_mdata()
         # Get the UMAP coordinates
         umap = (
@@ -78,7 +78,7 @@ class TSS_Tornado(View):
             umap = umap[umap["cluster"].isin(self.selected_clusters)]
 
             # Plot the UMAP with the clusters
-            container.plotly_chart(
+            st.plotly_chart(
                 px.scatter(
                     umap,
                     x="UMAP1",
@@ -90,7 +90,7 @@ class TSS_Tornado(View):
             )
         else:
             # Plot the UMAP without the clusters, coloring by sample
-            container.plotly_chart(
+            st.plotly_chart(
                 px.scatter(
                     umap,
                     x="UMAP1",
@@ -101,7 +101,7 @@ class TSS_Tornado(View):
                 )
             )
 
-    def display_trace(self, container: DeltaGenerator):
+    def display_trace(self):
         """
         Make a line plot of the average coverage for the selected data slice.
         """
@@ -130,9 +130,9 @@ class TSS_Tornado(View):
             )
         )
         fig.update_yaxes(matches=None)
-        container.plotly_chart(fig)
+        st.plotly_chart(fig)
 
-    def display_trace_fingerprint(self, container: DeltaGenerator):
+    def display_trace_fingerprint(self):
         """
         Make a line plot of the average coverage for the selected data slice,
         with a fingerprint plot below.
@@ -149,7 +149,6 @@ class TSS_Tornado(View):
                 avg_coverage,
                 bins,
                 mdata.obs,
-                container,
                 title="Average Coverage"
             )
         else:
@@ -161,11 +160,10 @@ class TSS_Tornado(View):
                     avg_coverage.query(f"cluster == '{cluster}'"),
                     cluster_bins,
                     mdata.obs.loc[ix],
-                    container,
                     title=f"Average Coverage (K={self.selected_k}, {cluster})"
                 )
 
-    def plot_tornado(self, avg_coverage, bins, obs, container, title=""):
+    def plot_tornado(self, avg_coverage, bins, obs, title=""):
         fig = make_subplots(
             rows=2,
             shared_xaxes=True,
@@ -204,9 +202,9 @@ class TSS_Tornado(View):
             title_text=title
         )
 
-        container.plotly_chart(fig)
+        st.plotly_chart(fig)
 
-    def display_fingerprint(self, container: DeltaGenerator):
+    def display_fingerprint(self):
         # Get the binned abundances
         mdata = get_mdata()
         bins = mdata.mod["binned_coverage"].to_df()
@@ -215,8 +213,7 @@ class TSS_Tornado(View):
             # Show all of the data
             self.plot_fingerprint(
                 bins,
-                mdata.obs,
-                container
+                mdata.obs
             )
         else:
             # Iterate over each of the selected clusters
@@ -226,11 +223,10 @@ class TSS_Tornado(View):
                 self.plot_fingerprint(
                     cluster_bins,
                     mdata.obs.loc[ix],
-                    container,
                     title=f"K={self.selected_k}, {cluster}"
                 )
 
-    def plot_fingerprint(self, bins, obs, container, title=""):
+    def plot_fingerprint(self, bins, obs, title=""):
         fig = make_subplots()
 
         fig.add_trace(
@@ -249,7 +245,7 @@ class TSS_Tornado(View):
         )
         fig.update_layout(title_text=title)
 
-        container.plotly_chart(fig)
+        st.plotly_chart(fig)
 
     @property
     def bin_position_labels(self):
@@ -311,10 +307,10 @@ class TSS_Tornado(View):
             self.update_view_uns("selected_k", value)
             self.selected_clusters = self.all_clusters
 
-    def _ask_selected_k(self, params: DeltaGenerator):
+    def _ask_selected_k(self):
 
         # The user can show the TSS Tornado plot for different values of K
-        params.selectbox(
+        st.selectbox(
             "Grouping",
             ["All"] + [f"K={k}" for k in self.all_k],
             index=(
@@ -345,7 +341,7 @@ class TSS_Tornado(View):
     def selected_clusters(self, value: List[str]):
         self.update_view_uns("selected_clusters", value)
 
-    def _ask_selected_clusters(self, params: DeltaGenerator):
+    def _ask_selected_clusters(self):
         """
         Ask the user which of the clusters to display.
         """
@@ -360,7 +356,7 @@ class TSS_Tornado(View):
             c for c in self.selected_clusters if c in self.all_clusters
         ]
 
-        params.multiselect(
+        st.multiselect(
             "Clusters",
             self.all_clusters,
             default=self.selected_clusters,
@@ -398,7 +394,7 @@ class TSS_Tornado(View):
     def view_type(self, value: str):
         self.update_view_uns("view_type", value)
 
-    def _ask_view_type(self, params: DeltaGenerator):
+    def _ask_view_type(self):
         """Ask the user what type of display to show."""
         options = [
             "Trace",
@@ -411,7 +407,7 @@ class TSS_Tornado(View):
         if self.view_type not in options:
             self.view_type = options[0]
 
-        params.selectbox(
+        st.selectbox(
             "View Type",
             options,
             index=options.index(self.view_type),
@@ -434,7 +430,7 @@ class TSS_Tornado(View):
     def samples(self, value: List[str]):
         self.update_view_uns("samples", value)
 
-    def _ask_samples(self, params: DeltaGenerator):
+    def _ask_samples(self):
         """Ask the user which samples to show."""
 
         params.multiselect(
@@ -483,32 +479,32 @@ class TSS_Tornado(View):
         all_k.sort()
         return all_k
 
-    def _validate_mdata(self, mdata, container):
+    def _validate_mdata(self, mdata):
         if mdata is None:
-            container.write("No data available.")
+            st.write("No data available.")
             return False
 
         for kw in ["chrom", "tss"]:
             if kw not in mdata.obs:
-                container.write(f"Missing {kw} in metadata table.")
+                st.write(f"Missing {kw} in metadata table.")
                 return False
 
         # Make sure that the group means are available for all values of K
         for k in self.all_k:
             if f"kmeans_{k}_avg_zscore" not in mdata.uns:
-                container.write(f"Missing group means for K={k}.")
+                st.write(f"Missing group means for K={k}.")
                 return False
 
         # Make sure that the global means are available
         if "avg_zscore" not in mdata.uns:
-            container.write("Missing global means.")
+            st.write("Missing global means.")
             return False
 
         # Make sure that the selection of K is available
         selected_k = self.uns.get("selected_k")
         if selected_k is not None:
             if selected_k not in self.all_k:
-                container.write(f"K={selected_k} not available.")
+                st.write(f"K={selected_k} not available.")
                 return False
 
         return True

@@ -7,6 +7,7 @@ from muon import MuData
 
 def markdown(
     mdata: MuData,
+    text_sidebar=False,
     text='',
     **extra_params
 ):
@@ -21,6 +22,7 @@ def markdown(
         'markdown',
         mdata,
         params={
+            'text.sidebar': extra_params.get('text_sidebar', text_sidebar),
             'text': extra_params.get('text', text)
         }
     )
