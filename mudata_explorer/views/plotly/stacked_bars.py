@@ -149,7 +149,10 @@ annotated by a single column which contains categories.
         else:
             assert self.params['formatting.sort_rows_by'] == "Category"
             assert category is not None, "Must provide a category to sort by"
-            data = data.reindex(index=category.sort_values().index)
+            data = pd.concat([
+                self.sort_rows(d)
+                for _, d in data.groupby(category)
+            ])
 
         if self.params['formatting.sort_cols_by'] == "Labels":
             data = data.sort_index(axis=1)
