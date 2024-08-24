@@ -73,6 +73,11 @@ annotated by a single column which contains categories.
                     "type": "string",
                     "label": "Y Axis Title",
                     "default": ""
+                },
+                "feature_label": {
+                    "type": "string",
+                    "label": "Feature",
+                    "default": ""
                 }
             }
         }
@@ -154,6 +159,7 @@ annotated by a single column which contains categories.
 
         # Set up the layout arguments
         yaxis_title = self.params.get("formatting.yaxis_title")
+        feature_label = self.params.get("formatting.feature_label")
         layout_args = dict(
             barmode='stack',
             title=self.params.get("formatting.title"),
@@ -162,7 +168,7 @@ annotated by a single column which contains categories.
 
         if category is None:
             # Just make the stacked bars
-            fig = go.Figure(data=self._make_bars(data, yaxis_title))
+            fig = go.Figure(data=self._make_bars(data, feature_label))
         else:
             # Make the stacked bars with categories
             fig = make_subplots(
@@ -172,7 +178,7 @@ annotated by a single column which contains categories.
                 vertical_spacing=0.01,
                 row_heights=[0.9, 0.1]
             )
-            fig.add_traces(self._make_bars(data, yaxis_title), rows=1, cols=1)
+            fig.add_traces(self._make_bars(data, feature_label), rows=1, cols=1)
             category_name = self.params.get("table.category.category.label", "")
             fig.add_traces(self._make_annot(category, category_name), rows=2, cols=1)
             # Set the ticks on yaxis2 to be invisible
