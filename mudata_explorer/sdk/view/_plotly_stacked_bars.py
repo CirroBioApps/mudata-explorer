@@ -54,7 +54,9 @@ def plotly_stacked_bars(
     table_category_transforms_sidebar=False,
     formatting_sidebar=False,
     formatting_max_features_sidebar=False,
-    formatting_max_features=10,
+    formatting_max_features=None,
+    formatting_max_features_enabled=True,
+    formatting_max_features_enabled_sidebar=False,
     formatting_sort_cols_by_sidebar=False,
     formatting_sort_cols_by='Labels',
     formatting_sort_rows_by_sidebar=False,
@@ -65,6 +67,8 @@ def plotly_stacked_bars(
     formatting_yaxis_title='',
     formatting_feature_label_sidebar=False,
     formatting_feature_label='',
+    formatting_max_y_sidebar=False,
+    formatting_max_y=0,
     **extra_params
 ):
     """
@@ -129,6 +133,8 @@ annotated by a single column which contains categories.
             'formatting.sidebar': extra_params.get('formatting_sidebar', formatting_sidebar),
             'formatting.max_features.sidebar': extra_params.get('formatting_max_features_sidebar', formatting_max_features_sidebar),
             'formatting.max_features': extra_params.get('formatting_max_features', formatting_max_features),
+            'formatting.max_features.enabled': extra_params.get('formatting_max_features_enabled', formatting_max_features_enabled),
+            'formatting.max_features.enabled.sidebar': extra_params.get('formatting_max_features_enabled_sidebar', formatting_max_features_enabled_sidebar),
             'formatting.sort_cols_by.sidebar': extra_params.get('formatting_sort_cols_by_sidebar', formatting_sort_cols_by_sidebar),
             'formatting.sort_cols_by': extra_params.get('formatting_sort_cols_by', formatting_sort_cols_by),
             'formatting.sort_rows_by.sidebar': extra_params.get('formatting_sort_rows_by_sidebar', formatting_sort_rows_by_sidebar),
@@ -138,6 +144,8 @@ annotated by a single column which contains categories.
             'formatting.yaxis_title.sidebar': extra_params.get('formatting_yaxis_title_sidebar', formatting_yaxis_title_sidebar),
             'formatting.yaxis_title': extra_params.get('formatting_yaxis_title', formatting_yaxis_title),
             'formatting.feature_label.sidebar': extra_params.get('formatting_feature_label_sidebar', formatting_feature_label_sidebar),
-            'formatting.feature_label': extra_params.get('formatting_feature_label', formatting_feature_label)
+            'formatting.feature_label': extra_params.get('formatting_feature_label', formatting_feature_label),
+            'formatting.max_y.sidebar': extra_params.get('formatting_max_y_sidebar', formatting_max_y_sidebar),
+            'formatting.max_y': extra_params.get('formatting_max_y', formatting_max_y)
         }
     )

@@ -47,8 +47,7 @@ annotated by a single column which contains categories.
                 "max_features": {
                     "type": "integer",
                     "label": "Maximum Number of Features",
-                    "default": 10,
-                    "sidebar": True
+                    "optional": True
                 },
                 "sort_cols_by": {
                     "type": "string",
@@ -79,6 +78,12 @@ annotated by a single column which contains categories.
                     "type": "string",
                     "label": "Feature",
                     "default": ""
+                },
+                "max_y": {
+                    "type": "float",
+                    "label": "Maximum Y Value",
+                    "help": "If specified, set the maximum value of the y axis",
+                    "default": 0
                 }
             }
         }
@@ -108,8 +113,8 @@ annotated by a single column which contains categories.
             return
 
         # Group together all columns beyond the `max_features` threshold
-        max_features = self.params["formatting.max_features"]
-        if max_features > 0 and data.shape[1] > max_features:
+        max_features = self.params.get("formatting.max_features")
+        if max_features is not None and max_features > 0 and data.shape[1] > max_features:
             feature_rank = data.mean().sort_values(ascending=False)
             to_drop = feature_rank.iloc[max_features:].index
             data = (
@@ -169,6 +174,11 @@ annotated by a single column which contains categories.
             title=self.params.get("formatting.title"),
             yaxis_title=yaxis_title
         )
+
+        # If the maximum Y value was specified
+        max_y = self.params.get("formatting.max_y", 0)
+        if max_y > 0:
+            layout_args["yaxis_range"] = [0, max_y]
 
         if category is None:
             # Just make the stacked bars

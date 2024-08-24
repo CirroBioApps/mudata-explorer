@@ -4,9 +4,9 @@ from mudata_explorer.base import all_transforms, get_transform
 from mudata_explorer.app.mdata import get_mdata, set_mdata, has_mdata
 from mudata_explorer.app.mdata import get_supp_figs
 from mudata_explorer.app.mdata import tree_tables, list_cnames, join_dataframe_tables, get_dataframe_column
-from mudata_explorer.app.sidebar import get_edit_views_flag
 from mudata_explorer.helpers.views import get_views
 from mudata_explorer.app.process import nest_params
+from mudata_explorer.app.query_params import get_edit_views_flag
 from typing import Dict, List, Optional
 import pandas as pd
 import plotly.express as px
@@ -589,7 +589,7 @@ class MuDataAppHelpers:
                         kw=prefix_key,
                         **{
                             kw: float(elem[kw])
-                            for kw in ["min_value", "max_value"]
+                            for kw in ["min_value", "max_value", "step"]
                             if elem.get(kw) is not None
                         }
                     )
