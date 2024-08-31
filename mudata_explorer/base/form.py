@@ -96,11 +96,15 @@ class MuDataAppEnabledToggle(_SharedFunctions):
         self.value = st.session_state[self._render_key()]
 
 
-class MuDataAppEnabledDummy:
+class MuDataAppDummy:
     """
     Dummy element used instead of MuDataAppEnabledToggle
-    when an element is not optional.
+    when an element is not optional,
+    or instead of MuDataAppSidebarToggle when an element
+    cannot be shown in the sidebar.
     """
+    value = False
+
     def __init__(self):
         return
 
@@ -131,15 +135,15 @@ class MuDataAppFormElement(_SharedFunctions):
     # Value of the element
     value: Any
     # Whether or not the form element is displayed in the sidebar
-    sidebar: MuDataAppSidebarToggle
+    sidebar: Union[MuDataAppSidebarToggle, MuDataAppDummy]
     # Whether the form element can be toggled to null value
     optional: bool
     # If optional, use a toggle to track whether the value is null
-    enabled: Union[MuDataAppEnabledToggle, MuDataAppEnabledDummy]
+    enabled: Union[MuDataAppEnabledToggle, MuDataAppDummy]
     # Flag used to indicate whether sufficient input has been provided
     complete: bool
 
-    def __init__(self, schema: dict, prefix=None, ix=-1):
+    def __init__(self, schema: dict, prefix=None, ix=-1, sidebar=True):
         """
         Set up the form element.
         The schema defines the attributes of the element.
@@ -161,7 +165,11 @@ class MuDataAppFormElement(_SharedFunctions):
         )
         self.help = schema.get("help")
         self.value = st.session_state.get(self._render_key(), schema.get("default"))
-        self.sidebar = MuDataAppSidebarToggle(schema.get("sidebar", False), prefix, ix)
+        if sidebar:
+            self.sidebar = MuDataAppSidebarToggle(schema.get("sidebar", False), prefix, ix)
+        else:
+            self.sidebar = MuDataAppDummy()
+
         self.optional = schema.get("optional", False)
         self.enabled = MuDataAppEnabledToggle(
             schema.get("enabled", True),
@@ -401,7 +409,8 @@ class MuDataAppForm(MuDataAppFormElement):
         super().__init__(
             schema=schema,
             prefix=prefix,
-            ix=ix
+            ix=ix,
+            sidebar=False
         )        
         assert schema["type"] == "object"
 
@@ -775,7 +784,7 @@ class MuDataAppDataFrame(MuDataAppFormElement):
     def __init__(self, elem: dict, prefix=None, ix=-1):
         """Set up the form dataframe element."""
 
-        super().__init__(elem, prefix=prefix, ix=ix)
+        super().__init__(elem, prefix=prefix, ix=ix, sidebar=False)
 
         self._axis = MuDataAppString(
             dict(

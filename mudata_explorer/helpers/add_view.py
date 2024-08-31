@@ -9,17 +9,18 @@ import muon as mu
 def add_view(
     view_type: str,
     mdata: Optional[mu.MuData] = None,
-    params: Optional[dict] = None
+    params: Optional[dict] = None,
+    ix: int = -1
 ):
     if mdata is None:
         if get_mdata() is None:
             setup_mdata()
     views = get_views(mdata)
-    views.append(
-        get_view_by_type(view_type).template()
-    )
+    template = get_view_by_type(view_type).template()
+    if ix == -1:
+        views.append(template)
+    else:
+        views.insert(ix, template)
     if params is not None:
-        views[-1]["params"] = params
+        views[ix]["params"] = params
     set_views(views, mdata)
-
-

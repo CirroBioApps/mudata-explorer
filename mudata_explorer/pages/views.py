@@ -84,48 +84,48 @@ def edit_view(view: View, container: DeltaGenerator, ix: int, n_views: int):
             help="Move this view down in the list."
         )
 
+    # Let the user add text or a figure above
+    expander.button(
+        f":pencil2: Add Text Above",
+        on_click=button_add_view_callback,
+        key=f"add-text-above-{ix}",
+        args=("markdown",),
+        kwargs=dict(ix=ix)
+    )
+
+    expander.button(
+        f":chart_with_upwards_trend: Add Figure Above",
+        on_click=button_add_view_callback,
+        key=f"add-figure-above-{ix}",
+        args=("plotly-scatter",),
+        kwargs=dict(ix=ix)
+    )
+
 
 def button_add_view():
 
-    st.write("#### Add a new view")
-
-    # Let the user select the type of view to add
-    all_categories = asset_categories(all_views)
-
-    selected_category = st.selectbox(
-        "Select a category",
-        all_categories
-    )
-
-    # Let the user select which view to add, filtering by category
-    filtered_views = filter_by_category(all_views, selected_category)
-
-    # Get the assets needed to select from the filtered views
-    df = asset_dataframe(filtered_views)
-
-    selected_name = st.selectbox(
-        "Select a view to add",
-        df["name"].tolist()
-    )
-    selected_ix = df["name"].tolist().index(selected_name)
-    selected_type = df["type"].tolist()[selected_ix]
-    help_text = df["help_text"].tolist()[selected_ix]
-
-    if help_text is not None:
-        st.markdown(help_text)
-
-    # Instantiate the selected view type if the user clicks a button
+    # Let the user add a text block
     st.button(
-        f"Add {selected_name}",
+        f"Add Text",
         on_click=button_add_view_callback,
-        args=(selected_type,),
-        use_container_width=True
+        args=("markdown",),
+        kwargs=dict(ix=-1)
+    )
+    # Let the user add a scatter plot
+    st.button(
+        f"Add Figure",
+        on_click=button_add_view_callback,
+        args=("plotly-scatter",),
+        kwargs=dict(ix=-1)
     )
 
 
-def button_add_view_callback(selected_type: str):
-    add_view(selected_type)
-    set_edit_view_flag(len(get_views()) - 1)
+def button_add_view_callback(selected_type: str, ix=-1):
+    add_view(selected_type, ix=ix)
+    if ix == -1:
+        set_edit_view_flag(len(get_views()) - 1)
+    else:
+        set_edit_view_flag(ix)
 
 
 def move_up(ix: int):
@@ -208,15 +208,43 @@ def run_edit_view():
         params=views[edit_ix]['params']
     )
 
-    # Show the name of the view
-    st.write(
-        f"#### {view.ix + 1}. {view.name}"
-        if view.ix != -1
-        else f"#### {view.name}"
+    # Let the user modify the view type
+    all_categories = asset_categories(all_views)
+
+    st.markdown("#### Figure Type")
+    selected_category = st.selectbox(
+        "Category",
+        all_categories,
+        index=all_categories.index(view.category)
     )
 
-    # Show the help text for the view
-    st.write(view.help_text)
+    # Let the user select which view to add, filtering by category
+    filtered_views = filter_by_category(all_views, selected_category)
+
+    # Get the assets needed to select from the filtered views
+    df = asset_dataframe(filtered_views)
+
+    selected_name = st.selectbox(
+        "Figure Type",
+        df["name"].tolist(),
+        index=df["name"].tolist().index(view.name)
+    )
+    selected_ix = df["name"].tolist().index(selected_name)
+    selected_type = df["type"].tolist()[selected_ix]
+    help_text = df["help_text"].tolist()[selected_ix]
+
+    if help_text is not None:
+        st.markdown(help_text)
+
+    # If the selected type is different
+    if selected_type != view.type:
+        
+        # Re-instantiate the view to edit
+        view = make_view(
+            ix=edit_ix,
+            type=selected_type,
+            params=views[edit_ix]['params']
+        )
 
     # Render the input form
     view.display_form()
@@ -284,6 +312,9 @@ def view_editable():
         except Exception as e:
             # Log the full traceback of the exception
             display.exception(e)
+
+    if len(mdata_views) > 0:
+        st.write("---")
 
     # Let the user add a new view
     button_add_view()

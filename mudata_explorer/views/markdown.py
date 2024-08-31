@@ -18,9 +18,10 @@ class Markdown(View):
             "sidebar": True
         }
     }
+    params = {}
 
     def display(self):
 
-        text = self.params.get('text')
+        text = self.params.get('text.value')
         if text is not None and len(text) > 0:
             st.write(text)
