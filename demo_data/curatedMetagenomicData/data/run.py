@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from pandas import read_csv, DataFrame
 from muon import MuData
-from mudata_explorer.sdk import view, io, process
+from mudata_explorer.sdk import io
 from mudata_explorer.parsers.curatedMetagenomicData import read_tsv
 from mudata_explorer.parsers.microbiome import MicrobiomeParams
 from mudata_explorer.parsers.microbiome import _run_processes

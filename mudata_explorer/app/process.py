@@ -1,4 +1,5 @@
 import json
+from mudata_explorer.helpers.params import nest_params
 from mudata_explorer.app.mdata import has_mdata, get_mdata, setup_mdata, set_mdata
 from mudata_explorer.helpers.io import json_safe
 import muon as mu
@@ -52,19 +53,4 @@ def process_sdk_snippet(prov: dict):
 )
 """
 
-
-def nest_params(params: dict):
-    output = dict()
-    for key, value in params.items():
-        if '.' in key:
-            keys = key.split('.', 1)
-            if keys[0] not in output:
-                output[keys[0]] = dict()
-            output[keys[0]][keys[1]] = value
-        else:
-            output[key] = value
-    return {
-        key: nest_params(value) if isinstance(value, dict) else value
-        for key, value in output.items()
-    }
 

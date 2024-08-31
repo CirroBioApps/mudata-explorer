@@ -547,7 +547,7 @@ def add_provenance(
     set_provenance(provenance)
 
 
-def get_supp_figs() -> List[Tuple[str, dict]]:
+def get_supp_figs() -> List[str]:
     """Return the list of figures which are stored in the provenance."""
 
     return [

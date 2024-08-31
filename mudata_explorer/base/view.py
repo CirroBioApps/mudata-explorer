@@ -1,59 +1,64 @@
-from typing import List
-from mudata_explorer.base.base import MuDataAppHelpers
-from mudata_explorer.app.mdata import set_mdata
+from typing import Optional
+from mudata_explorer.helpers.views import get_views, set_views
+from mudata_explorer.helpers.params import nest_params
+from mudata_explorer.base.base import MuDataAppAction
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 
 
-class View(MuDataAppHelpers):
+class View(MuDataAppAction):
 
     type: str
     name: str
     help_text: str
     editable: bool
     defaults: dict = {}
+    params: Optional[dict] # Only populated after the form is rendered
 
     def __init__(
         self,
         ix: int,
         params: dict,
-        editable: bool,
-        uns={},
-        **kwargs
+        uns={}
     ):
-        self.ix = ix
-        self.type = type
-        self.params = {
-            kw: params.get(kw, val)
-            for kw, val in self.get_schema_defaults(self.schema)
-        }
-        self.uns = uns
+        # Instantiate the self.form attribute from the schema
+        # (also set self.ix)
+        super().__init__(ix)
 
-        # Whether the params are editable
-        self.params_editable = editable
+        # Load any params
+        self.form.load(nest_params(params))
+
+        # Set any unstructured data
+        self.uns = uns
 
     @classmethod
     def build(
         cls,
         ix=-1,
         params=dict(),
-        uns=dict(),
-        editable=False
+        uns=dict()
     ):
         return cls(
             ix=ix,
             params=params,
-            uns=uns,
-            editable=editable
+            uns=uns
         )
+    
+    def display_form(self):
+        """Render the form element, and then save changes."""
+        self.form.render()
+        self.save_changes()
+        # Save the output of the form as self.params
+        self.params = self.form.dump()
+
 
     def attach(self):
 
-        # Set up the parameters for viewing
-        self.get_data()
+        # Show the input form and save any changes that are made
+        self.display_form()
 
-        # Let the user run the method, catching any errors
-        if not self.params_complete:
+        # Catch any errors if incomplete inputs are provided
+        if not self.form.complete:
             st.write("Please complete all input fields")
             return
 
@@ -87,3 +92,27 @@ class View(MuDataAppHelpers):
 
     def param_key(self, kw):
         return f"view-{self.ix}-{kw}"
+    
+    def save_changes_button(self):
+        """
+        When the "Save Changes" button is pressed,
+        Save the values of the form to the MuData object,
+        and also remove the 'edit-view' field from query_params.
+        """
+
+        # Save any changes which have been made to the form
+        self.save_changes()
+
+        # Clear the 'edit-view' query param
+        del st.query_params['edit-view']
+
+    def save_changes(self):
+        """Save the values of the form to the MuData object."""
+
+        # Get the views
+        views = get_views()
+
+        # Set the params on the view
+        views[self.ix]["params"] = self.form.dehydrate()
+
+        set_views(views)

@@ -3,13 +3,13 @@ import numpy as np
 import pandas as pd
 from mudata_explorer.app.mdata import get_mdata, set_mdata
 from mudata_explorer.app.mdata import save_annot
-from mudata_explorer.base.base import MuDataAppHelpers
+from mudata_explorer.base.base import MuDataAppAction
 from mudata_explorer.base.slice import MuDataSlice
 from streamlit.delta_generator import DeltaGenerator
 from muon import MuData
 
 
-class Process(MuDataAppHelpers):
+class Process(MuDataAppAction):
 
     ix = -1
     outputs = Dict[str, dict]

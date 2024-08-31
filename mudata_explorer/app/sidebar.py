@@ -2,9 +2,9 @@ import streamlit as st
 from streamlit.errors import StreamlitAPIException
 from typing import Union, List
 from mudata_explorer.app.mdata import get_mdata
-from mudata_explorer.app.url import load_url
 from mudata_explorer.app.mdata import has_history
-from mudata_explorer.app.query_params import get_edit_views_flag, update_edit_views
+from mudata_explorer.app.query_params import get_editable_flag, update_edit_views
+from mudata_explorer.app.query_params import check_file_url
 from mudata_explorer.helpers.save_load import load_history
 from mudata_explorer.helpers.plotting import plot_mdata
 from streamlit.delta_generator import DeltaGenerator
@@ -20,14 +20,14 @@ def sidebar_page_links(page_links):
         )
 
 
-def sidebar_edit_views():
+def sidebar_toggle_editable():
 
     st.sidebar.checkbox(
         "Edit Figures",
-        value=get_edit_views_flag(),
+        value=get_editable_flag(),
         help="Display a set of menus to modify the figures.",
         on_change=update_edit_views,
-        key="sidebar_edit_views"
+        key="sidebar_toggle_editable"
     )
 
 
@@ -57,9 +57,7 @@ def setup_sidebar(
         st.rerun()
 
     # If a file link is in the query params
-    if st.query_params.get("file"):
-        load_url(st.query_params["file"])
-        del st.query_params["file"]
+    check_file_url()
 
     sidebar_page_links([
         ("save_load", "Save / Load", ":material/save:"),
@@ -70,7 +68,7 @@ def setup_sidebar(
         ("about", "About", ":material/info:")
     ])
     if edit_views:
-        sidebar_edit_views()
+        sidebar_toggle_editable()
     if load_history:
         sidebar_load_history()
 

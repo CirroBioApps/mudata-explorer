@@ -415,18 +415,17 @@ def add_stacked_bars(
     mdata: MuData,
     title: str,
     yaxis_title: str,
-    max_features: int,
     table: str,
     category_cname: str,
     category_label: str,
     category_table="Observation Metadata",
-    sort_rows_by="Values"
+    sort_rows_by="Values",
+    features=None
 ):
     view.plotly_stacked_bars(
         mdata,
         **{
             "formatting": {
-                "max_features": max_features,
                 "title": title,
                 "yaxis_title": yaxis_title,
                 "sort_rows_by": sort_rows_by

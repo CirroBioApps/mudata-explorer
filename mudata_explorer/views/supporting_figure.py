@@ -17,6 +17,8 @@ class SupportingFigure(View):
         }
     }
 
+    params = {}
+
     def display(self):
 
         # Get the location and index position of the figure

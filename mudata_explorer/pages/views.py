@@ -1,8 +1,11 @@
 from mudata_explorer.helpers.views import get_views, set_views, delete_view, duplicate_view
 from mudata_explorer.helpers.add_view import add_view
-from mudata_explorer.app.sidebar import get_edit_views_flag, setup_sidebar
+from mudata_explorer.app.sidebar import get_editable_flag, setup_sidebar
 from mudata_explorer.app.mdata import get_mdata
+from mudata_explorer.app.query_params import set_edit_view_flag
+from mudata_explorer.app.query_params import get_edit_view_flag
 from mudata_explorer.base.view import View
+from mudata_explorer.base.sdk_snippet import show_view_sdk_snippet
 from mudata_explorer.helpers.assets import all_views, make_view
 from mudata_explorer.helpers.assets import asset_categories, asset_dataframe
 from mudata_explorer.helpers.assets import filter_by_category
@@ -10,41 +13,37 @@ import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 
 
-def make_views(editable=False):
+def make_views():
 
     views = get_views()
 
     return [
         make_view(
             ix=ix,
-            editable=editable,
-            **view
+            type=view["type"],
+            params=view["params"]
         )
         for ix, view in enumerate(views)
     ]
 
 
-def make_editable(ix: int):
-    st.query_params["edit-view"] = ix
-
-
 def edit_view(view: View, container: DeltaGenerator, ix: int, n_views: int):
 
     # If the views are not editable, don't show the edit buttons
-    if not get_edit_views_flag():
+    if not get_editable_flag():
         # Instead, just set up the params for the view
-        view.get_data()
+        view.display_form()
         return
 
     # Set up an expand element for all of the rearranging options
-    expander = container.expander("Edit Position")
+    expander = container.expander("More Options", expanded=True)
 
     # The first button allows the user to provide inputs
     expander.button(
-        ":pencil: Configure",
+        ":pencil: Edit All",
         help="Edit the inputs for this view.",
         key=f"edit-inputs-{ix}",
-        on_click=make_editable,
+        on_click=set_edit_view_flag,
         args=(ix,)
     )
 
@@ -126,7 +125,7 @@ def button_add_view():
 
 def button_add_view_callback(selected_type: str):
     add_view(selected_type)
-    st.query_params["edit-view"] = len(get_views()) - 1
+    set_edit_view_flag(len(get_views()) - 1)
 
 
 def move_up(ix: int):
@@ -159,8 +158,8 @@ def run():
         edit_views=True,
         page_layout=(
             "centered"
-            if st.query_params.get("edit-view") is None
-            and get_edit_views_flag() is False
+            if get_edit_view_flag() is None
+            and get_editable_flag() is False
             else "wide"
         )
     )
@@ -174,14 +173,14 @@ def run():
         return
 
     # If the user has selected a view to edit, show the edit menu
-    if st.query_params.get("edit-view") is not None:
+    if get_edit_view_flag() is not None:
 
         run_edit_view()
 
     else:
 
         # If the views are editable
-        if get_edit_views_flag():
+        if get_editable_flag():
 
             # Show the views with edit buttons
             view_editable()
@@ -194,7 +193,7 @@ def run():
 def run_edit_view():
 
     # The view to edit
-    edit_ix = int(st.query_params.get("edit-view"))
+    edit_ix = get_edit_view_flag()
 
     # Get the list of all views defined in the dataset
     views = get_views()
@@ -205,11 +204,39 @@ def run_edit_view():
     # Instantiate the view to edit
     view = make_view(
         ix=edit_ix,
-        editable=True,
-        **views[edit_ix]
+        type=views[edit_ix]['type'],
+        params=views[edit_ix]['params']
     )
 
-    view.get_data()
+    # Show the name of the view
+    st.write(
+        f"#### {view.ix + 1}. {view.name}"
+        if view.ix != -1
+        else f"#### {view.name}"
+    )
+
+    # Show the help text for the view
+    st.write(view.help_text)
+
+    # Render the input form
+    view.display_form()
+
+    # Show the display
+    view.display()
+
+    st.button(
+        ":information_source: SDK Snippet",
+        on_click=show_view_sdk_snippet,
+        key=f"show-view-sdk-snippet-{view.ix}",
+        args=(view.ix,),
+        help="Show an example for configuration via SDK."
+    )
+
+    st.button(
+        ":page_facing_up: Save Changes",
+        key=f"save-changes-{view.ix}",
+        on_click=view.save_changes_button
+    )
 
 
 def view_editable():
@@ -217,11 +244,11 @@ def view_editable():
     Show the views with edit buttons.
     """
 
-    if not get_edit_views_flag():
+    if not get_editable_flag():
         st.rerun()
 
     # All of the views defined in the dataset
-    mdata_views = make_views(editable=False)
+    mdata_views = make_views()
 
     for ix, view in enumerate(mdata_views):
         if ix > 0:
@@ -235,16 +262,15 @@ def view_editable():
         # Show the name of the view
         controls.write(f"#### {ix + 1}. {view.name}")
 
-        # Expose any params which can be configured in the sidebar
+        # In the controls columns
         with controls:
+            # Expose any params which can be configured in the sidebar
             view.runtime_options()
-
-        # Show any sidebar parameters in the controls container
-        with controls:
-            view.get_data()
+            # Show any sidebar parameters in the controls container
+            view.display_form()
 
         # Let the user run the method, catching any errors
-        if not view.params_complete:
+        if not view.form.complete:
             display.write("Please complete all input fields")
             return
 
@@ -266,7 +292,7 @@ def view_editable():
 def view_non_editable():
 
     # All of the views defined in the dataset
-    mdata_views = make_views(editable=False)
+    mdata_views = make_views()
 
     for view in mdata_views:
 

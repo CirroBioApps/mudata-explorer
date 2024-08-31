@@ -1,7 +1,7 @@
 from typing import List
 from mudata_explorer import views
 from mudata_explorer import process
-from mudata_explorer.base.base import MuDataAppHelpers
+from mudata_explorer.base.base import MuDataAppAction
 from mudata_explorer.base.view import View
 from mudata_explorer.base.process import Process
 from mudata_explorer.helpers.read_table import read_table # noqa
@@ -57,9 +57,9 @@ def all_process_types() -> List[str]:
     ]
 
 
-def make_view(type: str, params={}, **kwargs) -> View:
+def make_view(ix: int, type: str, params={}) -> View:
     view = get_view_by_type(type)
-    return view(params=params, **kwargs)
+    return view(ix=ix, params=params)
 
 
 def get_process_by_type(process_type: str) -> Process:
@@ -86,7 +86,7 @@ def asset_categories(list_of_assets):
 
 
 def filter_by_category(
-    list_of_assets: List[MuDataAppHelpers],
+    list_of_assets: List[MuDataAppAction],
     category: str
 ):
     return [
@@ -98,7 +98,7 @@ def filter_by_category(
 
 
 def asset_dataframe(
-    list_of_assets: List[MuDataAppHelpers]
+    list_of_assets: List[MuDataAppAction]
 ) -> pd.DataFrame:
     """Return a DataFrame of asset types and names."""
     return pd.DataFrame(

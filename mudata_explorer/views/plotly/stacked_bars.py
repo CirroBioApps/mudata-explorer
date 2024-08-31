@@ -113,7 +113,7 @@ annotated by a single column which contains categories.
             return
 
         # Group together all columns beyond the `max_features` threshold
-        max_features = self.params.get("formatting.max_features")
+        max_features = self.params.get("formatting.max_features.value")
         if max_features is not None and max_features > 0 and data.shape[1] > max_features:
             feature_rank = data.mean().sort_values(ascending=False)
             to_drop = feature_rank.iloc[max_features:].index
@@ -128,13 +128,17 @@ annotated by a single column which contains categories.
         # If no category was given
         if self.params.get("table.category.dataframe") is None:
             category = None
-        # If a category was provided
+        # If a category DataFrame was provided
         else:
-            category: pd.Series = (
-                self.params
-                ["table.category.dataframe"]
-                ["category"]
-            )
+            category_df: pd.DataFrame = self.params["table.category.dataframe"]
+
+            # If a column was provided
+            if "category" in category_df.columns.values:
+                category: pd.Series = category_df["category"]
+            else:
+                category = None
+
+        if category is not None:
 
             # Get the shared indices
             index = data.index.intersection(category.index)
@@ -148,35 +152,35 @@ annotated by a single column which contains categories.
             category = category.loc[index]
 
         # Sort the table
-        if self.params['formatting.sort_rows_by'] == "Labels":
+        if self.params['formatting.sort_rows_by.value'] == "Labels":
             data = data.sort_index()
-        elif self.params['formatting.sort_rows_by'] == "Values":
+        elif self.params['formatting.sort_rows_by.value'] == "Values":
             data = self.sort_rows(data)
         else:
-            assert self.params['formatting.sort_rows_by'] == "Category"
+            assert self.params['formatting.sort_rows_by.value'] == "Category"
             assert category is not None, "Must provide a category to sort by"
             data = pd.concat([
                 self.sort_rows(d)
                 for _, d in data.groupby(category)
             ])
 
-        if self.params['formatting.sort_cols_by'] == "Labels":
+        if self.params['formatting.sort_cols_by.value'] == "Labels":
             data = data.sort_index(axis=1)
         else:
-            assert self.params['formatting.sort_cols_by'] == "Values"
+            assert self.params['formatting.sort_cols_by.value'] == "Values"
             data = self.sort_rows(data.T).T
 
         # Set up the layout arguments
-        yaxis_title = self.params.get("formatting.yaxis_title")
-        feature_label = self.params.get("formatting.feature_label")
+        yaxis_title = self.params.get("formatting.yaxis_title.value")
+        feature_label = self.params.get("formatting.feature_label.value")
         layout_args = dict(
             barmode='stack',
-            title=self.params.get("formatting.title"),
+            title=self.params.get("formatting.title.value"),
             yaxis_title=yaxis_title
         )
 
         # If the maximum Y value was specified
-        max_y = self.params.get("formatting.max_y", 0)
+        max_y = self.params.get("formatting.max_y.value", 0)
         if max_y > 0:
             layout_args["yaxis_range"] = [0, max_y]
 
@@ -193,7 +197,7 @@ annotated by a single column which contains categories.
                 row_heights=[0.9, 0.1]
             )
             fig.add_traces(self._make_bars(data, feature_label), rows=1, cols=1)
-            category_name = self.params.get("table.category.category.label", "")
+            category_name = self.params.get("table.category.category.label.value", "")
             fig.add_traces(self._make_annot(category, category_name), rows=2, cols=1)
             # Set the ticks on yaxis2 to be invisible
             fig.update_yaxes(
