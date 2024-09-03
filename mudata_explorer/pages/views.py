@@ -300,7 +300,7 @@ def view_editable():
         # Let the user run the method, catching any errors
         if not view.form.complete:
             display.write("Please complete all input fields")
-            return
+            continue
 
         # Set up a set of buttons to edit the order of the view
         edit_view(view, controls, ix, len(mdata_views))
