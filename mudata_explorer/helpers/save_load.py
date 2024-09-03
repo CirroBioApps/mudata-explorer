@@ -104,6 +104,6 @@ def load_history():
         set_process(dict(
             type=proc.type,
             category=proc.category,
-            params=proc.params
+            params=proc.dehydrate()
         ))
         st.rerun()
