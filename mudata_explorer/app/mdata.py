@@ -276,7 +276,6 @@ def join_dataframe_tables(
     Tables from different modalities:
         Joined along the columns (if the orientation is to observations)
         Joined along the index (if the orientation is to variables)
-
     """
     _is_axis(axis)
 

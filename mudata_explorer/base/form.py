@@ -111,7 +111,7 @@ class MuDataAppDummy:
     def render(self):
         return
 
-    def dump(self) -> Dict[str, Any]:
+    def dump(self, mdata=None) -> Dict[str, Any]:
         return {}
     
     def dehydrate(self):
@@ -224,7 +224,7 @@ class MuDataAppFormElement(_SharedFunctions):
         """Wrapper to determine if no form inputs should be shown."""
         return self.ix >= 0 and get_edit_view_flag() != self.ix and not get_editable_flag()
 
-    def dump(self) -> Dict[str, Any]:
+    def dump(self, mdata=None) -> Dict[str, Any]:
         """
         Return a dict with all values defined by the form element.
         Note that the .value attribute is also being returned as
@@ -431,7 +431,7 @@ class MuDataAppForm(MuDataAppFormElement):
         """A form is complete if all child elements are complete."""
         return all([elem._complete for elem in self.properties.values()])
 
-    def dump(self) -> Dict[str, Any]:
+    def dump(self, mdata=None) -> Dict[str, Any]:
         """
         Return a dict with all values defined by the form element,
         along with all of its nested properties.
@@ -439,7 +439,7 @@ class MuDataAppForm(MuDataAppFormElement):
         vals = {
             kw: val
             for elem in self.properties.values()
-            for kw, val in elem.dump().items()
+            for kw, val in elem.dump(mdata=mdata).items()
         }
         if self.optional:
             vals = {
@@ -950,24 +950,17 @@ class MuDataAppDataFrame(MuDataAppFormElement):
                         self._complete = False
 
                 # Build a DataFrame with the selected columns
-                self.value = pd.DataFrame({
-                    col_kw: col_elem.value
-                    for col_kw, col_elem in self._columns.items()
-                    if col_elem.value is not None
-                })
+                self._build_dataframe_from_columns()
 
                 # Let the user filter the rows
                 self._filter_rows.render()
 
                 # Optionally filter the rows
                 if self._filter_rows.value is not None:
-                    self.value = self.value.reindex(
-                        index=[
-                            val
-                            for val in self._filter_rows.value
-                            if val in self.value.index.values
-                        ]
-                    )
+
+                    # Modify self.value in place
+                    self._filter_rows_in_place()
+
                     if border:
                         st.write(
                             f"Rows after filtering: {self.value.shape[0]:,}"
@@ -1004,13 +997,7 @@ class MuDataAppDataFrame(MuDataAppFormElement):
 
                 # Optionally filter the columns
                 if self._filter_cols.value is not None:
-                    self.value = self.value.reindex(
-                        columns=[
-                            val
-                            for val in self._filter_cols.value
-                            if val in self.value.columns.values
-                        ]
-                    )
+                    self._filter_cols_in_place()
                     if border:                    
                         st.write(
                             f"Columns after filtering: {self.value.shape[0]:,}"
@@ -1019,12 +1006,8 @@ class MuDataAppDataFrame(MuDataAppFormElement):
             # Render the option to select data transformations
             self._transforms.render()
 
-            if self._transforms.value is not None:
-                for transform_id in self._transforms.value:
-                    transform = get_transform(transform_id)
-                    if border:
-                        st.write(f"Running: {transform.name}")
-                    self.value = transform.run(self.value)
+            # Run any specified transforms
+            self._run_transforms_in_place(print_status=border)
 
             if self.value is not None and border:
                 _rows = self.value.shape[0]
@@ -1036,18 +1019,101 @@ class MuDataAppDataFrame(MuDataAppFormElement):
                 else:
                     st.write(f"{_prefix}: {_rows:,} rows and {_cols:,} columns")
 
-    def dump(self) -> Dict[str, Any]:
+    def _build_dataframe_from_columns(self):
+        """Build a DataFrame as a combination of columns."""
+
+        self.value = pd.DataFrame({
+            col_kw: col_elem.value
+            for col_kw, col_elem in self._columns.items()
+            if col_elem.value is not None
+        })
+
+    def _filter_rows_in_place(self):
+        """If filtering is enabled, modify the DataFrame in self.value"""
+
+        self.value = self.value.reindex(
+            index=[
+                val
+                for val in self._filter_rows.value
+                if val in self.value.index.values
+            ]
+        )
+
+    def _filter_cols_in_place(self):
+        """If filtering is enabled, modify the DataFrame in self.value"""
+
+        self.value = self.value.reindex(
+            columns=[
+                val
+                for val in self._filter_cols.value
+                if val in self.value.columns.values
+            ]
+        )
+
+    def _run_transforms_in_place(self, print_status=False):
+        if self._transforms.value is not None:
+            for transform_id in self._transforms.value:
+                transform = get_transform(transform_id)
+                if print_status:
+                    st.write(f"Running: {transform.name}")
+                self.value = transform.run(self.value)
+
+
+    def _build_dataframe(self, mdata=None):
+        """Build the DataFrame based on the parameters in the form and save as self.value"""
+
+        # If the user is expected to select columns
+        if len(self._columns) > 0:
+
+            # Populate self.value for each of the columns
+            for col_elem in self._columns.values():
+                col_elem._build_dataframe(mdata=mdata)
+
+            # Build a DataFrame with the selected columns
+            self._build_dataframe_from_columns()
+
+            # Optionally filter the rows
+            if self._filter_rows.value is not None:
+                self._filter_rows_in_place()
+
+        # Otherwise
+        else:
+            # Stop if no tables were given
+            if self._tables.value is None or len(self._tables.value) == 0:
+                return
+
+            # Get the DataFrame(s) selected by the user
+            self.value = join_dataframe_tables(self._tables.value, self._axis.value, mdata=mdata)
+
+            # Optionally filter the rows
+            if self._filter_rows.value is not None:
+                self._filter_rows_in_place()
+
+            # Optionally filter the columns
+            if self._filter_cols.value is not None:
+                self._filter_cols_in_place()
+
+        # Run any specified transforms
+        self._run_transforms_in_place(print_status=False)
+
+    def dump(self, mdata=None) -> Dict[str, Any]:
 
         items = dict()
+
+        # If the value attribute is not populated
+        if self.value is None:
+
+            # Populate it
+            self._build_dataframe(mdata=mdata)
 
         if self.enabled_or_required:
             items[self._kw("dataframe")] = self.value
 
         items = {
             **items,
-            **super().dump(),
-            **self._axis.dump(),
-            **self._transforms.dump()
+            **super().dump(mdata=mdata),
+            **self._axis.dump(mdata=mdata),
+            **self._transforms.dump(mdata=mdata)
         }
 
         # If column selection is not enabled,
@@ -1055,18 +1121,18 @@ class MuDataAppDataFrame(MuDataAppFormElement):
         if len(self._columns) == 0:
             items = {
                 **items,
-                **self._tables.dump(),
-                **self._filter_cols.dump()
+                **self._tables.dump(mdata=mdata),
+                **self._filter_cols.dump(mdata=mdata)
             }
 
         # Add any columns specified in the schema
         else:
 
             for col_elem in self._columns.values():
-                items = {**items, **col_elem.dump()}
+                items = {**items, **col_elem.dump(mdata=mdata)}
 
         # Settings for filtering the rows
-        items = {**items, **self._filter_rows.dump()}
+        items = {**items, **self._filter_rows.dump(mdata=mdata)}
 
         return items    
 
@@ -1243,16 +1309,36 @@ class MuDataAppDataFrameColumn(MuDataAppFormElement):
                 self._scale.update_options(scale_options)
                 self._scale.render()
 
-    def dump(self) -> Dict[str, Any]:
+    def _build_dataframe(self, mdata=None):
+        """Build the DataFrame based on the parameters in the form and save as self.value"""
+
+        if self._table.value is None or len(self._table.value) == 0:
+            return
+
+        # Get the DataFrame
+        df = join_dataframe_tables(self._table.value, self.axis, mdata=mdata)
+
+        if self._cname.value is None:
+            return
+
+        # Save the values of the column selected
+        self.value = df[self._cname.value]
+
+    def dump(self, mdata=None) -> Dict[str, Any]:
+
+        # If the value attribute has not been populated
+        if self.value is None:
+            # Populate it
+            self._build_dataframe(mdata=mdata)
 
         return {
-            **super().dump(),
-            **self._table.dump(),
-            **self._cname.dump(),
-            **self._label.dump(),
-            **self._scale.dump(),
+            **super().dump(mdata=mdata),
+            **self._table.dump(mdata=mdata),
+            **self._cname.dump(mdata=mdata),
+            **self._label.dump(mdata=mdata),
+            **self._scale.dump(mdata=mdata),
             **{self._kw("colorscale"): self._colorscale},
-            **self._is_categorical.dump()
+            **self._is_categorical.dump(mdata=mdata)
         }
 
     def dehydrate(self):
@@ -1491,15 +1577,15 @@ class MuDataAppDataFrameFilterAxis(MuDataAppFormElement):
                 # Tell the user how many element passed the filter
                 st.write(f"Elements passing filter: {len(self.value):,}")
 
-    def dump(self) -> Dict[str, Any]:
+    def dump(self, mdata=None) -> Dict[str, Any]:
         return {
-            **super().dump(),
-            **self._type.dump(),
-            **self._tables.dump(),
-            **self._cname.dump(),
-            **self._expr.dump(),
-            **self._value_enum.dump(),
-            **self._value_str.dump()
+            **super().dump(mdata=mdata),
+            **self._type.dump(mdata=mdata),
+            **self._tables.dump(mdata=mdata),
+            **self._cname.dump(mdata=mdata),
+            **self._expr.dump(mdata=mdata),
+            **self._value_enum.dump(mdata=mdata),
+            **self._value_str.dump(mdata=mdata)
         }
         
     def dehydrate(self):

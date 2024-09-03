@@ -33,7 +33,7 @@ def codegen_views():
                 if isinstance(val, str)
                 else f"{kw.replace('.', '_')}={val}"
             )
-            for kw, val in view.params.items()
+            for kw, val in view.form.dehydrate().items()
         ])
 
         # Construct the signature for the function, which
@@ -51,7 +51,7 @@ def codegen_views():
         # Construct the signature for calling the add_view method
         elem["add_view_params"] = ",\n            ".join([
             f"'{kw}': extra_params.get('{kw.replace('.', '_')}', {kw.replace('.', '_')})"
-            for kw in view.params
+            for kw in view.form.dehydrate()
         ])
 
         # Construct the parameters for the function
@@ -118,7 +118,7 @@ def codegen_processes():
                 if isinstance(val, str)
                 else f"{kw.replace('.', '_')}={val}"
             )
-            for kw, val in process.params.items()
+            for kw, val in process.form.dehydrate().items()
         ])
 
         # Construct the signature for the function, which
@@ -136,7 +136,7 @@ def codegen_processes():
         # Construct the signature for calling the add_process method
         elem["add_process_params"] = ",\n            ".join([
             f"'{kw}': extra_params.get('{kw.replace('.', '_')}', {kw.replace('.', '_')})"
-            for kw in process.params
+            for kw in process.form.dehydrate()
         ])
 
         # Construct the parameters for the function
@@ -168,8 +168,8 @@ def {safe_process_type}({signature}):
     assert process.params_editable is False, "params_editable must be False"
     assert isinstance(process.mdata, MuData), type(process.mdata)
 
-    # Get the data from the object
-    process.get_data()
+    # Populate the params for the process
+    process.populate_params()
 
     # Run the process
     process.execute()

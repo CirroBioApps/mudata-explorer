@@ -202,3 +202,8 @@ class Process(MuDataAppAction):
     @classmethod
     def hydrate(cls, params: dict):
         return cls(params)
+
+    def populate_params(self):
+        """Populate the params attribute of the object."""
+
+        self.params = self.form.dump(self.mdata)

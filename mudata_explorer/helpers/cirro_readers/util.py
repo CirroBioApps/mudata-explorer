@@ -193,8 +193,8 @@ def summarize_features(
 ):
     process.summary_stats(
         mdata,
-        table_data_tables=f"{mod}.data",
-        table_data_axis=1
+        table_data_tables_value=f"{mod}.data",
+        table_data_axis_value=1
     )
 
 
