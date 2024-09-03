@@ -100,7 +100,9 @@ def run():
         )
 
     # Get the parameters from the user
-    process.get_data(container)
+    with container:
+        process.form.render()
+    process.params = process.form.dump()
 
     # Get the output locations
     output_locs = process.get_output_locs()
@@ -122,7 +124,7 @@ def run():
         )
 
     # Let the user run the method, catching any errors
-    if not process.params_complete:
+    if not process.form.complete:
         container.write("Please complete all input fields")
         return
 

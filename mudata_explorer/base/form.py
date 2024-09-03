@@ -111,7 +111,7 @@ class MuDataAppDummy:
     def render(self):
         return
 
-    def dump(self):
+    def dump(self) -> Dict[str, Any]:
         return {}
     
     def dehydrate(self):
@@ -227,8 +227,15 @@ class MuDataAppFormElement(_SharedFunctions):
     def dump(self) -> Dict[str, Any]:
         """
         Return a dict with all values defined by the form element.
+        Note that the .value attribute is also being returned as
+        using the prefix key for the element overall.
+        This accomplishes the back-compatibility with versions
+        that were saved by the earliest versions of the app.
         """
-        vals = {self._kw("sidebar"): self.sidebar.value}
+        vals = {
+            self._kw("sidebar"): self.sidebar.value,
+            self.prefix: self.value
+        }
         if self.enabled_or_required:
             vals[self._kw("value")] = self.value
         if self.optional:
@@ -933,6 +940,10 @@ class MuDataAppDataFrame(MuDataAppFormElement):
                 # Render those options
                 for col_elem in self._columns.values():
                     col_elem.render()
+                    # If the column is enabled or required, but no value is provided
+                    if col_elem.enabled_or_required and col_elem.value is None:
+                        # Then the DataFrame is not complete
+                        self._complete = False
 
                 # Build a DataFrame with the selected columns
                 self.value = pd.DataFrame({
@@ -963,6 +974,7 @@ class MuDataAppDataFrame(MuDataAppFormElement):
                 # Render the option to select table(s) for input
                 self._tables.render()
                 if self._tables.value is None or len(self._tables.value) == 0:
+                    self._complete = False
                     return
 
                 # Get the DataFrame(s) selected by the user
@@ -1020,7 +1032,7 @@ class MuDataAppDataFrame(MuDataAppFormElement):
                 else:
                     st.write(f"{_prefix}: {_rows:,} rows and {_cols:,} columns")
 
-    def dump(self):
+    def dump(self) -> Dict[str, Any]:
 
         items = dict()
 
@@ -1217,7 +1229,7 @@ class MuDataAppDataFrameColumn(MuDataAppFormElement):
                 self._scale.update_options(scale_options)
                 self._scale.render()
 
-    def dump(self):
+    def dump(self) -> Dict[str, Any]:
 
         return {
             **super().dump(),
@@ -1465,7 +1477,7 @@ class MuDataAppDataFrameFilterAxis(MuDataAppFormElement):
                 # Tell the user how many element passed the filter
                 st.write(f"Elements passing filter: {len(self.value):,}")
 
-    def dump(self):
+    def dump(self) -> Dict[str, Any]:
         return {
             **super().dump(),
             **self._type.dump(),

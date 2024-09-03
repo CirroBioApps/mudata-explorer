@@ -5,6 +5,7 @@ from mudata_explorer.app.mdata import get_mdata, set_mdata
 from mudata_explorer.app.mdata import save_annot
 from mudata_explorer.base.base import MuDataAppAction
 from mudata_explorer.base.slice import MuDataSlice
+from mudata_explorer.helpers.params import nest_params
 from streamlit.delta_generator import DeltaGenerator
 from muon import MuData
 
@@ -25,10 +26,10 @@ class Process(MuDataAppAction):
         save results to that object instead of the global object.
         """
 
-        self.params = {
-            kw: params.get(kw, val)
-            for kw, val in self.get_schema_defaults(self.schema)
-        }
+        # Instantiate the self.form attribute from the schema
+        super().__init__(-1)
+        # Load any params
+        self.form.load(nest_params(params))
         self.params_editable = params_editable
         self.mdata = mdata
 
@@ -196,10 +197,7 @@ class Process(MuDataAppAction):
     def dehydrate(self):
         """Only save those params which can be loaded."""
 
-        return {
-            kw: self.params[kw]
-            for kw, _ in self.get_schema_defaults(self.schema)
-        }
+        return self.form.dehydrate()
 
     @classmethod
     def hydrate(cls, params: dict):

@@ -110,6 +110,8 @@ class RunKmeans(Process):
             assert k >= min_k, msg
             assert k <= max_k, msg
 
+        if self.params.get("table.data.dataframe") is None:
+            raise Exception("Must select input data table")
         df: pd.DataFrame = self.params["table.data.dataframe"].dropna()
         msg = "Null values in all rows - remove invalid columns"
         assert df.shape[0] > 0, msg
