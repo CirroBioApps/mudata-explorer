@@ -58,13 +58,13 @@ class PlotlyLine(Plotly):
             data,
             x="x",
             y="y",
-            color="color" if self.params["data.color.enabled"] else None,
+            color="color" if self.params["data.columns.color.enabled.value"] else None,
             log_x=self.params["scale_options.log_x"],
             log_y=self.params["scale_options.log_y"],
             labels=dict(
-                x=self.params["data.x.label"],
-                y=self.params["data.y.label"],
-                color=self.params["data.color.label"]
+                x=self.params["data.columns.x.label.value"],
+                y=self.params["data.columns.y.label.value"],
+                color=self.params["data.columns.color.label.value"]
             ),
             title=self.params["scale_options.title"],
             **colorscale

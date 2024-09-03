@@ -111,11 +111,11 @@ class PlotlyBox(Plotly):
             x="x",
             y="y",
             log_y=self.params["scale_options.log_y"],
-            color="color" if self.params["data.color.enabled"] else None,
+            color="color" if self.params["data.columns.color.enabled.value"] else None,
             labels=dict(
-                x=self.params["data.x.label"],
-                y=self.params["data.y.label"],
-                color=self.params["data.color.label"]
+                x=self.params["data.columns.x.label.value"],
+                y=self.params["data.columns.y.label.value"],
+                color=self.params["data.columns.color.label.value"]
             ),
             title=title,
             **colorscale

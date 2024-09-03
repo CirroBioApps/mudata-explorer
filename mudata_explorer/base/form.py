@@ -29,15 +29,15 @@ class _SharedFunctions:
                 }
         return schema
 
-    def load(self, params: Dict[str, Any]):
+    def load(self, params: Union[Any, Dict[str, Any]]):
         """
         Load the basic values defined in a dict of params.
         """
         if not isinstance(params, dict):
-            return
-        if "value" in params:
+            self.value = params
+        elif "value" in params:
             self.value = params["value"]
-        if "sidebar" in params and hasattr(self, 'sidebar'):
+        elif "sidebar" in params and hasattr(self, 'sidebar'):
             self.sidebar.value = params["sidebar"]
 
 
@@ -280,15 +280,15 @@ class MuDataAppFormElement(_SharedFunctions):
             }
         return vals
 
-    def load(self, params: Dict[str, Any]):
+    def load(self, params: Union[Any, Dict[str, Any]]):
         """
         Load all values defined in a dict of params.
         """
-        if not isinstance(params, dict):
-            return
-
         # Load the 'value' and 'sidebar' elements
         super().load(params)
+
+        if not isinstance(params, dict):
+            return
 
         # Load the 'enabled' element
         if "enabled" in params:
@@ -467,12 +467,16 @@ class MuDataAppForm(MuDataAppFormElement):
             }
         return vals
     
-    def load(self, params: Dict[str, Any]):
+    def load(self, params: Union[Any, Dict[str, Any]]):
         """
         Load all values defined in a dict of params,
         including any which map to nested properties.
         """
         super().load(params)
+
+        if not isinstance(params, dict):
+            return
+
         for elem_kw, elem in self.properties.items():
             if elem_kw in params:
                 elem.load(params[elem_kw])
@@ -1097,23 +1101,33 @@ class MuDataAppDataFrame(MuDataAppFormElement):
 
         return items
     
-    def load(self, params: Dict[str, Any]):
+    def load(self, params: Union[Any, Dict[str, Any]]):
         """
         Perform the inverse of dehydrate, take a set of
         serialized params and save them.
         """
+        super().load(params)
+
         if not isinstance(params, dict):
             return
-        super().load(params)
+
         self._axis.load(params.get("axis"))        
         self._transforms.load(params.get("transforms"))
         if len(self._columns) == 0:
-            self._tables.load(params.get("tables"))
+            self._tables.load(
+                params.get(
+                    "tables",
+                    params.get("table")
+                )
+            )
             self._filter_cols.load(params.get("filter_cols"))
         else:
             for col_kw, col_elem in self._columns.items():
                 col_elem.load(
-                    params.get("columns", {}).get(col_kw)
+                    params.get("columns", {}).get(
+                        col_kw,
+                        params.get(col_kw)
+                    )
                 )
         self._filter_rows.load(params.get("filter_rows"))
 
@@ -1254,9 +1268,9 @@ class MuDataAppDataFrameColumn(MuDataAppFormElement):
         }
     
     def load(self, params: Dict[str, Any]):
+        super().load(params)
         if not isinstance(params, dict):
             return
-        super().load(params)
         if "colorscale" in params:
             self._colorscale = params["colorscale"]
         self._table.load(params.get("table"))
@@ -1500,9 +1514,9 @@ class MuDataAppDataFrameFilterAxis(MuDataAppFormElement):
         }
     
     def load(self, params: Dict[str, Any]):
+        super().load(params)
         if not isinstance(params, dict):
             return
-        super().load(params)
         self._type.load(params.get("type"))
         self._tables.load(params.get("tables"))
         self._cname.load(params.get("cname"))

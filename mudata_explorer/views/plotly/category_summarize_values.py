@@ -225,7 +225,7 @@ class PlotlyCategorySummarizeValues(Plotly):
                     if self.params["table.data.axis"]
                     else "Variable"
                 ),
-                category=self.params["table.category.category.label"],
+                category=self.params["table.category.columns.category.label"],
                 **labels
             ),
             title=self.params["formatting.title"]

@@ -153,12 +153,12 @@ and using a log scale for the x- and y-axes.
             color="color_val",
             facet_col="color_label",
             facet_col_wrap=int(self.params["formatting.ncols"]),
-            size="size" if self.params["data.size.enabled"] else None,
+            size="size" if self.params["data.columns.size.enabled.value"] else None,
             opacity=opacity,
             labels=dict(
-                x=self.params["data.x.label"],
-                y=self.params["data.y.label"],
-                size=self.params["data.size.label"],
+                x=self.params["data.columns.x.label.value"],
+                y=self.params["data.columns.y.label.value"],
+                size=self.params["data.columns.size.label.value"],
                 color_val=self.params["formatting.color_label"]
             ),
             color_continuous_scale=self.params["formatting.colorscale"]

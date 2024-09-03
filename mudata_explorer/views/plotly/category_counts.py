@@ -99,7 +99,7 @@ class PlotlyCategoryCount(Plotly):
             data
             .groupby(
                 ["x", "color"]
-                if self.params["data.color.enabled"] else "x"
+                if self.params["data.columns.color.enabled.value"] else "x"
             )
             .apply(len)
             .rename("count")
@@ -109,7 +109,7 @@ class PlotlyCategoryCount(Plotly):
         title = self.params["formatting.title"]
 
         if self.params["annotation_options.chisquare"]:
-            if self.params["data.color.enabled"]:
+            if self.params["data.columns.color.enabled.value"]:
                 chi2, p, _, _ = chi2_contingency(
                     df.pivot(index="x", columns="color", values="count").fillna(0)
                 )
@@ -128,14 +128,14 @@ class PlotlyCategoryCount(Plotly):
             x="x",
             y="count",
             log_y=self.params["scale_options.log_y"],
-            color="color" if self.params["data.color.enabled"] else None,
+            color="color" if self.params["data.columns.color.enabled.value"] else None,
             labels=dict(
-                x=self.params["data.x.label"],
-                count=self.params["ylabel"],
-                color=self.params["data.color.label"]
+                x=self.params["data.columns.x.label.value"],
+                count=self.params["ylabel.value"],
+                color=self.params["data.columns.color.label.value"]
             ),
-            barmode=self.params["barmode"],
-            text_auto=self.params.get("annotation_options.show_values", False) is True,
+            barmode=self.params["barmode.value"],
+            text_auto=self.params.get("annotation_options.show_values.value", False) is True,
             title=title,
             **colorscale
         )

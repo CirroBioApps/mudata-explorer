@@ -299,19 +299,21 @@ def view_editable():
 
         # Let the user run the method, catching any errors
         if not view.form.complete:
+
             display.write("Please complete all input fields")
-            continue
+
+        else:
+
+            # Now make the display, catching any errors
+            try:
+                with display:
+                    view.display()
+            except Exception as e:
+                # Log the full traceback of the exception
+                display.exception(e)
 
         # Set up a set of buttons to edit the order of the view
         edit_view(view, controls, ix, len(mdata_views))
-
-        # Now make the display, catching any errors
-        try:
-            with display:
-                view.display()
-        except Exception as e:
-            # Log the full traceback of the exception
-            display.exception(e)
 
     if len(mdata_views) > 0:
         st.write("---")

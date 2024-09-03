@@ -247,7 +247,7 @@ class PlotlyBoxMulti(Plotly):
         fig = px.box(
             data_long,
             labels=dict(
-                category=self.params["table.category.category.label"],
+                category=self.params["table.category.columns.category.label"],
                 value=self.params["display_options.val_label"],
                 **{
                     var_name: self.params["display_options.var_label"]

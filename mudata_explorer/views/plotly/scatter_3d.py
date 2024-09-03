@@ -67,14 +67,14 @@ class PlotlyScatter3D(Plotly):
             log_x=self.params["scale_options.log_x"],
             log_y=self.params["scale_options.log_y"],
             log_z=self.params["scale_options.log_z"],
-            color="color" if self.params["data.color.enabled"] else None,
-            size="size" if self.params["data.size.enabled"] else None,
+            color="color" if self.params["data.columns.color.enabled.value"] else None,
+            size="size" if self.params["data.columns.size.enabled.value"] else None,
             labels=dict(
-                x=self.params["data.x.label"],
-                y=self.params["data.y.label"],
+                x=self.params["data.columns.x.label.value"],
+                y=self.params["data.columns.y.label.value"],
                 z=self.params["data.z.label"],
-                color=self.params["data.color.label"],
-                size=self.params["data.size.label"]
+                color=self.params["data.columns.color.label.value"],
+                size=self.params["data.columns.size.label.value"]
             ),
             **colorscale
         )

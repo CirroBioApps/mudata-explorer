@@ -22,24 +22,24 @@ class Plotly(View):
         # Check each column to see if it is a color scale
         for col_kw in [
             kw[:-len(".scale")] for kw in self.params.keys()
-            if kw.endswith(".scale") and kw.startswith(table_kw)
+            if kw.endswith(".scale") and kw.startswith(table_kw + ".columns.")
         ]:
-            cname = col_kw[len(table_kw) + 1:]
+            cname = col_kw[len(table_kw) + len(".columns."):]
 
-            if self.params[f"{col_kw}.enabled"]:
-                if self.params[f"{col_kw}.is_categorical"]:
+            if self.params.get(f"{col_kw}.enabled.value", True):
+                if self.params[f"{col_kw}.is_categorical.value"]:
                     data = data.assign(**{
                         cname: data[cname].apply(str)
                     })
                     colorscale = dict(
                         color_discrete_sequence=getattr(
                             px.colors.qualitative,
-                            self.params[f"{col_kw}.scale"]
+                            self.params[f"{col_kw}.scale.value"]
                         )
                     )
                 else:
                     colorscale = dict(
-                        color_continuous_scale=self.params[f"{col_kw}.scale"]
+                        color_continuous_scale=self.params[f"{col_kw}.scale.value"]
                     )
             else:
                 colorscale = {}

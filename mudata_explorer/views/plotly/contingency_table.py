@@ -167,8 +167,8 @@ The display can be used to show either:
             )
         )
         fig.update_layout(
-            xaxis_title=self.params["data.x.label"],
-            yaxis_title=self.params["data.y.label"]
+            xaxis_title=self.params["data.columns.x.label.value"],
+            yaxis_title=self.params["data.columns.y.label.value"]
         )
 
         st.plotly_chart(fig)
