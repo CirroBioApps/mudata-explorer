@@ -286,6 +286,7 @@ def join_dataframe_tables(
         tables = [tables]
 
     for table in tables:
+        assert table is not None
         if table == "Observation Metadata":
             assert axis == 0
             modality = 'None'

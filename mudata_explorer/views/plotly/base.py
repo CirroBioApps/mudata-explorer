@@ -28,6 +28,8 @@ class Plotly(View):
 
             if self.params.get(f"{col_kw}.enabled.value", True):
                 if self.params[f"{col_kw}.is_categorical.value"]:
+                    assert self.params[f"{col_kw}.scale.value"] is not None, \
+                        f"Must specify color scale for {col_kw}"
                     data = data.assign(**{
                         cname: data[cname].apply(str)
                     })

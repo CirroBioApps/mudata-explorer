@@ -74,6 +74,7 @@ class SummaryStats(Process):
 
         df: pd.DataFrame = self.params["table.data.dataframe"]
 
+        assert df is not None, self.params
         # Calculate summary statistics
         res = df.apply(self.summary_stats, axis=1)
 

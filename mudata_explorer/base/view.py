@@ -13,7 +13,7 @@ class View(MuDataAppAction):
     help_text: str
     editable: bool
     defaults: dict = {}
-    params: Optional[dict] # Only populated after the form is rendered
+    params = {}
 
     def __init__(
         self,
@@ -55,7 +55,11 @@ class View(MuDataAppAction):
     def attach(self):
 
         # Show the input form and save any changes that are made
-        self.display_form()
+        try:
+            self.display_form()
+        except Exception as e:
+            st.exception(e)
+            return
 
         # Catch any errors if incomplete inputs are provided
         if not self.form.complete:

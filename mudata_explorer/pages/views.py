@@ -295,7 +295,10 @@ def view_editable():
             # Expose any params which can be configured in the sidebar
             view.runtime_options()
             # Show any sidebar parameters in the controls container
-            view.display_form()
+            try:
+                view.display_form()
+            except Exception as e:
+                st.error(str(e))
 
         # Let the user run the method, catching any errors
         if not view.form.complete:
