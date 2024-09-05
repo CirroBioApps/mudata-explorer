@@ -58,11 +58,14 @@ def _save_value(ix: int, prefix: str, value: Any):
     # Get the params saved in the state for this view
     view = get_view(ix)
 
+    # The keyword for the params is {prefix}.value for everything except the sidebar
+    kw = prefix if prefix.endswith(".sidebar") else f"{prefix}.value"
+
     # If the value does not match
-    if view["params"].get(prefix + ".value") != value:
+    if view["params"].get(kw) != value:
 
         # Update it
-        view["params"][prefix + ".value"] = value
+        view["params"][kw] = value
 
         # Save the state
         set_view(ix=ix, view=view)
