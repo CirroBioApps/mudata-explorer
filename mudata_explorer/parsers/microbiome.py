@@ -26,6 +26,50 @@ class MicrobiomeParams:
     leiden_res: float = 1.0
 
 
+def _top_features(
+    mdata: MuData,
+    n_top_features: int,
+    varm_key="summary_stats",
+    cname="mean",
+    ascending=False
+):
+    return list(
+        mdata
+        .mod["abund"]
+        .varm[varm_key]
+        .sort_values(
+            by=cname,
+            ascending=ascending
+        )
+        .head(n_top_features)
+        .index.values
+    )
+
+
+def _top_features_filter_cols(
+    mdata: MuData,
+    n_top_features: int,
+    varm_key="summary_stats",
+    cname="mean",
+    ascending=False
+): 
+    features = _top_features(
+        mdata,
+        n_top_features,
+        varm_key=varm_key,
+        cname=cname,
+        ascending=ascending
+    )
+
+    return dict(
+        tables_value=["abund.data"],
+        type_value="index",
+        expr_value="in",
+        value_enum_value=features,
+        value_enum_sidebar=True
+    )
+
+
 def parse_adata(adata: AnnData, groupby_var=False) -> Optional[MuData]:
     
     mdata = _parse_adata(adata, groupby_var=groupby_var)
@@ -58,6 +102,10 @@ def _parse_adata(adata: AnnData, groupby_var=False) -> MuData:
     # Get the sample metadata
     with st.container(border=1):
         adata = _read_sample_meta(adata)
+
+    # Optionally filter samples by sample metadata
+    with st.container(border=1):
+        adata = _filter_samples(adata)
 
     # Make a MuData object
     mdata = io.build_mdata(
@@ -199,6 +247,41 @@ To modify or augment this information, download as a CSV and upload a new copy.
             new_meta = new_meta.reindex(adata.obs.index)
             st.dataframe(new_meta)
             adata.obs = new_meta
+
+    return adata
+
+
+def _filter_samples(adata: AnnData):
+
+    st.markdown("""**Filter Samples**
+
+Optionally filter the set of samples which are included in the analysis
+using the metadata annotations available.                
+""")
+    ntot = adata.shape[0]
+    
+    query_string = st.text_input(
+        "Query String",
+        placeholder="e.g. group == 'A' or timepoint == 1"
+    )
+    if query_string is not None and len(query_string) > 0:
+        try:
+            filtered = adata[
+                adata.obs.query(query_string).index.values
+            ]
+        except Exception as e:
+            st.exception(e)
+
+        if filtered.shape[0] > 0:
+
+            st.markdown(f"Including {filtered.shape[0]:,} / {ntot:,} samples")
+            return filtered
+        
+        else:
+            st.write("No samples matching the query")
+
+    else:
+        st.markdown(f"Including all {ntot:,} samples")
 
     return adata
 
@@ -346,54 +429,40 @@ def _run_processes(mdata: MuData, params: MicrobiomeParams):
                 )
 
 
-def _add_views(mdata: MuData, params: MicrobiomeParams):
+def _view_stacked_bars(mdata: MuData, params: MicrobiomeParams):
 
     # Show some stacked bars
     util.add_stacked_bars(
         mdata,
         title="Taxonomic Composition",
         yaxis_title="Proportion of Reads",
-        max_features=params.n_top_features,
         table="abund.data",
+        # Only show the top features
+        features=_top_features(mdata, params.n_top_features),
         category_cname=params.compare_by if params.is_categorical else None,
         category_label=params.label
     )
 
+
+def _view_most_abundant_boxplot(mdata: MuData, params: MicrobiomeParams):
+
     # Show the most abundant organisms
     view.plotly_box_multiple(
         mdata,
-        **{
-            "table": {
-                "category": {
-                    "enabled": False
-                },
-                "data": {
-                    "tables": ["abund.data"],
-                    "cols_query": {
-                        "query": {
-                            "cname": "mean_rank",
-                            "type": "value",
-                            "table": [
-                                "abund.varm.summary_stats"
-                            ],
-                            "expr": "<=",
-                            "value": str(params.n_top_features)
-                        }
-                    }
-                }
-            },
-            "variable_options": {
-                "axis": "X-Axis",
-                "log_values": False
-            },
-            "display_options": {
-                "var_label": "Organisms",
-                "val_label": "Relative Abundance",
-                "title": "High Abundance Organisms"
-            }
-        }
+        table_category_enabled_value=False,
+        table_data_tables_value=["abund.data"],
+        table_data_filter_cols=_top_features_filter_cols(mdata, params.n_top_features),
+        variable_options_axis_value="X-Axis",
+        variable_options_log_values_value=False,
+        display_options_title_value="High Abundance Organisms",
+        display_options_var_label_value="Organisms",
+        display_options_var_label_sidebar=True,
+        display_options_val_label_value="Relative Abundance",
+        display_options_val_label_sidebar=True
     )
 
+
+def _view_umap(mdata: MuData, params: MicrobiomeParams):
     # If a metadata column was selected
     if params.compare_by:
 
@@ -444,210 +513,217 @@ Leiden algorithm (resolution: {params.leiden_res}).
         scale="D3"
     )
 
+
+def _view_orgs_by_cluster(mdata: MuData, params: MicrobiomeParams):
+
     # Show the organisms that differentiate the leiden clusters
-    view.markdown(mdata, text="**Top Organisms by Cluster**")
+    view.markdown(mdata, text_value="**Top Organisms by Cluster**", text_sidebar=True)
 
     view.plotly_category_summarize_values(
         mdata,
-        **{
-            "table": {
-                "category": {
-                    "category": {
-                        "table": [
-                            "Observation Metadata"
-                        ],
-                        "cname": "leiden",
-                        "label": "Cluster (leiden)"
-                    }
-                },
-                "data": {
-                    "tables": [
-                        "abund.data"
-                    ],
-                    "cols_query": {
-                        "query": {
-                            "cname": "rank",
-                            "type": "value",
-                            "table": [
-                                "abund.varm.kruskal_leiden"
-                            ],
-                            "expr": "<=",
-                            "value": str(params.n_top_features)
-                        }
-                    },
-                    "transforms": [
-                        "zscores_cols"
-                    ]
-                }
-            },
-            "formatting": {
-                "sort_by": "Values",
-                "color": "None"
-            }
-        }
+        table_category_columns_category_table_value="Observation Metadata",
+        table_category_columns_category_cname_value="leiden",
+        table_category_columns_category_label_value="Cluster (leiden)",
+        table_data_tables_value=["abund.data"],
+        table_data_filter_cols=_top_features_filter_cols(
+            mdata,
+            params.n_top_features,
+            varm_key="kruskal_leiden",
+            cname="rank",
+            ascending=True
+        ),
+        table_data_transforms_value=["zscores_cols"],
+        formatting_sort_by_value="Values",
+        formatting_color_value="None"
     )
 
-    view.markdown(mdata, text="""The table above shows the top features which
+    view.markdown(mdata, text_value="""The table above shows the top features which
 are most strongly associated with the clusters identified by the Leiden
 algorithm.
 The size of each point represents the mean abundance of the feature among the
 samples which were assigned to a particular cluster.
 To account for different scales of abundance, the values have been transformed
-to z-scores.""")
+to z-scores.""", text_sidebar=True)
 
-    # If a metadata column was selected
-    if params.compare_by:
 
-        # Comparison of the variable of interest across clusters
-        title = f"Distribution of {params.label} across Clusters"
-        legend = f"""The distribution of the variable '{params.label}'
+def _view_grouping_across_clusters(mdata: MuData, params: MicrobiomeParams):
+
+    # Comparison of the variable of interest across clusters
+    title = f"Distribution of {params.label} across Clusters"
+    legend = f"""The distribution of the variable '{params.label}'
 is shown across each of the clusters identified by the Leiden algorithm.
-    """
+"""
 
-        x_kwargs = dict(
-            table="Observation Metadata",
-            cname="leiden",
-            label="Cluster (leiden)",
-        )
-        y_kwargs = dict(
-            table="Observation Metadata",
-            cname=params.compare_by,
-            label=params.label
-        )
+    x_kwargs = dict(
+        table="Observation Metadata",
+        cname="leiden",
+        label="Cluster (leiden)",
+    )
+    y_kwargs = dict(
+        table="Observation Metadata",
+        cname=params.compare_by,
+        label=params.label
+    )
 
-        if not params.is_categorical:
+    if not params.is_categorical:
 
-            # Display as a boxplot
-            util.add_boxplot(
-                mdata,
-                title=title,
-                legend=legend,
-                **{
-                    f"{prefix}_{kw}": val
-                    for prefix, kwargs in [("x", x_kwargs), ("y", y_kwargs)]
-                    for kw, val in kwargs.items()
-                }
-            )
-
-        else:
-            # For categorical variables, show a category
-            # count which includes the leiden clusters
-            util.add_category_count(
-                mdata,
-                title=title,
-                legend=legend,
-                **{
-                    f"{prefix}_{kw}": val
-                    for prefix, kwargs in [("x", x_kwargs), ("color", y_kwargs)]
-                    for kw, val in kwargs.items()
-                }
-            )
-
-        # Summarize the association of individual organisms with the variable
-        
-        if params.is_categorical:
-            stats_table = f"abund.varm.kruskal_{params.compare_by}"
-            stats_name = "Kruskal-Wallis H-test"
-        else:
-            stats_table = f"abund.varm.spearman_{params.compare_by}"
-            stats_name = "Spearman Rank Correlation"
-
-        view.markdown(mdata, text=f"""
-    **Top Organisms Associated with {params.label}**
-                    
-The table below shows the top features which are most strongly associated with
-the variable of interest ({params.label}).
-{stats_name} was used to identify the features which are most strongly
-associated with the variable.""")
-
-        view.table(
+        # Display as a boxplot
+        util.add_boxplot(
             mdata,
+            title=title,
+            legend=legend,
             **{
-                "options": {
-                    "sort": {
-                        "sort_by": {
-                            "table": [stats_table],
-                            "cname": "pvalue",
-                            "label": "pvalue"
-                        },
-                        "axis": 1
-                    }
-                },
-                "data": {
-                    "table": {
-                        "axis": 1,
-                        "tables": [stats_table],
-                        "cols_query": {
-                            "query": {
-                                "cname": "",
-                                "type": "index",
-                                "expr": "in",
-                                "value": [
-                                    "statistic",
-                                    "pvalue",
-                                    "neg_log10_pvalue",
-                                    "mean"
-                                ]
-                            }
-                        }
-                    }
-                }
+                f"{prefix}_{kw}": val
+                for prefix, kwargs in [("x", x_kwargs), ("y", y_kwargs)]
+                for kw, val in kwargs.items()
             }
         )
 
-        util.add_scatter(
+    else:
+        # For categorical variables, show a category
+        # count which includes the leiden clusters
+        util.add_category_count(
             mdata,
-            title=f"Association with {params.label} ({stats_name})",
-            legend="""
+            title=title,
+            legend=legend,
+            **{
+                f"{prefix}_{kw}": val
+                for prefix, kwargs in [("x", x_kwargs), ("color", y_kwargs)]
+                for kw, val in kwargs.items()
+            }
+        )
+
+
+def _setup_stats_table_name(params: MicrobiomeParams):
+    if params.is_categorical:
+        stats_table = f"abund.varm.kruskal_{params.compare_by}"
+        stats_name = "Kruskal-Wallis H-test"
+    else:
+        stats_table = f"abund.varm.spearman_{params.compare_by}"
+        stats_name = "Spearman Rank Correlation"
+    return stats_table, stats_name
+
+
+def _view_orgs_assoc_with_clusters(mdata: MuData, params: MicrobiomeParams):
+    """Summarize the association of individual organisms with the variable"""
+
+    stats_table, stats_name = _setup_stats_table_name(params)
+    
+    view.markdown(mdata, text_value=f"""
+**Top Organisms Associated with {params.label}**
+                
+The table below shows the top features which are most strongly associated with
+the variable of interest ({params.label}).
+{stats_name} was used to identify the features which are most strongly
+associated with the variable.""", text_sidebar=True)
+
+    view.table(
+        mdata,
+        options_sort_axis_value=1,
+        options_sort_columns_sort_by_table_value=[stats_table],
+        options_sort_columns_sort_by_cname_value="pvalue",
+        options_sort_columns_sort_by_label_value="pvalue",
+        data_table_axis_value=1,
+        data_table_tables_value=[stats_table],
+        data_table_filter_cols_tables_value=[stats_table],
+        data_table_filter_cols_type_value="index",
+        data_table_filter_cols_expr_value="in",
+        data_table_filter_cols_cname_value="",
+        data_table_filter_cols_value_enum_value=[
+            "statistic",
+            "pvalue",
+            "neg_log10_pvalue",
+            "mean"
+        ],
+        data_table_filter_cols_value_enum_sidebar=True
+    )
+
+    view.plotly_scatter(
+        mdata,
+        data_axis_value=1,
+        data_columns_color_enabled_value=False,
+        data_columns_size_enabled_value=False,
+        data_columns_x_table_value=stats_table,
+        data_columns_x_cname_value="mean",
+        data_columns_x_label_value="Mean Abundance",
+        data_columns_x_label_sidebar=True,
+        data_columns_y_table_value=stats_table,
+        data_columns_y_cname_value="neg_log10_pvalue",
+        data_columns_y_label_value="-log10(p-value)",
+        data_columns_y_label_sidebar=True,
+        formatting_title_value=f"Association with {params.label} ({stats_name})",
+        formatting_title_sidebar=True,
+        scale_options_log_x_value=True,
+        scale_options_log_x_sidebar=True,
+        scale_options_log_y_sidebar=False,
+    )
+
+    view.markdown(mdata, text_value="""
 Each point represents a single microbe.
 The vertical position (y-axis) of each point shows the degree of association using the -log10(p-value).
-The x-axis shows the mean abundance of the microbe among the samples.""",
-            x="mean",
-            xlabel="Mean Abundance",
-            y="neg_log10_pvalue",
-            ylabel="-log10(p-value)",
-            table=stats_table,
-            axis=1,
+The x-axis shows the mean abundance of the microbe among the samples.""", text_sidebar=True)
+
+
+def _view_top_assoc_org(mdata: MuData, params: MicrobiomeParams):
+
+    stats_table, _ = _setup_stats_table_name(params)
+
+    # Plot the most strongly associated organism
+    org = mdata.mod["abund"].varm[stats_table.split(".")[-1]]["neg_log10_pvalue"].idxmax()
+    if params.is_categorical:
+        util.add_boxplot(
+            mdata,
+            title="",
+            legend=f"""The distribution of abundances for a single organism are shown
+across the different groups identified by '{params.label}'.""",
+            x_table="Observation Metadata",
+            x_cname=params.compare_by,
+            x_label=params.label,
+            y_table="abund.data",
+            y_cname=org,
+            y_label=org
+        )
+    else:
+        util.add_scatter(
+            mdata,
+            title="",
+            legend=f"""The abundance of a single organism is shown across the samples.
+The x-axis shows the value of {params.label} for each sample.
+The y-axis shows the relative abundance of a single organism.""",
+            x=params.compare_by,
+            xlabel=params.label,
+            y=org,
+            ylabel=org,
+            table=None,
+            axis=0,
             color_table=None,
             cname=None,
             label=None,
             is_categorical=False,
-            scale=None
+            scale=None,
+            xtable="Observation Metadata",
+            ytable="abund.data"
         )
 
-        # Plot the most strongly associated organism
-        org = mdata.mod["abund"].varm[stats_table.split(".")[-1]]["neg_log10_pvalue"].idxmax()
-        if params.is_categorical:
-            util.add_boxplot(
-                mdata,
-                title="",
-                legend=f"""The distribution of abundances for a single organism are shown
-across the different groups identified by '{params.label}'.""",
-                x_table="Observation Metadata",
-                x_cname=params.compare_by,
-                x_label=params.label,
-                y_table="abund.data",
-                y_cname=org,
-                y_label=org
-            )
-        else:
-            util.add_scatter(
-                mdata,
-                title="",
-                legend=f"""The abundance of a single organism is shown across the samples.
-The x-axis shows the value of {params.label} for each sample.
-The y-axis shows the relative abundance of a single organism.""",
-                x=params.compare_by,
-                xlabel=params.label,
-                y=org,
-                ylabel=org,
-                table=None,
-                axis=0,
-                color_table=None,
-                cname=None,
-                label=None,
-                is_categorical=False,
-                scale=None,
-                xtable="Observation Metadata",
-                ytable="abund.data"
-            )
+
+def _add_views(mdata: MuData, params: MicrobiomeParams):
+
+    if params.dataset_name:
+        view.markdown(mdata, f"### {params.dataset_name}", text_sidebar=True)
+
+    _view_stacked_bars(mdata, params)
+
+    _view_most_abundant_boxplot(mdata, params)
+
+    _view_umap(mdata, params)
+
+    _view_orgs_by_cluster(mdata, params)
+
+    # If a metadata column was selected
+    if params.compare_by:
+
+        _view_grouping_across_clusters(mdata, params)
+
+        _view_orgs_assoc_with_clusters(mdata, params)
+
+        _view_top_assoc_org(mdata, params)
