@@ -1,12 +1,12 @@
 import json
-from mudata_explorer.helpers.views import get_views
+from mudata_explorer.app.mdata import get_view
 from mudata_explorer.helpers.params import nest_params
 import streamlit as st
 
 
 @st.dialog("Figure Parameters", width='large')
 def show_view_sdk_snippet(ix: int):
-    view = get_views()[ix]
+    view = get_view(ix)
     st.code(sdk_snippet(view))
 
 

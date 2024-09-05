@@ -1,14 +1,13 @@
 from mudata_explorer.helpers.assets import make_process
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
-from mudata_explorer.app.mdata import set_mdata
 from mudata_explorer.helpers.io import read_h5mu
-from mudata_explorer.app.mdata import get_history
-from mudata_explorer.app.process import set_process
+from mudata_explorer.app.mdata import set_mdata
+from mudata_explorer.app.mdata import get_history, set_process
 from mudata_explorer.app.hash import get_dat_hash, set_mdata_hash, hash_dat
 
 
-def upload_mdata(container: DeltaGenerator):
+def upload_mdata(container: DeltaGenerator, id="main"):
     container.write("#### Load Data")
     h5mu_file = container.file_uploader(
         "**Upload MuData (.h5mu)**"
@@ -31,8 +30,8 @@ def upload_mdata(container: DeltaGenerator):
         container.write("Unique file hash not found in file name.")
 
     if container.button("Load Dataset", key="load-from-file"):
-        set_mdata(mdata)
-        set_mdata_hash(mdata_hash)
+        set_mdata(mdata, full=True, id=id)
+        set_mdata_hash(mdata_hash, id=id)
         st.switch_page("pages/views.py")
 
 

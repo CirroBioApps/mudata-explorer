@@ -15,9 +15,7 @@ def _load_url(url: str):
         return mu.read_h5mu(tmp.file.name)
 
 
-def load_url(url: str):
+def load_url(url: str, id="main"):
     mdata = _load_url(url)
     hydrate_uns(mdata)
-    set_mdata(mdata.copy())
-
-
+    set_mdata(mdata.copy(), id=id, full=True)

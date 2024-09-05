@@ -6,9 +6,9 @@ from streamlit.delta_generator import DeltaGenerator
 from plotly import io
 
 
-def show_provenance(loc: MuDataSlice, container: DeltaGenerator):
+def show_provenance(loc: MuDataSlice, container: DeltaGenerator, id="main"):
 
-    prov = query_provenance(loc)
+    prov = query_provenance(loc, id=id)
     if prov is not None:
         with container.expander(
             f"**Provenance: '{loc.address}'**"

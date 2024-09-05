@@ -3,20 +3,21 @@ import pandas as pd
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 from mudata_explorer.helpers import join_kws
-from mudata_explorer.app.mdata import get_mdata, has_mdata, get_provenance
+from mudata_explorer.app.mdata import get_mdata, get_mdata_exists, get_provenance
 from mudata_explorer.app.sidebar import setup_sidebar
 
 
-def summarize_mdata(container: DeltaGenerator):
+def summarize_mdata(container: DeltaGenerator, id="main"):
 
     container.write("**Current MuData**")
 
-    mdata = get_mdata()
-    if not has_mdata():
+    if not get_mdata_exists(id=id):
         container.write("No data loaded.")
         return
 
-    provenance = get_provenance()
+    mdata = get_mdata(id=id, full=False)
+
+    provenance = get_provenance(id=id)
 
     for mod_name, mod in mdata.mod.items():
         shape = mod.to_df().shape
@@ -43,12 +44,13 @@ def show_provenance(
             st.write(provenance.get(provenance_key))
 
 
-def display_table(container: DeltaGenerator):
+def display_table(container: DeltaGenerator, id="main"):
     """Allow the user to display a table of the data."""
 
-    mdata = get_mdata()
-    if not has_mdata():
+    if not get_mdata_exists(id=id):
         return
+
+    mdata = get_mdata(id=id, full=False)
 
     container.write("#### Display Table")
 

@@ -3,7 +3,6 @@ import pandas as pd
 from mudata_explorer.base.view import View
 from mudata_explorer.app.mdata import get_mdata
 import streamlit as st
-from streamlit.delta_generator import DeltaGenerator
 from typing import List, Optional
 import plotly.express as px
 from plotly import graph_objects as go

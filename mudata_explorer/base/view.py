@@ -1,5 +1,5 @@
 from typing import Optional
-from mudata_explorer.helpers.views import get_views, set_views
+from mudata_explorer.app.mdata import get_view, set_view
 from mudata_explorer.helpers.params import nest_params
 from mudata_explorer.base.base import MuDataAppAction
 import streamlit as st
@@ -27,6 +27,7 @@ class View(MuDataAppAction):
 
         # Load any params
         self.form.load(nest_params(params))
+        self.params = self.form.dehydrate()
 
         # Set any unstructured data
         self.uns = uns
@@ -114,9 +115,9 @@ class View(MuDataAppAction):
         """Save the values of the form to the MuData object."""
 
         # Get the views
-        views = get_views()
+        view = get_view(self.ix)
 
         # Set the params on the view
-        views[self.ix]["params"] = self.form.dehydrate()
+        view["params"] = self.form.dehydrate()
 
-        set_views(views)
+        set_view(self.ix, view)

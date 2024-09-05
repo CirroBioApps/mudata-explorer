@@ -2,7 +2,7 @@ import hashlib
 from typing import Union, Optional
 from mudata_explorer.app.mdata import add_history
 from mudata_explorer.helpers.timestamp import get_timestamp
-from mudata_explorer.app.mdata import get_mdata, has_mdata
+from mudata_explorer.app.mdata import get_mdata, get_mdata_exists
 import muon as mu
 from mudata_explorer.helpers.io import mdata_to_binary
 
@@ -17,23 +17,24 @@ def hash_dat(dat, n: Union[int, None] = 16):
     return hex
 
 
-def set_mdata_hash(mdata_hash: str):
+def set_mdata_hash(mdata_hash: str, id="main"):
     """Record the hash of the data in the history."""
     add_history(dict(
         process="data_hash",
         params=dict(
             hash=mdata_hash
         ),
-        timestamp=get_timestamp()
+        timestamp=get_timestamp(),
+        id=id
     ))
 
 
-def get_dat_hash(mdata: Optional[mu.MuData] = None):
-    if mdata is None and has_mdata() is False:
+def get_dat_hash(mdata: Optional[mu.MuData] = None, id="main"):
+    if mdata is None and get_mdata_exists(id=id) is False:
         return None, None, None
 
     if mdata is None:
-        mdata = get_mdata()
+        mdata = get_mdata(full=True, id=id)
 
     # Convert the MuData object to binary
     dat = mdata_to_binary(mdata)

@@ -1,3 +1,4 @@
+from copy import copy
 from collections import defaultdict
 from mudata_explorer.base.slice import MuDataSlice
 from mudata_explorer.helpers.io import json_safe, validate_json
@@ -11,25 +12,191 @@ import pandas as pd
 import streamlit as st
 
 
-def get_mdata() -> Union[None, mu.MuData]:
-    if "mdata" not in st.session_state:
-        mdata = None
-    else:
-        mdata = st.session_state["mdata"]
+"""
+The saving and loading of a MuData object in the streamlit
+session state involves splitting up each element of the
+object so that callback invalidation is limited to the smallest
+necessary scope.
 
-    if mdata is not None:
-        assert isinstance(mdata, mu.MuData)
-        if "mudata-explorer-process" not in mdata.uns.keys():
-            mdata.uns["mudata-explorer-process"] = {
-                "category": None,
-                "type": None,
-                "params": {}
-            }
+The top-level key will be mdata-{id}, where
+the default id is 'main'. This makes it possible to store
+multiple MuData elements in the session state.
+
+Everything apart from the mdata-* elements
+of .uns will be saved to mdata-{id}-data.
+
+The other attributes of .uns will be saved to
+mdata-{id}-{key} as appropriate.
+
+The one exception will be views, which will be saved
+using:
+
+- mdata-{id}-n_views: int
+- mdata-{id}-views-{ix}
+
+A boolean key will be used to note whether any data
+exists: mdata-{id}-exists
+"""
+
+#####################
+# GET / SET METHODS #
+#####################
+
+def _session_key(attribute: str, id="main"):
+    return f"mdata-{id}-{attribute}"
+
+
+def _get_mdata_elem(
+    attribute: str,
+    default=None,
+    id="main"
+):
+
+    return copy(st.session_state.get(
+        _session_key(attribute, id=id),
+        default=default
+    ))
+
+
+def _set_mdata_elem(
+    attribute: str,
+    value=None,
+    id="main"
+):
+
+    st.session_state[_session_key(attribute, id=id)] = copy(value)
+
+
+def get_mdata_exists(id="main") -> bool:
+    return _get_mdata_elem("exists", default=False, id=id)
+
+
+def set_mdata_exists(exists: bool, id="main"):
+    assert isinstance(exists, bool)
+    _set_mdata_elem("exists", value=exists, id=id)
+
+
+def get_view(ix: int, id="main") -> dict:
+    view = _get_mdata_elem(f"views-{ix}", id=id)
+    assert view is not None, f"No view exists with ix={ix}"
+    return view
+
+
+def set_view(ix: int, view: dict, id="main"):
+    _set_mdata_elem(f"views-{ix}", value=view, id=id)
+
+
+def get_views(id="main") -> List[dict]:
+    return [
+        get_view(ix, id=id)
+        for ix in range(_get_mdata_elem("n_views", default=0, id=id))
+    ]
+
+
+def set_views(views: List[dict], id="main"):
+    assert isinstance(views, list)
+    _set_mdata_elem("n_views", value=len(views), id=id)
+    for ix, view in enumerate(views):
+        assert isinstance(view, dict)
+        set_view(ix, view, id=id)
+
+
+def get_process(id="main") -> dict:
+    default_process = {"category": None, "type": None, "params": {}}
+    return json_safe(
+        _get_mdata_elem("process", default=default_process, id=id)
+    )
+
+
+def set_process(process, id="main"):
+    _set_mdata_elem("process", value=process, id=id)
+
+
+def get_settings(id="main") -> dict:
+    return json_safe(_get_mdata_elem("settings", default={}, id=id))
+
+
+def set_settings(settings, id="main"):
+    assert isinstance(settings, dict)
+    # Make sure that the data is JSON serializable
+    settings = validate_json(settings)
+    _set_mdata_elem("settings", value=settings, id=id)
+
+
+def get_history(id="main", exclude=[]) -> List[dict]:
+    return [
+        h for h in json_safe(
+            _get_mdata_elem("history", default=[], id=id)
+        )
+        if h.get("process") not in exclude
+    ]
+
+
+def has_history(id="main", exclude=[]) -> bool:
+    return len(get_history(id=id, exclude=exclude)) > 0
+
+
+def set_history(history: list, id="main"):
+    assert isinstance(history, list)
+
+    # Make sure that the data is JSON serializable
+    history = validate_json(history)
+
+    _set_mdata_elem("history", value=history, id=id)
+
+
+def add_history(event: dict, id="main"):
+    history = get_history(id=id)
+    history.insert(0, event)
+    set_history(history, id=id)
+
+
+def get_provenance(id="main") -> Dict[str, dict]:
+    return json_safe(
+        _get_mdata_elem("provenance", default={}, id=id)
+    )
+
+def query_provenance(loc: MuDataSlice, id="main") -> Union[None, dict]:
+    provenance = get_provenance(id=id)
+    return provenance.get(loc.dehydrate(), None)
+
+
+def set_provenance(provenance, id="main"):
+    # Make sure that the data is JSON serializable
+    provenance = validate_json(provenance)
+
+    _set_mdata_elem("provenance", value=provenance, id=id)
+
+
+def add_provenance(
+    loc: MuDataSlice,
+    event: dict,
+    id="main"
+):
+    provenance = get_provenance(id=id)
+    provenance[loc.dehydrate()] = event
+    set_provenance(provenance, id=id)
+
+
+def get_mdata(full=False, id="main") -> Union[None, mu.MuData]:
+    """
+    Rebuild a single MuData object from all of the elements
+    in the different parts of the session state.
+    """
+
+    if not get_mdata_exists(id=id):
+        return
+
+    mdata = _get_mdata_elem("data", id=id)
+    assert isinstance(mdata, mu.MuData)
+
+    if full:
+        mdata.uns["mudata-explorer-process"] = get_process(id=id)
+        mdata.uns["mudata-explorer-views"] = get_views(id=id)
+        mdata.uns["mudata-explorer-history"] = get_history(id=id)
+        mdata.uns["mudata-explorer-provenance"] = get_provenance(id=id)
+
     return mdata
-
-
-def has_mdata() -> bool:
-    return len(list_modalities()) > 0
 
 
 def set_mdata(
@@ -37,7 +204,9 @@ def set_mdata(
     timestamp: Union[None, str] = None,
     process: Union[None, str] = None,
     params: Union[None, Dict[str, Any]] = None,
-    updated_keys: Union[List[str], str] = None
+    updated_keys: Union[List[str], str] = None,
+    full=False,
+    id="main"
 ):
     """
     Set the MuData object
@@ -53,7 +222,28 @@ def set_mdata(
         updated_keys = List[str] e.g. ["rna.X", "rna.obs", "rna.var"]
     """
 
+    # Make sure that the object is of the right type
     assert isinstance(mdata, mu.MuData), type(mdata)
+
+    # Mark that the mdata exists
+    set_mdata_exists(True, id=id)
+
+    # Save the MuData object
+    _set_mdata_elem("data", value=mdata, id=id)
+
+    if full:
+        # If any of the components exist, add them to the session state
+        if mdata.uns.get("mudata-explorer-views") is not None:
+            set_views(mdata.uns.get("mudata-explorer-views"), id=id)
+        if mdata.uns.get("mudata-explorer-process") is not None:
+            set_process(mdata.uns.get("mudata-explorer-process"), id=id)
+        if mdata.uns.get("mudata-explorer-settings") is not None:
+            set_settings(mdata.uns.get("mudata-explorer-settings"), id=id)
+        if mdata.uns.get("mudata-explorer-history") is not None:
+            set_history(mdata.uns.get("mudata-explorer-history"), id=id)
+        if mdata.uns.get("mudata-explorer-provenance") is not None:
+            set_provenance(mdata.uns.get("mudata-explorer-provenance"), id=id)
+
     if (
         timestamp is not None or
         process is not None or
@@ -67,21 +257,19 @@ def set_mdata(
         )
 
         # Add the event to the history
-        add_history(event, mdata)
+        add_history(event, id=id)
 
         # If any updated keys were provided
         if isinstance(updated_keys, str):
             updated_keys = [updated_keys]
         if isinstance(updated_keys, list):
             for kw in updated_keys:
-                add_provenance(kw, event, mdata)
-
-    st.session_state["mdata"] = mdata
+                add_provenance(kw, event, id=id)
 
 
-def setup_mdata():
+def setup_mdata(id="main"):
     mdata = _setup_mdata()
-    set_mdata(mdata)
+    set_mdata(mdata, id=id)
 
 
 def _setup_mdata() -> mu.MuData:
@@ -96,8 +284,8 @@ def _setup_mdata() -> mu.MuData:
     return mdata
 
 
-def list_modalities():
-    mdata: mu.MuData = get_mdata()
+def list_modalities(id="main"):
+    mdata: mu.MuData = get_mdata(id=id, full=False)
     if mdata is None:
         return []
     mods = [
@@ -112,7 +300,7 @@ def _is_axis(axis: int):
     assert axis in [0, 1], f"Unexpected axis: {axis}"
 
 
-def tree_tables(axis: int) -> List[str]:
+def tree_tables(axis: int, id="main") -> List[str]:
     """
     Return a list of all tables in the MuData object.
     axis = 0 for observations, 1 for variables
@@ -121,29 +309,29 @@ def tree_tables(axis: int) -> List[str]:
 
     tables = []
 
-    if has_mdata():
+    if get_mdata_exists(id=id):
 
         # If the orientation is to observations,
         # and there is observation metadata
         if axis == 0:
-            if get_mdata().obs.shape[1] > 0:
+            if get_mdata(id=id, full=False).obs.shape[1] > 0:
                 tables.append("Observation Metadata")
 
         # Add tables for each modality
         tables.extend([
             join_kws(modality, table)
-            for modality in list_modalities()
-            for table in list_tables(modality, axis)
+            for modality in list_modalities(id=id)
+            for table in list_tables(modality, axis, id=id)
         ])
 
     return tables
 
 
-def list_tables(modality: str, axis: int):
-    if not has_mdata():
+def list_tables(modality: str, axis: int, id="main"):
+    if not get_mdata_exists(id=id):
         return []
     _is_axis(axis)
-    mdata = get_mdata()
+    mdata = get_mdata(id=id, full=False)
     adata: ad.AnnData = mdata.mod[modality]
     tables = ["data"]
     if axis == 0:
@@ -159,14 +347,14 @@ def list_tables(modality: str, axis: int):
     return tables
 
 
-def list_cnames(tables: Union[str, List[str]], axis=0):
+def list_cnames(tables: Union[str, List[str]], axis=0, id="main"):
 
     _is_axis(axis)
 
-    if not has_mdata():
+    if not get_mdata_exists(id=id):
         return []
 
-    mdata = get_mdata()
+    mdata = get_mdata(id=id, full=False)
 
     if isinstance(tables, str) and len(tables) > 0:
         return get_table_cnames(tables, axis, mdata)
@@ -230,14 +418,15 @@ def get_dataframe_table(
     modality: str,
     table: str,
     axis: int,
-    mdata: Optional[mu.MuData] = None
+    mdata: Optional[mu.MuData] = None,
+    id="main"
 ) -> pd.DataFrame:
 
     _is_axis(axis)
 
     # Get the complete set of data
     if mdata is None:
-        mdata = get_mdata()
+        mdata = get_mdata(id=id, full=False)
 
     # Special case for observation metadata
     if axis == 0 and table == "metadata":
@@ -265,9 +454,10 @@ def get_dataframe_table(
 
 
 def join_dataframe_tables(
-    tables: List[str],
+    tables: Union[List[str], str],
     axis: int,
-    mdata: Optional[mu.MuData] = None
+    mdata: Optional[mu.MuData] = None,
+    id="main"
 ) -> pd.DataFrame:
     """
     Tables from the same modality:
@@ -286,14 +476,13 @@ def join_dataframe_tables(
         tables = [tables]
 
     for table in tables:
-        assert table is not None
         if table == "Observation Metadata":
             assert axis == 0
             modality = 'None'
-            df = get_dataframe_table(None, "metadata", axis, mdata=mdata)
+            df = get_dataframe_table(None, "metadata", axis, mdata=mdata, id=id)
         elif '.' in table:
             modality, attr = table.split(".", 1)
-            df = get_dataframe_table(modality, attr, axis, mdata=mdata)
+            df = get_dataframe_table(modality, attr, axis, mdata=mdata, id=id)
         else:
             raise ValueError(f"Could not find table: {table}")
 
@@ -330,7 +519,8 @@ def get_dataframe_column(
     mdata: Optional[mu.MuData],
     axis: int,
     table: List[str],
-    cname: str
+    cname: str,
+    id="main"
 ):
     if table is None:
         return
@@ -340,7 +530,8 @@ def get_dataframe_column(
     df = join_dataframe_tables(
         table,
         axis,
-        mdata=mdata
+        mdata=mdata,
+        id=id
     )
     # Make sure that the column is present
     assert cname in df.columns, f"Could not find column: {cname} in table {table} (axis={axis})"
@@ -360,7 +551,8 @@ def save_annot(
     column_dat: Union[pd.Series, pd.DataFrame],
     params: dict,
     process_type: str,
-    figures: Optional[List[dict]]
+    figures: Optional[List[dict]],
+    id="main"
 ):
 
     # Write the data to the specified address
@@ -378,13 +570,13 @@ def save_annot(
     # Save the results
 
     # Update the MuData object
-    set_mdata(mdata)
+    set_mdata(mdata, full=False, id=id)
 
     # Add it to the history
-    add_history(event)
+    add_history(event, id=id)
 
     # Mark the source of the table which was added
-    add_provenance(loc, event)
+    add_provenance(loc, event, id=id)
 
 
 def _overlapping_obs(mdata: mu.MuData, df: pd.DataFrame):
@@ -404,10 +596,10 @@ def _overlapping_obs(mdata: mu.MuData, df: pd.DataFrame):
 
 
 def add_modality(
-    mdata: mu.MuData,
+    mdata: Optional[mu.MuData],
     mod_name: str,
     df: pd.DataFrame
-):
+) -> mu.MuData:
     """Add a new modality to the MuData object."""
 
     # If the MuData object is None, create a new one
@@ -477,82 +669,12 @@ def add_mdata_uns(mdata: mu.MuData):
             mdata.uns[f"mudata-explorer-{kw}"] = val
 
 
-def add_history(event: dict):
-    if not has_mdata():
-        return
-    history = get_history()
-    history.insert(0, event)
-    set_history(history)
-
-
-def get_history(exclude=[]) -> List[dict]:
-    if not has_mdata():
-        return []
-    else:
-        return [
-            h for h in json_safe(
-                get_mdata().uns.get("mudata-explorer-history", [])
-            )
-            if h.get("process") not in exclude
-        ]
-
-
-def has_history(exclude=[]) -> bool:
-    return len(get_history(exclude=exclude)) > 0
-
-
-def set_history(history: dict):
-    mdata = get_mdata()
-    assert isinstance(mdata, mu.MuData)
-
-    # Make sure that the data is JSON serializable
-    history = validate_json(history)
-
-    mdata.uns["mudata-explorer-history"] = history
-    set_mdata(mdata)
-
-
-def get_provenance() -> Dict[str, dict]:
-    if not has_mdata():
-        return {}
-
-    mdata = get_mdata()
-    assert isinstance(mdata, mu.MuData), type(mdata)
-
-    return json_safe(mdata.uns.get("mudata-explorer-provenance", {}))
-
-
-def query_provenance(loc: MuDataSlice) -> Union[None, dict]:
-    provenance = get_provenance()
-    return provenance.get(loc.dehydrate(), None)
-
-
-def set_provenance(provenance: dict):
-    mdata = get_mdata()
-    assert isinstance(mdata, mu.MuData), type(mdata)
-
-    # Make sure that the data is JSON serializable
-    provenance = validate_json(provenance)
-
-    mdata.uns["mudata-explorer-provenance"] = provenance
-    set_mdata(mdata)
-
-
-def add_provenance(
-    loc: MuDataSlice,
-    event: dict
-):
-    provenance = get_provenance()
-    provenance[loc.dehydrate()] = event
-    set_provenance(provenance)
-
-
-def get_supp_figs() -> List[str]:
+def get_supp_figs(id="main") -> List[str]:
     """Return the list of figures which are stored in the provenance."""
 
     return [
         f"{loc}:{ix}"
-        for loc, prov in get_provenance().items()
+        for loc, prov in get_provenance(id=id).items()
         if prov.get("figures") is not None
         for ix, fig in enumerate(prov["figures"])
         if fig is not None

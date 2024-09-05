@@ -89,7 +89,8 @@ def _cirro_login_sub(auth_io: StringIO, base_url: str):
 
 def load_from_cirro(
     filter_process_ids: Optional[List[str]] = None,
-    show_link=True
+    show_link=True,
+    id="main"
 ):
 
     # If the Cirro client has not been set up,
@@ -124,8 +125,8 @@ def load_from_cirro(
     _, hash, _ = get_dat_hash(mdata)
 
     hydrate_uns(mdata)
-    set_mdata(mdata)
-    set_mdata_hash(hash)
+    set_mdata(mdata, full=True, id=id)
+    set_mdata_hash(hash, id=id)
     st.switch_page("pages/views.py")
 
 
@@ -147,7 +148,7 @@ def _load_dataset_url(
     return f"{app_url}/cirro_load?{query_args}"
 
 
-def save_to_cirro():
+def save_to_cirro(id="main"):
 
     st.write("#### Save to Cirro")
 
@@ -178,7 +179,7 @@ def save_to_cirro():
         return
 
     # Get the active dataset
-    mdata = get_mdata()
+    mdata = get_mdata(id=id, full=True)
 
     # If there is no active dataset
     if mdata is None:
@@ -210,7 +211,7 @@ def save_to_cirro():
                 upload_folder=tmp
             )
         except Exception as e:
-            st.error(f"Error: {e}")
+            st.exception(e)
             return
 
     st.write(
@@ -234,7 +235,7 @@ def _select_project(key: str) -> DataPortalProject:
     # If there is an error
     except Exception as e:
         # Report it to the user
-        st.error(f"Error: {e}")
+        st.exception(e)
         util.clear_cirro_client()
 
     # If a project is supplied in the query string, use it
@@ -275,7 +276,7 @@ def _select_dataset(
     try:
         datasets = project.list_datasets()
     except Exception as e:
-        st.error(f"Error: {e}")
+        st.exception(e)
         util.clear_cirro_client()
 
     # Filter down to the datasets which have parsing configured

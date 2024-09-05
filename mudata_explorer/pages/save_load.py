@@ -1,7 +1,7 @@
 import streamlit as st
 from mudata_explorer.helpers import save_load
 from mudata_explorer.app.sidebar import setup_sidebar
-from mudata_explorer.app.mdata import has_mdata
+from mudata_explorer.app.mdata import get_mdata_exists
 
 
 def run():
@@ -16,14 +16,14 @@ def run():
             icon=":material/download:"
         )
 
-        if has_mdata():
+        if get_mdata_exists():
             st.page_link(
                 "pages/cirro_save.py",
                 label="Save Data To Cirro",
                 icon=":material/save:"
             )
 
-    if has_mdata():
+    if get_mdata_exists():
         save_load.download_mdata(
             st.container(border=True)
         )

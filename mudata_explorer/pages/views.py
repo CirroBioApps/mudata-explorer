@@ -1,7 +1,7 @@
-from mudata_explorer.helpers.views import get_views, set_views, delete_view, duplicate_view
+from mudata_explorer.helpers.views import delete_view, duplicate_view
 from mudata_explorer.helpers.add_view import add_view
 from mudata_explorer.app.sidebar import get_editable_flag, setup_sidebar
-from mudata_explorer.app.mdata import get_mdata
+from mudata_explorer.app.mdata import get_views, set_views, get_mdata_exists, get_view
 from mudata_explorer.app.query_params import set_edit_view_flag
 from mudata_explorer.app.query_params import get_edit_view_flag
 from mudata_explorer.base.view import View
@@ -164,7 +164,7 @@ def run():
         )
     )
 
-    if get_mdata() is None:
+    if not get_mdata_exists():
         st.page_link(
             "pages/tables.py",
             label="Upload data to get started",
@@ -195,17 +195,14 @@ def run_edit_view():
     # The view to edit
     edit_ix = get_edit_view_flag()
 
-    # Get the list of all views defined in the dataset
-    views = get_views()
-
-    if len(views) < (edit_ix + 1):
-        st.error("No views to edit.")
+    # Get the view to edit
+    view = get_view(edit_ix)
 
     # Instantiate the view to edit
     view = make_view(
         ix=edit_ix,
-        type=views[edit_ix]['type'],
-        params=views[edit_ix]['params']
+        type=view['type'],
+        params=view['params']
     )
 
     # Let the user modify the view type
@@ -243,7 +240,7 @@ def run_edit_view():
         view = make_view(
             ix=edit_ix,
             type=selected_type,
-            params=views[edit_ix]['params']
+            params=view.form.dehydrate()
         )
 
     # Render the input form
@@ -298,7 +295,7 @@ def view_editable():
             try:
                 view.display_form()
             except Exception as e:
-                st.error(str(e))
+                st.exception(e)
 
         # Let the user run the method, catching any errors
         if not view.form.complete:

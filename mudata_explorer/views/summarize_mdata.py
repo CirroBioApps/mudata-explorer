@@ -1,4 +1,5 @@
 from mudata_explorer.base.view import View
+from mudata_explorer.app import get_mdata
 import streamlit as st
 
 
@@ -12,7 +13,7 @@ class SummarizeMuData(View):
 
     def display(self):
 
-        mdata = self.get_mdata()
+        mdata = get_mdata(full=False)
 
         if (
             mdata is None or

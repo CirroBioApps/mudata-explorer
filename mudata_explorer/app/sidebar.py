@@ -1,8 +1,7 @@
 import streamlit as st
 from streamlit.errors import StreamlitAPIException
 from typing import Union, List
-from mudata_explorer.app.mdata import get_mdata
-from mudata_explorer.app.mdata import has_history
+from mudata_explorer.app import mdata
 from mudata_explorer.app.query_params import get_editable_flag, update_edit_views
 from mudata_explorer.app.query_params import check_file_url
 from mudata_explorer.helpers.save_load import load_history
@@ -31,11 +30,11 @@ def sidebar_toggle_editable():
     )
 
 
-def sidebar_load_history():
-    if get_mdata() is None:
+def sidebar_load_history(id="main"):
+    if not mdata.get_mdata_exists(id=id):
         return
 
-    if not has_history(exclude=['add_data', 'add_view']):
+    if not mdata.has_history(exclude=['add_data', 'add_view'], id=id):
         return
 
     if st.sidebar.button("Rerun Analysis"):

@@ -2,10 +2,10 @@ import pandas as pd
 from mudata_explorer.helpers.assets import asset_categories, filter_by_category
 from mudata_explorer.helpers.assets import asset_dataframe
 from mudata_explorer.helpers.assets import all_processes, make_process
-from mudata_explorer.app.process import get_process, update_process, update_process_on_change
+from mudata_explorer.app.process import update_process, update_process_on_change
 from mudata_explorer.app.sidebar import setup_sidebar
 from mudata_explorer.app.provenance import show_provenance
-from mudata_explorer.app.mdata import has_mdata
+from mudata_explorer.app.mdata import get_mdata_exists, get_process
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 
@@ -73,7 +73,7 @@ def run():
 
     container.write("#### Analyze Data")
 
-    if not has_mdata():
+    if not get_mdata_exists():
         container.page_link(
             "pages/tables.py",
             label="Upload data to get started",

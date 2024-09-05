@@ -1,17 +1,18 @@
 from streamlit.delta_generator import DeltaGenerator
-from mudata_explorer.app.mdata import has_mdata, get_mdata
+from mudata_explorer.app.mdata import get_mdata_exists, get_mdata
 from plotly import graph_objects as go
 
 
 def plot_mdata(
     container: DeltaGenerator,
     hspace=10,
-    vspace=10
+    vspace=10,
+    id="main"
 ):
-    if not has_mdata():
+    if not get_mdata_exists(id=id):
         return
 
-    mdata = get_mdata()
+    mdata = get_mdata(id=id, full=False)
 
     # Set up a figure
     fig = go.Figure()

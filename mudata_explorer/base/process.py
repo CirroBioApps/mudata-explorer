@@ -1,8 +1,9 @@
 from typing import Dict, List, Optional, Union, Generator
 import numpy as np
 import pandas as pd
-from mudata_explorer.app.mdata import get_mdata, set_mdata
+from mudata_explorer.app.mdata import get_mdata
 from mudata_explorer.app.mdata import save_annot
+from mudata_explorer.app.mdata import get_process, set_process
 from mudata_explorer.base.base import MuDataAppAction
 from mudata_explorer.base.slice import MuDataSlice
 from mudata_explorer.helpers.params import nest_params
@@ -146,14 +147,15 @@ class Process(MuDataAppAction):
         self,
         output_kw: str,
         res: Union[pd.Series, pd.DataFrame],
-        figures: Optional[List[dict]] = None
+        figures: Optional[List[dict]] = None,
+        id="main"
     ):
 
         assert output_kw in self.outputs, f"Output {output_kw} not found"
 
         # Get the MuData object
         if self.mdata is None:
-            mdata = get_mdata()
+            mdata = get_mdata(id=id, full=False)
         else:
             mdata = self.mdata
 
@@ -168,7 +170,8 @@ class Process(MuDataAppAction):
                 res,
                 self.dehydrate(),
                 self.type,
-                figures
+                figures,
+                id=id
             )
 
     def execute(self):
@@ -177,19 +180,19 @@ class Process(MuDataAppAction):
     def param_key(self, kw):
         return f"process-{kw}"
 
-    def update_view_param(self, kw, value):
-        # Get the MuData object
-        mdata = get_mdata()
+    def update_view_param(self, kw, value, id="main"):
+        # Get the current process
+        process = get_process(id=id)
 
         # Modify the value of this param for this view
-        if "params" not in mdata.uns["mudata-explorer-process"]:
-            mdata.uns["mudata-explorer-process"]["params"] = {}
+        if "params" not in process:
+            process["params"] = {}
 
         # Set the value of the parameter
-        mdata.uns["mudata-explorer-process"]["params"][kw] = value
+        process["params"][kw] = value
 
-        # Save the MuData object
-        set_mdata(mdata)
+        # Save the process definition
+        set_process(process=process, id=id)
 
         # Also update the params object
         self.params[kw] = value

@@ -36,7 +36,7 @@ def list_files(
     # If there is an error
     except Exception as e:
         # Report it to the user
-        st.error(f"Error: {e}")
+        st.exception(e)
         clear_cirro_client()
 
     # If a pattern was provided

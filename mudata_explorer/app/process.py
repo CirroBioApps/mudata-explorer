@@ -1,28 +1,9 @@
 import json
 from mudata_explorer.helpers.params import nest_params
-from mudata_explorer.app.mdata import has_mdata, get_mdata, setup_mdata, set_mdata
+from mudata_explorer.app import mdata as mdata_funcs
 from mudata_explorer.helpers.io import json_safe
 import muon as mu
 import streamlit as st
-
-
-def get_process() -> dict:
-    if not has_mdata():
-        return {}
-    mdata = get_mdata()
-    assert isinstance(mdata, mu.MuData), type(mdata)
-    return json_safe(mdata.uns.get("mudata-explorer-process", {}))
-
-
-def set_process(process: dict) -> None:
-    if not has_mdata():
-        setup_mdata()
-
-    mdata = get_mdata()
-    assert mdata is not None
-    assert isinstance(mdata, mu.MuData), type(mdata)
-    mdata.uns["mudata-explorer-process"] = process
-    set_mdata(mdata)
 
 
 def update_process_on_change(kw) -> None:
@@ -30,10 +11,10 @@ def update_process_on_change(kw) -> None:
     update_process(kw, val)
 
 
-def update_process(kw, val) -> None:
-    process = get_process()
+def update_process(kw, val, id="main") -> None:
+    process = mdata_funcs.get_process(id=id)
     process[kw] = val
-    set_process(process)
+    mdata_funcs.set_process(process, id=id)
 
 
 def process_sdk_snippet(prov: dict):

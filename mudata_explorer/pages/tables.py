@@ -1,7 +1,7 @@
 from mudata_explorer.base.slice import MuDataSlice
 from mudata_explorer.app.sidebar import setup_sidebar
 from mudata_explorer.helpers.join_kws import join_kws
-from mudata_explorer.app.mdata import has_mdata, setup_mdata, get_mdata, set_mdata, add_modality, list_modalities
+from mudata_explorer.app.mdata import get_mdata_exists, setup_mdata, get_mdata, set_mdata, add_modality, list_modalities
 import pandas as pd
 from streamlit.delta_generator import DeltaGenerator
 import streamlit as st
@@ -107,7 +107,8 @@ def show_table(
     slot: str,
     mod: Optional[str] = None,
     attr: Optional[str] = None,
-    editable=True
+    editable=True,
+    id="main"
 ):
     """Show the user a table and let them upload a new version."""
 
@@ -122,7 +123,7 @@ def show_table(
         axis=slot.startswith("var"),
         attr=attr
     )
-    df = slice.dataframe(get_mdata())
+    df = slice.dataframe(get_mdata(id=id, full=False))
     if isinstance(df, str):
         st.write(df)
         return
@@ -194,14 +195,14 @@ def upload_csv_modal(slice: MuDataSlice, kw: str):
             )
 
             # If there is no data, set it up
-            if not has_mdata():
+            if not get_mdata_exists():
                 # A new dataset can only be set up with observation metadata
                 # or a new set of observation data
                 assert slice.slot == "obs", slice.slot
                 setup_mdata()
 
             # Get the MuData object
-            mdata = get_mdata()
+            mdata = get_mdata(full=False)
 
             # Add the new data
             slice.write(
@@ -209,30 +210,32 @@ def upload_csv_modal(slice: MuDataSlice, kw: str):
                 new_df
             )
 
-            set_mdata(mdata)
+            set_mdata(mdata, full=False)
             st.rerun()
 
 
-def show_modality(mod_name: str):
+def show_modality(mod_name: str, id="main"):
 
     # Display the observation data, but don't let the user modify it
     show_table(
         label=f"{mod_name}: Observation Data",
         slot="X",
         mod=mod_name,
-        editable=False
+        editable=False,
+        id=id
     )
 
     # Let the user modify the variable annotations
     show_table(
         label=f"{mod_name}: Variable Metadata",
         slot="var",
-        mod=mod_name
+        mod=mod_name,
+        id=id
     )
 
     # For any other tables which have been added
     for slot in ["varm", "varp", "obsm", "obsp"]:
-        for attr in getattr(get_mdata().mod[mod_name], slot).keys():
+        for attr in getattr(get_mdata(id=id, full=False).mod[mod_name], slot).keys():
             show_table(
                 label=f"{mod_name}: {slot}[{attr}]",
                 slot=slot,
@@ -242,7 +245,7 @@ def show_modality(mod_name: str):
 
 
 @st.dialog("New Measurement Data", width="large")
-def add_modality_modal():
+def add_modality_modal(id="main"):
 
     # Let the user upload a new version
     new_df = _get_table(
@@ -252,8 +255,8 @@ def add_modality_modal():
     )
 
     # Find the number of observations which overlap with the existing .obs
-    if new_df is not None and has_mdata():
-        obs = get_mdata().obs
+    if new_df is not None and get_mdata_exists():
+        obs = get_mdata(id=id, full=False).obs
         overlap = set(obs.index).intersection(set(new_df.index))
         if len(overlap) > 0:
             st.write(
@@ -270,7 +273,7 @@ def add_modality_modal():
         st.error("The measurement name cannot contain a period.")
         return
 
-    if has_mdata() and mod_name in list_modalities():
+    if get_mdata_exists(id=id) and mod_name in list_modalities(id=id):
         st.write("A measurement with this name already exists.")
         return
 
@@ -300,7 +303,7 @@ def add_modality_modal():
                 new_df = new_df.reindex(columns=subset_columns)
 
             # Add the new modality
-            mdata = get_mdata()
+            mdata = get_mdata(id=id, full=False)
             mdata = add_modality(
                 mdata,
                 mod_name,
@@ -308,7 +311,7 @@ def add_modality_modal():
             )
 
             # Add to the global scope
-            set_mdata(mdata)
+            set_mdata(mdata, id=id, full=False)
 
             # Rerun the page
             st.rerun()
