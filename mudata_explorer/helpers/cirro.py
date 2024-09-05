@@ -13,7 +13,10 @@ from mudata_explorer.helpers.cirro_readers import differential_abundance
 from mudata_explorer.helpers.cirro_readers import curatedMetagenomicData
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
-from streamlit.runtime.scriptrunner import script_run_context
+try:
+    from streamlit.runtime.scriptrunner_utils import script_run_context
+except ImportError:
+    from streamlit.runtime.scriptrunner import script_run_context
 from tempfile import TemporaryDirectory
 from threading import Thread
 from time import sleep
