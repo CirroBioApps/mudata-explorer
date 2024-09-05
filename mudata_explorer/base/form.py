@@ -1,6 +1,7 @@
 from mudata_explorer.helpers.join_kws import join_kws
 from mudata_explorer.app.query_params import get_edit_view_flag, get_editable_flag
 from mudata_explorer.app.mdata import get_supp_figs, tree_tables, join_dataframe_tables
+from mudata_explorer.app.mdata import get_view, set_view
 from mudata_explorer.base import all_transforms, get_transform
 import pandas as pd
 import plotly.express as px
@@ -8,14 +9,73 @@ import streamlit as st
 from typing import List, Optional, Dict, Any, Union
 
 
+def _render_key(ix: int, prefix: str) -> str:
+    return f"form-{ix}-{prefix}"
+
+
+def _watch(ix: int, prefix: str):
+    """
+    Watches for any changes to the value of the input element,
+    and updates the value of the element accordingly.
+    Can be overridden by child classes.
+    """
+    render_key = _render_key(ix, prefix)
+    if render_key in st.session_state:
+        value = st.session_state[render_key]
+        _save_value(ix, prefix, value)
+
+
+def _watch_enum(ix: int, prefix: str, enum: List[str], enumNames: Optional[List[str]]):
+    """Account for the case of enumNames."""
+    render_key = _render_key(ix, prefix)
+    value = st.session_state[render_key]
+    if value is None:
+        return
+    if enumNames is not None:
+        value = enum[enumNames.index(value)]
+    _save_value(ix, prefix, value)
+
+
+def _watch_enum_multi(ix: int, prefix: str, enum: List[str], enumNames: Optional[List[str]]):
+    """Account for the case of enumNames."""
+    render_key = _render_key(ix, prefix)
+    values = st.session_state[render_key]
+    if values is None:
+        values = []
+    if enumNames is not None:
+        values = [
+            enum[enumNames.index(val)]
+            for val in values
+        ]
+    _save_value(ix, prefix, values)
+
+
+def _save_value(ix: int, prefix: str, value: Any):
+    """
+    Save the value of the current element in the state.
+    """
+
+    # Get the params saved in the state for this view
+    view = get_view(ix)
+
+    # If the value does not match
+    if view["params"].get(prefix + ".value") != value:
+
+        # Update it
+        view["params"][prefix + ".value"] = value
+
+        # Save the state
+        set_view(ix=ix, view=view)
+
+
 class _SharedFunctions:
     def _kw(self, *kws):
         """Join the provided kws to self.prefix"""
         return join_kws(self.prefix, *kws)
     
-    def _render_key(self):
+    def _render_key(self) -> str:
         """Unique key used to identify an input element for a single form element."""
-        return f"form-{self.ix}-{self.prefix}"
+        return _render_key(self.ix, self.prefix)
     
     def _nest_outermost(self, schema: dict, prefix: Optional[str], ix: int):
         # If we are at the top level of the schema
@@ -59,7 +119,9 @@ class MuDataAppSidebarToggle(_SharedFunctions):
         st.checkbox(
             "Show in Sidebar",
             value=self.value,
-            key=self._render_key()
+            key=self._render_key(),
+            on_change=_watch,
+            args=(self.ix, self.prefix,)
         )
         self.value = st.session_state[self._render_key()]
 
@@ -91,7 +153,9 @@ class MuDataAppEnabledToggle(_SharedFunctions):
         st.checkbox(
             self.label,
             value=self.value,
-            key=self._render_key()
+            key=self._render_key(),
+            on_change=_watch,
+            args=(self.ix, self.prefix,)
         )
         self.value = st.session_state[self._render_key()]
 
@@ -338,30 +402,17 @@ class MuDataAppFormElement(_SharedFunctions):
                 return
         else:
             return
-        # At this point, the _render() function has been called
-        # which displays a form entry element to the user.
-        # If the value provided by the user has changed, then that
-        # new value will be updated by the element
-        self._watch()
 
     def _render(self):
         """
         Just show the label.
         Can be overridden by child classes.
         """
+
         if self.label is not None:
             st.markdown(self.label)
         if self.help is not None:
             st.markdown(self.help)
-
-    def _watch(self):
-        """
-        Watches for any changes to the value of the input element,
-        and updates the value of the element accordingly.
-        Can be overridden by child classes.
-        """
-        if self._render_key() in st.session_state:
-            self.value = st.session_state[self._render_key()]
 
     def parse_elem(self, elem: dict, elem_key: str):
         """Parse a single element of the form."""
@@ -546,6 +597,7 @@ class MuDataAppString(MuDataAppFormElement):
             assert len(self.enum) == len(self.enumNames)
 
     def _render(self):
+
         kwargs = dict(help=self.help, key=self._render_key())
         if self.enum:
             # Determine the index to select
@@ -560,29 +612,26 @@ class MuDataAppString(MuDataAppFormElement):
                 self.enum if self.enumNames is None else self.enumNames,
                 index=widget_ix,
                 placeholder=self.placeholder,
+                on_change=_watch_enum,
+                args=(self.ix, self.prefix, self.enum, self.enumNames),
                 **kwargs
             )
         elif self.multiline:
             st.text_area(
                 self.label,
                 self.value,
+                on_change=_watch,
+                args=(self.ix, self.prefix,),
                 **kwargs
             )
         else:
             st.text_input(
                 self.label,
                 self.value,
+                on_change=_watch,
+                args=(self.ix, self.prefix,),
                 **kwargs
             )
-
-    def _watch(self):
-        """Account for the case of enumNames."""
-        val = st.session_state[self._render_key()]
-        if val is None:
-            return
-        if self.enumNames is not None:
-            val = self.enum[self.enumNames.index(val)]
-        self.value = val
 
     def update_options(self, enum, enumNames=None):
         assert isinstance(enum, list), (enum, type(enum))
@@ -605,13 +654,16 @@ class MuDataAppFloat(MuDataAppFormElement):
         self.step = schema.get("step")
 
     def _render(self):
+
         st.number_input(
             self.label,
             min_value=self.min_value,
             max_value=self.max_value,
             step=self.step,
             value=self.value,
-            key=self._render_key()
+            key=self._render_key(),
+            on_change=_watch,
+            args=(self.ix, self.prefix,)
         )
 
 class MuDataAppBoolean(MuDataAppFormElement):
@@ -622,7 +674,9 @@ class MuDataAppBoolean(MuDataAppFormElement):
             self.label,
             self.value,
             key=self._render_key(),
-            help=self.help
+            help=self.help,
+            on_change=_watch,
+            args=(self.ix, self.prefix,)
         )
 
 class MuDataAppInteger(MuDataAppFormElement):
@@ -649,7 +703,9 @@ class MuDataAppInteger(MuDataAppFormElement):
             max_value=self.max_value,
             value=self.value,
             key=self._render_key(),
-            help=self.help
+            help=self.help,
+            on_change=_watch,
+            args=(self.ix, self.prefix,)
         )
 
 
@@ -671,6 +727,10 @@ class MuDataAppEnum(MuDataAppFormElement):
 
     def _render(self):
 
+        # If the value is a list
+        if isinstance(self.value, list):
+            self.value = self.value[0]
+
         # Determine the index to select
         if self.value is None:
             widget_ix = None
@@ -678,23 +738,17 @@ class MuDataAppEnum(MuDataAppFormElement):
             if self.value not in self.enum:
                 self.value = self.enum[0]
             widget_ix = self.enum.index(self.value)
+
         st.selectbox(
             self.label,
             self.enum if self.enumNames is None else self.enumNames,
             index=widget_ix,
             placeholder=self.placeholder,
             help=self.help,
-            key=self._render_key()
+            key=self._render_key(),
+            on_change=_watch_enum,
+            args=(self.ix, self.prefix, self.enum, self.enumNames,)
         )
-
-    def _watch(self):
-        """Account for the case of enumNames."""
-        val = st.session_state[self._render_key()]
-        if val is None:
-            return
-        if self.enumNames is not None:
-            val = self.enum[self.enumNames.index(val)]
-        self.value = val
 
     def update_options(self, enum, enumNames=None):
         assert isinstance(enum, list), (enum, type(enum))
@@ -745,20 +799,10 @@ class MuDataAppEnumMulti(MuDataAppFormElement):
             default=default,
             placeholder=self.placeholder,
             help=self.help,
-            key=self._render_key()
+            key=self._render_key(),
+            on_change=_watch_enum_multi,
+            args=(self.ix, self.prefix, self.enum, self.enumNames,)
         )
-
-    def _watch(self):
-        """Account for the case of enumNames."""
-        vals = st.session_state[self._render_key()]
-        if vals is None:
-            vals = []
-        if self.enumNames is not None:
-            vals = [
-                self.enum[self.enumNames.index(val)]
-                for val in vals
-            ]
-        self.value = vals
 
     def update_options(self, enum, enumNames=None):
         assert isinstance(enum, list), (enum, type(enum))
@@ -812,7 +856,12 @@ class MuDataAppDataFrame(MuDataAppFormElement):
             self._axis.value = 0
 
         self._columns = {
-            col_kw: MuDataAppDataFrameColumn(col_elem, prefix=self._kw("columns", col_kw), ix=self.ix)
+            col_kw: MuDataAppDataFrameColumn(
+                col_elem,
+                prefix=self._kw("columns", col_kw),
+                ix=self.ix,
+                axis=self._axis.value
+            )
             for col_kw, col_elem in elem.get("columns", {}).items()
         }
 
@@ -1199,7 +1248,7 @@ class MuDataAppDataFrame(MuDataAppFormElement):
 
 
 class MuDataAppDataFrameColumn(MuDataAppFormElement):
-    axis: int # Set by the parent method
+    axis: int # Updated by the parent method
     _table: MuDataAppString
     _cname: MuDataAppString
     _label: MuDataAppString
@@ -1208,15 +1257,17 @@ class MuDataAppDataFrameColumn(MuDataAppFormElement):
     _is_categorical: MuDataAppBoolean
     value: Optional[pd.Series]
 
-    def __init__(self, elem: Dict, prefix=None, ix=-1):
+    def __init__(self, elem: Dict, prefix=None, ix=-1, axis=0):
+        self.axis = axis
         elem["type"] = "column"
         super().__init__(elem, prefix, ix)
 
-        self._table = MuDataAppString(
+        self._table = MuDataAppEnum(
             dict(
                 type="string",
                 label="Select Table",
-                default=elem.get("table")
+                default=elem.get("table"),
+                enum=[elem.get("table")]
             ),
             self._kw("table"),
             self.ix
@@ -1272,7 +1323,9 @@ class MuDataAppDataFrameColumn(MuDataAppFormElement):
             # Select a table
             self._table.render()
 
-            if self._table.value is None or len(self._table.value) == 0:
+            if self._table.value is None \
+                or len(self._table.value) == 0 \
+                or any([v is None for v in self._table.value]):
                 return
 
             # Get the DataFrame
@@ -1330,6 +1383,10 @@ class MuDataAppDataFrameColumn(MuDataAppFormElement):
         if self.value is None:
             # Populate it
             self._build_dataframe(mdata=mdata)
+
+        # If the color scale has not been populated
+        if self._scale.value is None:
+            self._scale.value = "D3" if self._is_categorical.value else "bluered"
 
         return {
             **super().dump(mdata=mdata),
