@@ -77,13 +77,18 @@ def set_mdata_exists(exists: bool, id="main"):
 
 
 def get_view(ix: int, id="main") -> dict:
+    if ix == -1:
+        return get_process(id=id)
     view = _get_mdata_elem(f"views-{ix}", id=id)
     assert view is not None, f"No view exists with ix={ix}"
     return view
 
 
 def set_view(ix: int, view: dict, id="main"):
-    _set_mdata_elem(f"views-{ix}", value=view, id=id)
+    if ix == -1:
+        set_process(view, id=id)
+    else:
+        _set_mdata_elem(f"views-{ix}", value=view, id=id)
 
 
 def get_views(id="main") -> List[dict]:
