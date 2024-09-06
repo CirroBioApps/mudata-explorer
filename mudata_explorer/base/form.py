@@ -125,9 +125,11 @@ class _SharedFunctions:
         """
         if not isinstance(params, dict):
             self.value = params
-        elif "value" in params:
+            return
+
+        if "value" in params:
             self.value = params["value"]
-        elif "sidebar" in params and hasattr(self, 'sidebar'):
+        if "sidebar" in params and hasattr(self, 'sidebar'):
             self.sidebar.value = params["sidebar"]
 
 
@@ -154,7 +156,6 @@ class MuDataAppSidebarToggle(_SharedFunctions):
             args=(self.ix, self.prefix,),
             kwargs=dict(copy_to=copy_to)
         )
-        self.value = st.session_state[self._render_key()]
 
 
 class MuDataAppEnabledToggle(_SharedFunctions):
