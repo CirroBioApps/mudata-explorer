@@ -72,7 +72,7 @@ def _top_features_filter_cols(
 
 
 def parse_adata(adata: AnnData, groupby_var=False) -> Optional[MuData]:
-    
+
     mdata = _parse_adata(adata, groupby_var=groupby_var)
 
     params = _get_params(mdata)
@@ -107,6 +107,13 @@ def _parse_adata(adata: AnnData, groupby_var=False) -> MuData:
     # Optionally filter samples by sample metadata
     with st.container(border=1):
         adata = _filter_samples(adata)
+
+    # Coerce objects to str in the metadata table
+    adata.obs = adata.obs.astype({
+        cname: "str"
+        for cname, dtype in adata.obs.dtypes.items()
+        if dtype == "object"
+    })
 
     # Make a MuData object
     mdata = io.build_mdata(
