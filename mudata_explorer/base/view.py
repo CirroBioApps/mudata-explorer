@@ -117,6 +117,9 @@ class View(MuDataAppAction):
         # Get the views
         view = get_view(self.ix)
 
+        # Make sure that the type is up to date
+        view["type"] = self.type
+
         # Set the params on the view
         view["params"] = self.form.dehydrate()
 

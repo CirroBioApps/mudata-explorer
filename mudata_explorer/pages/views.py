@@ -221,6 +221,19 @@ def run_edit_view():
     # Get the assets needed to select from the filtered views
     df = asset_dataframe(filtered_views)
 
+    # If the selected type is not in the selected category
+    if view.type not in df["type"].tolist():
+
+        # Re-instantiate the view to edit
+        view = make_view(
+            ix=edit_ix,
+            type=df["type"].values[0],
+            params=view.form.dehydrate()
+        )
+
+        # Update the type of the view in the state
+        view.save_changes()
+        
     selected_name = st.selectbox(
         "Figure Type",
         df["name"].tolist(),
@@ -242,12 +255,17 @@ def run_edit_view():
             type=selected_type,
             params=view.form.dehydrate()
         )
-
-    # Render the input form
+        # Update the type of the view in the state
+        view.save_changes()
+        
+    # Render the input form and save any changes in the state
     view.display_form()
 
     # Show the display
-    view.display()
+    try:
+        view.display()
+    except Exception as e:
+        st.exception(e)
 
     st.button(
         ":information_source: SDK Snippet",
