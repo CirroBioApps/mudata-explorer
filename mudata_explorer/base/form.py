@@ -896,8 +896,6 @@ class MuDataAppDataFrame(MuDataAppFormElement):
             prefix=self._kw("axis"),
             ix=self.ix
         )
-        if self._axis.value is None:
-            _save_value(self.ix, self._axis.prefix, 0)
 
         self._columns = {
             col_kw: MuDataAppDataFrameColumn(
@@ -1020,10 +1018,9 @@ class MuDataAppDataFrame(MuDataAppFormElement):
             # Determine the axis
             self._axis.render()
 
-            # If no axis has been selected
+            # If none was selected, default to 0
             if self._axis.value is None:
-                self._complete = False
-                return
+                _save_value(self.ix, self._axis.prefix, 0)
 
             # The axes used for filtering must change
             # if the user changes the orientation
