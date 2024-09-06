@@ -11,6 +11,7 @@ from ._plotly_line import plotly_line # noqa
 from ._plotly_scatter import plotly_scatter # noqa
 from ._plotly_scatter_3d import plotly_scatter_3d # noqa
 from ._plotly_scatter_multi import plotly_scatter_multi # noqa
+from ._plotly_scatter_vectors import plotly_scatter_vectors # noqa
 from ._plotly_stacked_bars import plotly_stacked_bars # noqa
 from ._supporting_figure import supporting_figure # noqa
 from ._tss_tornado import tss_tornado # noqa
@@ -27,6 +28,7 @@ from ._plotly_line import plotly_line # noqa
 from ._plotly_scatter import plotly_scatter # noqa
 from ._plotly_scatter_3d import plotly_scatter_3d # noqa
 from ._plotly_scatter_multi import plotly_scatter_multi # noqa
+from ._plotly_scatter_vectors import plotly_scatter_vectors # noqa
 from ._plotly_stacked_bars import plotly_stacked_bars # noqa
 from ._seaborn_clustermap import seaborn_clustermap # noqa
 from ._supporting_figure import supporting_figure # noqa
