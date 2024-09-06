@@ -58,6 +58,12 @@ def pca(
     The degree to which each principal component captures the variance in the
     data is reported in the results as a percentage.
 
+    In addition to the coordinates in the embedded space, the loadings of each
+    component are also reported. These are the coefficients of the linear
+    combination of the original features that make up each component.
+    Those loadings can be used to interpret the meaning of each component, and
+    which of the original features contribute most to it.
+
     - [Wikipedia: Principal Component Analysis](https://en.wikipedia.org/wiki/Principal_component_analysis)
     - [Visual Explanation of PCA](https://towardsdatascience.com/principal-component-analysis-pca-explained-visually-with-zero-math-1cbf392b9e7d)
     
