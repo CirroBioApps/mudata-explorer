@@ -63,7 +63,8 @@ def run():
     elif source == 'Cirro':
         cirro.load_from_cirro(
             filter_process_ids=[
-                "ingest_biom"
+                "ingest_biom",
+                "process-nf-core-ampliseq-2-4-0"
             ],
             show_link=False
         )
