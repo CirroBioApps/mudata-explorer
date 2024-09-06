@@ -45,7 +45,7 @@ def seaborn_clustermap(
     **extra_params
 ):
     """
-    Display a heatmap with clustered rows and columnsusing Seaborn.
+    Display a heatmap with clustered rows and columns using Seaborn.
     """
 
     assert isinstance(mdata, MuData), "mdata must be a MuData object"

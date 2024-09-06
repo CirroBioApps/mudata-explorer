@@ -6,6 +6,7 @@ from .plotly.box_multi import PlotlyBoxMulti # noqa
 from .plotly.category_counts import PlotlyCategoryCount # noqa
 from .plotly.category_summarize_values import PlotlyCategorySummarizeValues # noqa
 from .plotly.contingency_table import PlotlyContingencyTable # noqa
+from .plotly.histogram import PlotlyHistogram # noqa
 from .plotly.line import PlotlyLine # noqa
 from .plotly.scatter import PlotlyScatter # noqa
 from .plotly.scatter_3d import PlotlyScatter3D # noqa

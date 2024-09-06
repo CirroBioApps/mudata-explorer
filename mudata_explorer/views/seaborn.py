@@ -13,7 +13,7 @@ class Clustermap(Seaborn):
 
     type = "seaborn-clustermap"
     name = "Clustermap (Seaborn)"
-    help_text = "Display a heatmap with clustered rows and columnsusing Seaborn."
+    help_text = "Display a heatmap with clustered rows and columns using Seaborn."
     schema = {
         "data": {
             "type": "dataframe",

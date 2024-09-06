@@ -77,6 +77,9 @@ and using a log scale for the x- and y-axes.
         if data is None:
             st.write("Please select a data table")
             return
+        if "x" not in data.columns or "y" not in data.columns:
+            st.write("Please select columns for the x and y axes")
+            return
         try:
             opacity = float(self.params["formatting.opacity"])
         except ValueError:
