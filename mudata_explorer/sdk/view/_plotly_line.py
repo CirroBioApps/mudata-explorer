@@ -8,7 +8,7 @@ from muon import MuData
 def plotly_line(
     mdata: MuData,
     data_sidebar=False,
-    data_axis_value=0,
+    data_axis_value=None,
     data_axis_sidebar=False,
     data_transforms_value=[],
     data_transforms_sidebar=False,

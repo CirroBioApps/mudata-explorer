@@ -8,7 +8,7 @@ from muon import MuData
 def t_test_ind(
     mdata: MuData,
     data_sidebar=False,
-    data_axis_value=0,
+    data_axis_value=None,
     data_axis_sidebar=False,
     data_transforms_value=[],
     data_transforms_sidebar=False,
@@ -41,7 +41,7 @@ def t_test_ind(
     data_filter_rows_value_str_value=None,
     data_filter_rows_value_str_sidebar=False,
     group_sidebar=False,
-    group_axis_value=0,
+    group_axis_value=None,
     group_axis_sidebar=False,
     group_transforms_value=[],
     group_transforms_sidebar=False,

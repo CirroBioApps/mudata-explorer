@@ -8,7 +8,7 @@ from muon import MuData
 def table(
     mdata: MuData,
     data_table_sidebar=False,
-    data_table_axis_value=0,
+    data_table_axis_value=None,
     data_table_axis_sidebar=False,
     data_table_transforms_value=[],
     data_table_transforms_sidebar=False,
@@ -41,7 +41,7 @@ def table(
     data_table_filter_rows_value_str_value=None,
     data_table_filter_rows_value_str_sidebar=False,
     options_sort_sidebar=False,
-    options_sort_axis_value=0,
+    options_sort_axis_value=None,
     options_sort_axis_sidebar=False,
     options_sort_transforms_value=[],
     options_sort_transforms_sidebar=False,

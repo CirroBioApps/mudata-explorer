@@ -8,7 +8,7 @@ from muon import MuData
 def spearman(
     mdata: MuData,
     table_data_sidebar=False,
-    table_data_axis_value=0,
+    table_data_axis_value=None,
     table_data_axis_sidebar=False,
     table_data_transforms_value=[],
     table_data_transforms_sidebar=False,
@@ -41,7 +41,7 @@ def spearman(
     table_data_filter_rows_value_str_value=None,
     table_data_filter_rows_value_str_sidebar=False,
     table_comparitor_sidebar=False,
-    table_comparitor_axis_value=0,
+    table_comparitor_axis_value=None,
     table_comparitor_axis_sidebar=False,
     table_comparitor_transforms_value=[],
     table_comparitor_transforms_sidebar=False,

@@ -8,7 +8,7 @@ from muon import MuData
 def shannon_diversity(
     mdata: MuData,
     table_data_sidebar=False,
-    table_data_axis_value=0,
+    table_data_axis_value=None,
     table_data_axis_sidebar=False,
     table_data_transforms_value=[],
     table_data_transforms_sidebar=False,

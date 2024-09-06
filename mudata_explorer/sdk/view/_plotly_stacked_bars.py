@@ -8,7 +8,7 @@ from muon import MuData
 def plotly_stacked_bars(
     mdata: MuData,
     table_data_sidebar=False,
-    table_data_axis_value=0,
+    table_data_axis_value=None,
     table_data_axis_sidebar=False,
     table_data_transforms_value=[],
     table_data_transforms_sidebar=False,
@@ -43,7 +43,7 @@ def plotly_stacked_bars(
     table_category_enabled_value=True,
     table_category_enabled_sidebar=False,
     table_category_sidebar=False,
-    table_category_axis_value=0,
+    table_category_axis_value=None,
     table_category_axis_sidebar=False,
     table_category_transforms_value=[],
     table_category_transforms_sidebar=False,

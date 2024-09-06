@@ -8,7 +8,7 @@ from muon import MuData
 def group_freq(
     mdata: MuData,
     data_table_sidebar=False,
-    data_table_axis_value=0,
+    data_table_axis_value=None,
     data_table_axis_sidebar=False,
     data_table_transforms_value=[],
     data_table_transforms_sidebar=False,

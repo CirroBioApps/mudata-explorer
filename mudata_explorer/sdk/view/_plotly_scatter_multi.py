@@ -8,7 +8,7 @@ from muon import MuData
 def plotly_scatter_multi(
     mdata: MuData,
     data_sidebar=False,
-    data_axis_value=0,
+    data_axis_value=None,
     data_axis_sidebar=False,
     data_transforms_value=[],
     data_transforms_sidebar=False,
@@ -64,7 +64,7 @@ def plotly_scatter_multi(
     data_filter_rows_value_str_value=None,
     data_filter_rows_value_str_sidebar=False,
     colors_sidebar=False,
-    colors_axis_value=0,
+    colors_axis_value=None,
     colors_axis_sidebar=False,
     colors_transforms_value=[],
     colors_transforms_sidebar=False,
