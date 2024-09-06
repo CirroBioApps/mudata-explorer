@@ -250,6 +250,10 @@ class MuDataAppFormElement(_SharedFunctions):
         self._complete = True
 
     @property
+    def complete(self):
+        return self._complete
+
+    @property
     def enabled_or_required(self) -> bool:
         """If the element is either not optional or enabled."""
         return self.enabled.value if self.optional else True
@@ -485,7 +489,7 @@ class MuDataAppForm(MuDataAppFormElement):
     @property
     def complete(self):
         """A form is complete if all child elements are complete."""
-        return all([elem._complete for elem in self.properties.values()])
+        return all([elem.complete for elem in self.properties.values()])
 
     def dump(self, mdata=None) -> Dict[str, Any]:
         """
@@ -858,7 +862,7 @@ class MuDataAppDataFrame(MuDataAppFormElement):
             ix=self.ix
         )
         if self._axis.value is None:
-            self._axis.value = 0
+            _save_value(self.ix, self._axis.prefix, 0)
 
         self._columns = {
             col_kw: MuDataAppDataFrameColumn(
@@ -932,6 +936,11 @@ class MuDataAppDataFrame(MuDataAppFormElement):
                 for col_elem in self._columns.values()
             ]
         ]
+
+    @property
+    def complete(self):
+        """A form is complete if all child elements are complete."""
+        return all([elem.complete for elem in self._elements()])
 
     @property
     def enabled_or_required_in_sidebar_recur(self) -> bool:
@@ -1433,6 +1442,20 @@ class MuDataAppDataFrameColumn(MuDataAppFormElement):
         self._label.load(params.get("label"))
         self._scale.load(params.get("scale"))
         self._is_categorical.load(params.get("is_categorical"))
+
+    @property
+    def complete(self):
+        """A form is complete if all child elements are complete."""
+        if not self.enabled_or_required:
+            return True
+        return all([
+            elem.complete
+            for elem in [
+                self._table,
+                self._cname,
+                self._label
+            ]
+        ])
 
 
 class MuDataAppDataFrameFilterAxis(MuDataAppFormElement):
