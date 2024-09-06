@@ -13,7 +13,7 @@ def _render_key(ix: int, prefix: str) -> str:
     return f"form-{ix}-{prefix}"
 
 
-def _watch(ix: int, prefix: str):
+def _watch(ix: int, prefix: str, copy_to=None):
     """
     Watches for any changes to the value of the input element,
     and updates the value of the element accordingly.
@@ -23,9 +23,26 @@ def _watch(ix: int, prefix: str):
     if render_key in st.session_state:
         value = st.session_state[render_key]
         _save_value(ix, prefix, value)
+        _save_copy(ix, copy_to, value)
 
 
-def _watch_enum(ix: int, prefix: str, enum: List[str], enumNames: Optional[List[str]]):
+def _save_copy(ix, copy_to, value):
+    """Save the value to a copy_to location if provided."""
+    if copy_to is not None:
+        if isinstance(copy_to, list):
+            for prefix in copy_to:
+                _save_value(ix, prefix, value)
+        else:
+            _save_value(ix, copy_to, value)
+
+
+def _watch_enum(
+    ix: int,
+    prefix: str,
+    enum: List[str],
+    enumNames: Optional[List[str]],
+    copy_to: Optional[Union[str, List[str]]] = None
+):
     """Account for the case of enumNames."""
     render_key = _render_key(ix, prefix)
     value = st.session_state[render_key]
@@ -34,9 +51,16 @@ def _watch_enum(ix: int, prefix: str, enum: List[str], enumNames: Optional[List[
     if enumNames is not None:
         value = enum[enumNames.index(value)]
     _save_value(ix, prefix, value)
+    _save_copy(ix, copy_to, value)
 
 
-def _watch_enum_multi(ix: int, prefix: str, enum: List[str], enumNames: Optional[List[str]]):
+def _watch_enum_multi(
+    ix: int,
+    prefix: str,
+    enum: List[str],
+    enumNames: Optional[List[str]],
+    copy_to: Optional[Union[str, List[str]]] = None
+):
     """Account for the case of enumNames."""
     render_key = _render_key(ix, prefix)
     values = st.session_state[render_key]
@@ -48,6 +72,7 @@ def _watch_enum_multi(ix: int, prefix: str, enum: List[str], enumNames: Optional
             for val in values
         ]
     _save_value(ix, prefix, values)
+    _save_copy(ix, copy_to, values)
 
 
 def _save_value(ix: int, prefix: str, value: Any):
@@ -119,14 +144,15 @@ class MuDataAppSidebarToggle(_SharedFunctions):
         self.ix = ix
         self.value = st.session_state.get(self._render_key(), value)
 
-    def render(self):
+    def render(self, copy_to=None):
         """Display the checkbox and update the value on change."""
         st.checkbox(
             "Show in Sidebar",
             value=self.value,
             key=self._render_key(),
             on_change=_watch,
-            args=(self.ix, self.prefix,)
+            args=(self.ix, self.prefix,),
+            kwargs=dict(copy_to=copy_to)
         )
         self.value = st.session_state[self._render_key()]
 
@@ -153,14 +179,15 @@ class MuDataAppEnabledToggle(_SharedFunctions):
         if label is not None:
             self.label = label
 
-    def render(self):
+    def render(self, copy_to=None):
         """Display the checkbox and update the value on change."""
         st.checkbox(
             self.label,
             value=self.value,
             key=self._render_key(),
             on_change=_watch,
-            args=(self.ix, self.prefix,)
+            args=(self.ix, self.prefix,),
+            kwargs=dict(copy_to=copy_to)
         )
         self.value = st.session_state[self._render_key()]
 
@@ -177,7 +204,7 @@ class MuDataAppDummy:
     def __init__(self):
         return
 
-    def render(self):
+    def render(self, copy_to=None):
         return
 
     def dump(self, mdata=None) -> Dict[str, Any]:
@@ -367,7 +394,7 @@ class MuDataAppFormElement(_SharedFunctions):
         if "enabled" in params:
             self.enabled.load(params["enabled"])
 
-    def render(self):
+    def render(self, copy_to=None):
         """
         Present the user with a visual interface for modifying
         attributes.
@@ -381,7 +408,7 @@ class MuDataAppFormElement(_SharedFunctions):
                 self.enabled.render()
                 if not self.enabled.value:
                     return
-            self._render()
+            self._render(copy_to=copy_to)
         # If we are editing a single view, show all options
         elif get_edit_view_flag() == self.ix:
             # Make two columns to include the sidebar toggle
@@ -394,7 +421,7 @@ class MuDataAppFormElement(_SharedFunctions):
                 if not self.enabled.value:
                     return
             with cols[0]:
-                self._render()
+                self._render(copy_to=copy_to)
             with cols[1]:
                 self.sidebar.render()
         # If the sidebar is open
@@ -406,13 +433,13 @@ class MuDataAppFormElement(_SharedFunctions):
                     if not self.enabled.value:
                         return
                 # Then show the input element
-                self._render()
+                self._render(copy_to=copy_to)
             else:
                 return
         else:
             return
 
-    def _render(self):
+    def _render(self, copy_to=None):
         """
         Just show the label.
         Can be overridden by child classes.
@@ -557,7 +584,7 @@ class MuDataAppForm(MuDataAppFormElement):
             for elem in self.properties.values()
         ]) or self.enabled_or_required_in_sidebar
 
-    def render(self):
+    def render(self, copy_to=None):
         """Rendering a form will render all nested properties as well."""
         # By default, only put a border around the element if it is
         # not at the top level
@@ -577,7 +604,7 @@ class MuDataAppForm(MuDataAppFormElement):
 
         # Add a border if this is not the top level
         with st.container(border=border):
-            super().render()
+            super().render(copy_to=copy_to)
             # As long as the form itself is either required or enabled
             if self.enabled_or_required:
                 # Render the child elements
@@ -605,7 +632,7 @@ class MuDataAppString(MuDataAppFormElement):
         if self.enumNames is not None:
             assert len(self.enum) == len(self.enumNames)
 
-    def _render(self):
+    def _render(self, copy_to=None):
 
         kwargs = dict(help=self.help, key=self._render_key())
         if self.enum:
@@ -623,6 +650,7 @@ class MuDataAppString(MuDataAppFormElement):
                 placeholder=self.placeholder,
                 on_change=_watch_enum,
                 args=(self.ix, self.prefix, self.enum, self.enumNames),
+                kwargs=dict(copy_to=copy_to),
                 **kwargs
             )
         elif self.multiline:
@@ -631,6 +659,7 @@ class MuDataAppString(MuDataAppFormElement):
                 self.value,
                 on_change=_watch,
                 args=(self.ix, self.prefix,),
+                kwargs=dict(copy_to=copy_to),
                 **kwargs
             )
         else:
@@ -639,6 +668,7 @@ class MuDataAppString(MuDataAppFormElement):
                 self.value,
                 on_change=_watch,
                 args=(self.ix, self.prefix,),
+                kwargs=dict(copy_to=copy_to),
                 **kwargs
             )
 
@@ -662,7 +692,7 @@ class MuDataAppFloat(MuDataAppFormElement):
         self.min_value = schema.get("min_value")
         self.step = schema.get("step")
 
-    def _render(self):
+    def _render(self, copy_to=None):
 
         st.number_input(
             self.label,
@@ -672,20 +702,22 @@ class MuDataAppFloat(MuDataAppFormElement):
             value=self.value,
             key=self._render_key(),
             on_change=_watch,
+            kwargs=dict(copy_to=copy_to),
             args=(self.ix, self.prefix,)
         )
 
 class MuDataAppBoolean(MuDataAppFormElement):
     value: bool
 
-    def _render(self):
+    def _render(self, copy_to=None):
         st.checkbox(
             self.label,
             self.value,
             key=self._render_key(),
             help=self.help,
             on_change=_watch,
-            args=(self.ix, self.prefix,)
+            args=(self.ix, self.prefix,),
+            kwargs=dict(copy_to=copy_to)
         )
 
 class MuDataAppInteger(MuDataAppFormElement):
@@ -705,7 +737,7 @@ class MuDataAppInteger(MuDataAppFormElement):
         if self.min_value is not None:
             self.min_value = int(self.min_value)
 
-    def _render(self):
+    def _render(self, copy_to=None):
         st.number_input(
             self.label,
             min_value=self.min_value,
@@ -714,7 +746,8 @@ class MuDataAppInteger(MuDataAppFormElement):
             key=self._render_key(),
             help=self.help,
             on_change=_watch,
-            args=(self.ix, self.prefix,)
+            args=(self.ix, self.prefix,),
+            kwargs=dict(copy_to=copy_to)
         )
 
 
@@ -734,7 +767,7 @@ class MuDataAppEnum(MuDataAppFormElement):
         if self.enumNames is not None:
             assert len(self.enum) == len(self.enumNames), "enumNames length must match enum"
 
-    def _render(self):
+    def _render(self, copy_to=None):
 
         # If the value is a list
         if isinstance(self.value, list):
@@ -756,7 +789,8 @@ class MuDataAppEnum(MuDataAppFormElement):
             help=self.help,
             key=self._render_key(),
             on_change=_watch_enum,
-            args=(self.ix, self.prefix, self.enum, self.enumNames,)
+            args=(self.ix, self.prefix, self.enum, self.enumNames,),
+            kwargs=dict(copy_to=copy_to)
         )
 
     def update_options(self, enum, enumNames=None):
@@ -784,7 +818,7 @@ class MuDataAppEnumMulti(MuDataAppFormElement):
         if self.enumNames is not None:
             assert len(self.enum) == len(self.enumNames), "enumNames length must match enum"
 
-    def _render(self):
+    def _render(self, copy_to=None):
 
         # If no options are selected
         if self.value is None:
@@ -810,7 +844,8 @@ class MuDataAppEnumMulti(MuDataAppFormElement):
             help=self.help,
             key=self._render_key(),
             on_change=_watch_enum_multi,
-            args=(self.ix, self.prefix, self.enum, self.enumNames,)
+            args=(self.ix, self.prefix, self.enum, self.enumNames,),
+            kwargs=dict(copy_to=copy_to)
         )
 
     def update_options(self, enum, enumNames=None):
@@ -958,7 +993,7 @@ class MuDataAppDataFrame(MuDataAppFormElement):
             for elem in self._elements()
         ]) and self.show_in_sidebar
 
-    def render(self):
+    def render(self, copy_to=None):
         """
         Method used to render the input elements for the DataFrame.
         """
@@ -976,7 +1011,7 @@ class MuDataAppDataFrame(MuDataAppFormElement):
             border = False
 
         with st.container(border=border):
-            super().render()
+            super().render(copy_to=copy_to)
 
             # If the DataFrame is disabled
             if not self.enabled_or_required:
@@ -1334,12 +1369,12 @@ class MuDataAppDataFrameColumn(MuDataAppFormElement):
             self.ix
         )
 
-    def render(self):
+    def render(self, copy_to=None):
         """
         Method used to render the input elements for the DataFrame Column.
         """
         with st.container(border=True):
-            super().render()
+            super().render(copy_to=copy_to)
 
             # Select a table
             self._table.render()
@@ -1354,7 +1389,7 @@ class MuDataAppDataFrameColumn(MuDataAppFormElement):
 
             # Select the column
             self._cname.update_options(list(df.columns.values))
-            self._cname.render()
+            self._cname.render(copy_to=self._label.prefix)
 
             if self._cname.value is None:
                 return
@@ -1552,7 +1587,7 @@ class MuDataAppDataFrameFilterAxis(MuDataAppFormElement):
         """Fill in the list of tables available."""
         self._tables.update_options(all_tables)
 
-    def render(self):
+    def render(self, copy_to=None):
         # By default show a border
         border = True
 
@@ -1567,7 +1602,7 @@ class MuDataAppDataFrameFilterAxis(MuDataAppFormElement):
             border = False
 
         with st.container(border=border):
-            super().render()
+            super().render(copy_to=copy_to)
 
             # Prompt for the type of querying
             self._type.render()
