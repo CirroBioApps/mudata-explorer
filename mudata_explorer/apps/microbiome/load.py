@@ -64,7 +64,8 @@ def run():
         cirro.load_from_cirro(
             filter_process_ids=[
                 "ingest_biom",
-                "process-nf-core-ampliseq-2-4-0"
+                "process-nf-core-ampliseq-2-4-0",
+                "curated_metagenomic_data"
             ],
             show_link=False
         )
