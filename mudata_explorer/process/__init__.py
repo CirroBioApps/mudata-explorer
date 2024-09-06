@@ -13,3 +13,4 @@ from .t_test_ind import TTestIndependent # noqa
 from .anova import RunAnova # noqa
 from .kruskal import RunKruskal # noqa
 from .spearman import RunSpearman # noqa
+from .shannon_diversity import ShannonDiversity # noqa
