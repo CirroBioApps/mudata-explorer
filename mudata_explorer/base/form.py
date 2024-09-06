@@ -891,7 +891,7 @@ class MuDataAppDataFrame(MuDataAppFormElement):
                 label="Select Orientation",
                 enum=[0, 1],
                 enumNames=["Observations", "Variables"],
-                value=elem.get("axis")
+                value=elem.get("axis", 0)
             ),
             prefix=self._kw("axis"),
             ix=self.ix
@@ -1021,6 +1021,7 @@ class MuDataAppDataFrame(MuDataAppFormElement):
             # If none was selected, default to 0
             if self._axis.value is None:
                 _save_value(self.ix, self._axis.prefix, 0)
+                self._axis.value = 0
 
             # The axes used for filtering must change
             # if the user changes the orientation
@@ -1297,6 +1298,8 @@ class MuDataAppDataFrame(MuDataAppFormElement):
                         params.get(col_kw)
                     )
                 )
+                # Make sure to assign the loaded axis to each column element
+                col_elem.axis = self._axis.value
         self._filter_rows.load(params.get("filter_rows"))
 
 
