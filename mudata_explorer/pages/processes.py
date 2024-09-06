@@ -32,6 +32,7 @@ def _get_selected_process(container: DeltaGenerator, process_def: dict):
     all_categories = asset_categories(all_processes)
     if process_def.get("category") not in all_categories:
         update_process("category", all_categories[0])
+        process_def = get_process()
 
     selected_category = container.selectbox(
         "Select a category",
@@ -48,6 +49,7 @@ def _get_selected_process(container: DeltaGenerator, process_def: dict):
 
     if process_def.get("type") not in df["type"].values:
         update_process("type", df["type"].values[0])
+        process_def = get_process()
 
     selected_name = container.selectbox(
         "Select a process to run",
@@ -102,6 +104,10 @@ def run():
     # Get the parameters from the user
     with container:
         process.form.render()
+        if not process.form.complete:
+            st.write("Please copmlete all input fields")
+            return
+
     process.params = process.form.dump()
 
     # Get the output locations

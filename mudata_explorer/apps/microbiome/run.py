@@ -20,5 +20,6 @@ def run():
 
     header()
     load.run()
-    st.write("---")
-    st.markdown(readme("microbiome"))
+    if st.session_state.get('microbiome-empty-input', False):
+        st.write("---")
+        st.markdown(readme("microbiome"))

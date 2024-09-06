@@ -55,6 +55,7 @@ def run():
         ],
         index=None
     )
+    st.session_state['microbiome-empty-input'] = False
     if source == 'BIOM File':
         _load_data_biom()
     elif source == 'Curated Metagenomic Data':
@@ -66,3 +67,5 @@ def run():
             ],
             show_link=False
         )
+    else:
+        st.session_state['microbiome-empty-input'] = True

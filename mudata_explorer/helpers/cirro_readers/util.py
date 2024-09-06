@@ -198,6 +198,19 @@ def summarize_features(
     )
 
 
+def shannon_diversity(
+    mdata: MuData,
+    mod="mod",
+    dest_key="shannon"
+):
+    process.shannon_diversity(
+        mdata,
+        outputs_dest_key_value=dest_key,
+        table_data_axis_value=0,
+        table_data_tables_value=[f"{mod}.data"]
+    )
+
+
 def run_umap(
     mdata: MuData,
     mod="mod",
@@ -213,6 +226,19 @@ def run_umap(
         umap_params_n_neighbors_value=n_neighbors,
         umap_params_min_dist_value=min_dist,
         umap_params_n_components_value=n_components,
+        outputs_dest_key_value=dest_key,
+        table_data_axis_value=0,
+        table_data_tables_value=[f"{mod}.data"]
+    )
+
+
+def run_pca(
+    mdata: MuData,
+    mod="mod",
+    dest_key="pca"
+):
+    process.pca(
+        mdata,
         outputs_dest_key_value=dest_key,
         table_data_axis_value=0,
         table_data_tables_value=[f"{mod}.data"]

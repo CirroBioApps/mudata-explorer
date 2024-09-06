@@ -1,4 +1,5 @@
 from anndata import AnnData
+from copy import copy
 from dataclasses import dataclass
 from mudata_explorer.sdk import io, view
 from mudata_explorer.helpers.cirro_readers import util
@@ -256,8 +257,30 @@ def _filter_samples(adata: AnnData):
     st.markdown("""**Filter Samples**
 
 Optionally filter the set of samples which are included in the analysis
-using the metadata annotations available.                
 """)
+    
+    # Let the user select the approach for filtering samples
+    filter_method = st.selectbox(
+        "Filter Samples",
+        [
+            "Query String",
+            "Select Samples to Include",
+            "Select Samples to Exclude"
+        ],
+        index=None,
+        placeholder="Select a method"
+    )
+    if filter_method == "Query String":
+        return _filter_samples_query(adata)
+    elif filter_method == "Select Samples to Include":
+        return _filter_samples_select(adata, include=True)
+    elif filter_method == "Select Samples to Exclude":
+        return _filter_samples_select(adata, include=False)
+    else:
+        return adata
+
+
+def _filter_samples_query(adata: AnnData) -> AnnData:
     ntot = adata.shape[0]
     
     query_string = st.text_input(
@@ -284,6 +307,32 @@ using the metadata annotations available.
         st.markdown(f"Including all {ntot:,} samples")
 
     return adata
+
+
+def _filter_samples_select(adata: AnnData, include: bool) -> AnnData:
+    ntot = adata.shape[0]
+
+    # Let the user select samples to include or exclude
+    selected = st.multiselect(
+        f"Select Samples to {'Include' if include else 'Exclude'}",
+        adata.obs.index.values,
+        adata.obs.index.values if include else []
+    )
+
+    if len(selected) > 0 and len(selected) < ntot:
+
+        if include:
+            filtered = adata[selected]
+            st.markdown(f"Including {filtered.shape[0]:,} / {ntot:,} samples")
+        else:
+            filtered = adata[~adata.obs.index.isin(selected)]
+            st.markdown(f"Including {filtered.shape[0]:,} / {ntot:,} samples")
+
+        return filtered
+
+    else:
+        st.markdown(f"Including all {ntot:,} samples")
+        return adata
 
 
 def _get_params(mdata: MuData) -> Optional[MicrobiomeParams]:
@@ -367,6 +416,18 @@ def _run_processes(mdata: MuData, params: MicrobiomeParams):
     with st.spinner("Calculating Feature Metrics"):
         util.summarize_features(mdata, mod="abund")
 
+    # Calculate alpha diversity for each sample
+    with st.spinner("Calculating Alpha Diversity"):
+        util.shannon_diversity(mdata, mod="abund")
+
+    # Run PCA
+    with st.spinner("Running PCA"):
+        util.run_pca(
+            mdata,
+            mod="abund",
+            dest_key="pca"
+        )
+
     # Run UMAP
     with st.spinner("Running UMAP"):
         util.run_umap(
@@ -444,6 +505,113 @@ def _view_stacked_bars(mdata: MuData, params: MicrobiomeParams):
     )
 
 
+def _view_shannon_diversity(mdata: MuData, params: MicrobiomeParams):
+
+    # Set up the basic kwargs for the histogram
+    kwargs = {
+        "data": {
+            "sidebar": False,
+            "axis": {"value": 0, "sidebar": False},
+            "columns": {
+                "value": {
+                    "sidebar": False,
+                    "table": {
+                        "value": "Observation Metadata",
+                        "sidebar": False
+                    },
+                    "cname": {
+                        "value": "shannon",
+                        "sidebar": False
+                    },
+                    "label": {
+                        "value": "Shannon Diversity Index",
+                        "sidebar": False
+                    },
+                    "colorscale": False
+                },
+                "grouping": {
+                    "enabled": {
+                        "value": False,
+                        "sidebar": False
+                    },
+                    "sidebar": False
+                }
+            }
+        },
+        "scale_options": {
+            "log_y": {
+                "value": None,
+                "sidebar": False
+            }
+        },
+        "formatting": {
+            "title": {
+                "value": "Distribution of Alpha Diversity (Shannon Index)",
+                "sidebar": True
+            },
+            "nbins": {
+                "value": 30,
+                "sidebar": True
+            }
+        },
+        "statistics": {
+            "compare_groups": {
+                "value": "Disabled",
+                "sidebar": False
+            }
+        }
+    }
+
+    # Show the histogram
+    view.plotly_histogram(
+        mdata,
+        **copy(kwargs)
+    )
+
+    # If the user selected a categorical metadata column to compare between
+    if params.compare_by and params.is_categorical:
+
+        # Enable the grouping
+        kwargs["data"]["columns"]["grouping"] = {
+            "enabled": {
+                "value": True,
+                "sidebar": False
+            },
+            "sidebar": False,
+            "table": {
+                "value": "Observation Metadata",
+                "sidebar": False
+            },
+            "cname": {
+                "value": params.compare_by,
+                "sidebar": False
+            },
+            "label": {
+                "value": params.label,
+                "sidebar": False
+            },
+            "scale": {
+                "value": "D3",
+                "sidebar": False
+            },
+            "colorscale": True,
+            "is_categorical": {
+                "value": True,
+                "sidebar": False
+            }
+        }
+        # Update the title
+        kwargs["formatting"]["title"]["value"] = f"Distribution of Alpha Diversity by {params.label}"
+        # Compute stats between the groups
+        kwargs["statistics"]["compare_groups"]["value"] = "Kruskal-Wallis"
+
+        # Add that histogram as well
+        view.plotly_histogram(
+            mdata,
+            **copy(kwargs)
+        )
+
+
 def _view_most_abundant_boxplot(mdata: MuData, params: MicrobiomeParams):
 
     # Show the most abundant organisms
@@ -459,6 +627,79 @@ def _view_most_abundant_boxplot(mdata: MuData, params: MicrobiomeParams):
         display_options_var_label_sidebar=True,
         display_options_val_label_value="Relative Abundance",
         display_options_val_label_sidebar=True
+    )
+
+    # If the user selected a categorical metadata column to compare between
+    if params.compare_by and params.is_categorical:
+            
+        # Show the most abundant organisms by group
+        view.plotly_box_multiple(
+            mdata,
+            table_category_enabled_value=True,
+            table_category_columns_category_table_value="Observation Metadata",
+            table_category_columns_category_cname_value=params.compare_by,
+            table_category_columns_category_label_value=params.label,
+            table_data_tables_value=["abund.data"],
+            table_data_filter_cols=_top_features_filter_cols(mdata, params.n_top_features),
+            variable_options_axis_value="X-Axis",
+            variable_options_log_values_value=False,
+            display_options_title_value=f"High Abundance Organisms by {params.label}",
+            display_options_var_label_value="Organisms",
+            display_options_var_label_sidebar=True,
+            display_options_val_label_value="Relative Abundance",
+            display_options_val_label_sidebar=True,
+            category_options_axis_value="Color",
+            category_options_sort_by_value="Mean"
+        )
+
+
+def _view_pca(mdata: MuData, params: MicrobiomeParams):
+    pc1_cname = mdata.mod["abund"].obsm["pca"].columns[0]
+    pc2_cname = mdata.mod["abund"].obsm["pca"].columns[1]
+
+    # Get the organisms with the largest loadings on PC1 and PC2
+    top_orgs = list(
+        mdata.mod["abund"]
+        .varm["pca"]
+        .reindex(columns=[pc1_cname, pc2_cname])
+        .abs()
+        .max(axis=1)
+        .sort_values(ascending=False)
+        .head(params.n_top_features)
+        .index.values
+    )
+
+    # Show the PCA, coloring the points if a metadata column was selected
+    view.plotly_scatter_vectors(
+        mdata,
+        data_axis_value=0,
+        data_columns_x_table_value="abund.obsm.pca",
+        data_columns_y_table_value="abund.obsm.pca",
+        data_columns_x_cname_value=pc1_cname,
+        data_columns_x_label_value=pc1_cname,
+        data_columns_y_cname_value=pc2_cname,
+        data_columns_y_label_value=pc1_cname,
+        data_columns_size_enabled_value=False,
+        data_columns_color_enabled_value=params.compare_by is not None,
+        data_columns_color_table_value="Observation Metadata",
+        data_columns_color_cname_value=params.compare_by,
+        data_columns_color_label_value=params.label,
+        data_columns_color_colorscale=("D3" if params.is_categorical else "bluered"),
+        data_columns_color_is_categorical_value=params.is_categorical,
+        vectors_axis_value=1,
+        vectors_columns_x_table_value="abund.varm.pca",
+        vectors_columns_y_table_value="abund.varm.pca",
+        vectors_columns_x_cname_value=pc1_cname,
+        vectors_columns_x_label_value=pc1_cname,
+        vectors_columns_y_cname_value=pc2_cname,
+        vectors_columns_y_label_value=pc1_cname,
+        vectors_columns_label_enabled_value=False,
+        vectors_filter_rows_type_value="index",
+        vectors_filter_rows_tables_value=["abund.varm.pca"],
+        vectors_filter_rows_expr_value="in",
+        vectors_filter_rows_value_enum_value=top_orgs,
+        vectors_filter_rows_value_enum_sidebar=True,
+        formatting_title_value="Beta Diversity PCA",
     )
 
 
@@ -516,9 +757,7 @@ Leiden algorithm (resolution: {params.leiden_res}).
 
 def _view_orgs_by_cluster(mdata: MuData, params: MicrobiomeParams):
 
-    # Show the organisms that differentiate the leiden clusters
-    view.markdown(mdata, text_value="**Top Organisms by Cluster**", text_sidebar=True)
-
+    # Show the most variable organisms by cluster
     view.plotly_category_summarize_values(
         mdata,
         table_category_columns_category_table_value="Observation Metadata",
@@ -528,18 +767,20 @@ def _view_orgs_by_cluster(mdata: MuData, params: MicrobiomeParams):
         table_data_filter_cols=_top_features_filter_cols(
             mdata,
             params.n_top_features,
-            varm_key="kruskal_leiden",
-            cname="rank",
-            ascending=True
+            varm_key="summary_stats",
+            cname="std",
+            ascending=False
         ),
         table_data_transforms_value=["zscores_cols"],
         formatting_sort_by_value="Values",
-        formatting_color_value="None"
+        formatting_color_value="None",
+        formatting_title_value="Top Organisms by Cluster"
     )
 
     view.markdown(mdata, text_value="""The table above shows the top features which
-are most strongly associated with the clusters identified by the Leiden
-algorithm.
+have the highest standard deviation of abundances across the samples.
+The abundance of each organism is shown for each of the clusters identified by the
+Leiden algorithm.
 The size of each point represents the mean abundance of the feature among the
 samples which were assigned to a particular cluster.
 To account for different scales of abundance, the values have been transformed
@@ -713,7 +954,11 @@ def _add_views(mdata: MuData, params: MicrobiomeParams):
 
     _view_stacked_bars(mdata, params)
 
+    _view_shannon_diversity(mdata, params)
+
     _view_most_abundant_boxplot(mdata, params)
+
+    _view_pca(mdata, params)
 
     _view_umap(mdata, params)
 
