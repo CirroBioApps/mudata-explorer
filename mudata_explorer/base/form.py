@@ -57,6 +57,8 @@ def _save_value(ix: int, prefix: str, value: Any):
 
     # Get the params saved in the state for this view
     view = get_view(ix)
+    if "params" not in view:
+        view["params"] = {}
 
     # The keyword for the params is {prefix}.value for everything except the sidebar
     kw = prefix if prefix.endswith(".sidebar") else f"{prefix}.value"
@@ -974,6 +976,11 @@ class MuDataAppDataFrame(MuDataAppFormElement):
             # Determine the axis
             self._axis.render()
 
+            # If no axis has been selected
+            if self._axis.value is None:
+                self._complete = False
+                return
+
             # The axes used for filtering must change
             # if the user changes the orientation
             # of the overall dataframe
@@ -985,11 +992,13 @@ class MuDataAppDataFrame(MuDataAppFormElement):
 
             # Populate the list of options available for selection
             self._tables.update_options(all_tables)
-            self._filter_cols.update_tables(all_tables)
-            self._filter_rows.update_tables(all_tables)
             for col_elem in self._columns.values():
                 col_elem.axis = self._axis.value
                 col_elem._table.update_options(all_tables)
+
+            # To filter columns and rows, list the tables from the appropriate axis
+            self._filter_rows.update_tables(tree_tables(self._filter_rows.axis))
+            self._filter_cols.update_tables(tree_tables(self._filter_cols.axis))
 
             # If the user is expected to select columns
             if len(self._columns) > 0:
