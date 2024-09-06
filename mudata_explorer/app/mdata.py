@@ -480,8 +480,13 @@ def join_dataframe_tables(
     if not isinstance(tables, list):
         tables = [tables]
 
+    if all([table is None for table in tables]):
+        return None
+
     for table in tables:
-        if table == "Observation Metadata":
+        if table is None:
+            continue
+        elif table == "Observation Metadata":
             assert axis == 0
             modality = 'None'
             df = get_dataframe_table(None, "metadata", axis, mdata=mdata, id=id)
