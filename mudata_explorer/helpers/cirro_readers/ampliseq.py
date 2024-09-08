@@ -42,7 +42,7 @@ def _read_ampliseq_as_anndata(dataset: DataPortalDataset) -> Optional[MuData]:
     # For this dataset, any dashes in sample names
     # are replaced with underscores
     sample_meta = sample_meta.rename(
-        index=lambda i: i.replace("-", "_")
+        index=lambda i: str(i).replace("-", "_")
     )
 
     # Make an AnnData object
