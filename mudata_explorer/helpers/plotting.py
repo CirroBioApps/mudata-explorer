@@ -1,10 +1,9 @@
-from streamlit.delta_generator import DeltaGenerator
+import streamlit as st
 from mudata_explorer.app.mdata import get_mdata_exists, get_mdata
 from plotly import graph_objects as go
 
 
 def plot_mdata(
-    container: DeltaGenerator,
     hspace=10,
     vspace=10,
     id="main"
@@ -122,10 +121,12 @@ def plot_mdata(
         hovermode="closest",
         plot_bgcolor="rgba(0, 0, 0, 0)",  # Transparent background
         margin=dict(l=0, r=0, t=0, b=0),
-        paper_bgcolor="rgba(0, 0, 0, 0)"  # Transparent background
+        paper_bgcolor="rgba(0, 0, 0, 0)",  # Transparent background
+        xaxis=dict(showgrid=False),
+        yaxis=dict(showgrid=False)
     )
 
-    container.plotly_chart(fig)
+    st.plotly_chart(fig)
 
 
 def _add_box(

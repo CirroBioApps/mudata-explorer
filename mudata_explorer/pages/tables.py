@@ -2,6 +2,7 @@ from mudata_explorer.base.slice import MuDataSlice
 from mudata_explorer.app.sidebar import setup_sidebar
 from mudata_explorer.helpers.join_kws import join_kws
 from mudata_explorer.app.mdata import get_mdata_exists, setup_mdata, get_mdata, set_mdata, add_modality, list_modalities
+from mudata_explorer.helpers.plotting import plot_mdata
 import pandas as pd
 from streamlit.delta_generator import DeltaGenerator
 import streamlit as st
@@ -323,6 +324,8 @@ def run():
     setup_sidebar()
 
     st.write("### MuData Contents")
+
+    plot_mdata()
 
     # Show the metadata
     show_table(

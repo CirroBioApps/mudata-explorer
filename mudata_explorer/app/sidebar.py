@@ -5,7 +5,6 @@ from mudata_explorer.app import mdata
 from mudata_explorer.app.query_params import get_editable_flag, update_edit_views
 from mudata_explorer.app.query_params import check_file_url
 from mudata_explorer.helpers.save_load import load_history
-from mudata_explorer.helpers.plotting import plot_mdata
 from streamlit.delta_generator import DeltaGenerator
 
 
@@ -70,8 +69,6 @@ def setup_sidebar(
         sidebar_toggle_editable()
     if load_history:
         sidebar_load_history()
-
-    plot_mdata(st.sidebar)
 
 
 def landing_shortcuts():
