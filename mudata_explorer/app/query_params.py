@@ -18,25 +18,39 @@ def clear_edit_view_flag():
         del st.query_params["edit-view"]
 
 
-def get_editable_flag() -> bool:
-    return st.query_params.get("editable", False)
+def get_show_menu_flag() -> bool:
+    return st.query_params.get("show_menu", True)
 
 
-def set_editable_flag(val: bool):
+def set_show_menu_flag(val: bool):
+    assert isinstance(val, bool)
+    if not val:
+        st.query_params["show_menu"] = val
+    else:
+        if "show_menu" in st.query_params:
+            del st.query_params["show_menu"]
+
+
+def toggle_show_menu():
+    set_show_menu_flag(not get_show_menu_flag())
+    st.rerun()
+
+
+def get_show_sidebar_flag() -> bool:
+    return st.query_params.get("show_sidebar", False)
+
+
+def set_show_sidebar_flag(val: bool):
     assert isinstance(val, bool)
     if val:
-        st.query_params["editable"] = val
+        st.query_params["show_sidebar"] = val
     else:
-        if "editable" in st.query_params:
-            del st.query_params["editable"]
+        if "show_sidebar" in st.query_params:
+            del st.query_params["show_sidebar"]
 
 
-def update_edit_views():
-    # Check the state of the input element used to update the editable flag
-    flag = st.session_state["sidebar_toggle_editable"]
-    # Make sure that the input element is in sync
-    if flag != get_editable_flag():
-        set_editable_flag(flag)
+def toggle_show_sidebar():
+    set_show_sidebar_flag(not get_show_sidebar_flag())
 
 
 def check_file_url():

@@ -2,7 +2,8 @@ import streamlit as st
 from streamlit.errors import StreamlitAPIException
 from typing import Union, List
 from mudata_explorer.app import mdata
-from mudata_explorer.app.query_params import get_editable_flag, update_edit_views
+from mudata_explorer.app.query_params import get_show_sidebar_flag, toggle_show_sidebar
+from mudata_explorer.app.query_params import get_show_menu_flag
 from mudata_explorer.app.query_params import check_file_url
 from mudata_explorer.helpers.save_load import load_history
 from streamlit.delta_generator import DeltaGenerator
@@ -18,14 +19,12 @@ def sidebar_page_links(page_links):
         )
 
 
-def sidebar_toggle_editable():
+def sidebar_toggle_button():
 
-    st.sidebar.checkbox(
-        "Edit Figures",
-        value=get_editable_flag(),
-        help="Display a set of menus to modify the figures.",
-        on_change=update_edit_views,
-        key="sidebar_toggle_editable"
+    st.sidebar.button(
+        f"{'Close' if get_show_sidebar_flag() else 'Open'} Sidebar",
+        on_click=toggle_show_sidebar,
+        key="sidebar_toggle_button"
     )
 
 
@@ -41,16 +40,20 @@ def sidebar_load_history(id="main"):
 
 
 def setup_sidebar(
-    edit_views=False,
+    sidebar_toggle=False,
     load_history=False,
     page_layout="centered"
 ):
     """
     Setup the sidebar with links to all of the pages.
-    If edit_views is True, add a checkbox to allow the user to edit the views.
+    If sidebar_toggle is True, add a checkbox to allow the user to edit the views.
     """
     try:
-        st.set_page_config("MuData Explorer", layout=page_layout)
+        st.set_page_config(
+            "MuData Explorer",
+            layout=page_layout,
+            initial_sidebar_state="expanded" if get_show_menu_flag() else "collapsed"
+        )
     except StreamlitAPIException:
         st.rerun()
 
@@ -65,8 +68,8 @@ def setup_sidebar(
         ("history", "History", ":material/history:"),
         ("about", "About", ":material/info:")
     ])
-    if edit_views:
-        sidebar_toggle_editable()
+    if sidebar_toggle:
+        sidebar_toggle_button()
     if load_history:
         sidebar_load_history()
 

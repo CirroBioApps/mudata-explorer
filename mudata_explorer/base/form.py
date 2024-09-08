@@ -1,5 +1,5 @@
 from mudata_explorer.helpers.join_kws import join_kws
-from mudata_explorer.app.query_params import get_edit_view_flag, get_editable_flag
+from mudata_explorer.app.query_params import get_edit_view_flag, get_show_sidebar_flag
 from mudata_explorer.app.mdata import get_supp_figs, tree_tables, join_dataframe_tables
 from mudata_explorer.app.mdata import get_view, set_view
 from mudata_explorer.base import all_transforms, get_transform
@@ -318,12 +318,12 @@ class MuDataAppFormElement(_SharedFunctions):
     @property
     def _in_sidebar(self) -> bool:
         """Wrapper to determine if the form is being rendered in the sidebar."""
-        return self.ix >= 0 and get_edit_view_flag() != self.ix and get_editable_flag()
+        return self.ix >= 0 and get_edit_view_flag() != self.ix and get_show_sidebar_flag()
 
     @property
     def _display_only(self) -> bool:
         """Wrapper to determine if no form inputs should be shown."""
-        return self.ix >= 0 and get_edit_view_flag() != self.ix and not get_editable_flag()
+        return self.ix >= 0 and get_edit_view_flag() != self.ix and not get_show_sidebar_flag()
 
     def dump(self, mdata=None) -> Dict[str, Any]:
         """
@@ -426,7 +426,7 @@ class MuDataAppFormElement(_SharedFunctions):
             with cols[1]:
                 self.sidebar.render()
         # If the sidebar is open
-        elif get_editable_flag():
+        elif get_show_sidebar_flag():
             # And this specific element has the sidebar attribute set to True
             if self.sidebar.value:
                 if self.optional:

@@ -1,6 +1,6 @@
 from mudata_explorer.helpers.views import delete_view, duplicate_view
 from mudata_explorer.helpers.add_view import add_view
-from mudata_explorer.app.sidebar import get_editable_flag, setup_sidebar
+from mudata_explorer.app.sidebar import get_show_sidebar_flag, setup_sidebar
 from mudata_explorer.app.mdata import get_views, set_views, get_mdata_exists, get_view
 from mudata_explorer.app.query_params import set_edit_view_flag
 from mudata_explorer.app.query_params import get_edit_view_flag
@@ -30,7 +30,7 @@ def make_views():
 def edit_view(view: View, container: DeltaGenerator, ix: int, n_views: int):
 
     # If the views are not editable, don't show the edit buttons
-    if not get_editable_flag():
+    if not get_show_sidebar_flag():
         # Instead, just set up the params for the view
         view.display_form()
         return
@@ -155,11 +155,11 @@ def move_down(ix: int):
 def run():
 
     setup_sidebar(
-        edit_views=True,
+        sidebar_toggle=True,
         page_layout=(
             "centered"
             if get_edit_view_flag() is None
-            and get_editable_flag() is False
+            and get_show_sidebar_flag() is False
             else "wide"
         )
     )
@@ -180,7 +180,7 @@ def run():
     else:
 
         # If the views are editable
-        if get_editable_flag():
+        if get_show_sidebar_flag():
 
             # Show the views with edit buttons
             view_editable()
@@ -287,7 +287,7 @@ def view_editable():
     Show the views with edit buttons.
     """
 
-    if not get_editable_flag():
+    if not get_show_sidebar_flag():
         st.rerun()
 
     # All of the views defined in the dataset
