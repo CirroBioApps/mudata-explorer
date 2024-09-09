@@ -206,7 +206,7 @@ def upload_csv_modal(slice: MuDataSlice, kw: str):
             mdata = get_mdata(full=False)
 
             # Add the new data
-            slice.write(
+            mdata = slice.write(
                 mdata,
                 new_df
             )

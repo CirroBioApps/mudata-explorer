@@ -166,7 +166,7 @@ class MuDataSlice:
 
         return dat.dropna(how="all")
 
-    def write(self, mdata: MuData, dat: Union[pd.Series, pd.DataFrame]):
+    def write(self, mdata: MuData, dat: Union[pd.Series, pd.DataFrame]) -> MuData:
         """Write the data in the slice to the container."""
 
         assert isinstance(dat, (pd.Series, pd.DataFrame)), type(dat)
@@ -177,7 +177,7 @@ class MuDataSlice:
             assert self.subattr is None
             assert self.axis == 0
 
-            self._write_obs(mdata, dat)
+            mdata = self._write_obs(mdata, dat)
 
         # Writing to the variable metadata
         elif self.slot == "var":
@@ -242,6 +242,8 @@ class MuDataSlice:
                     [self.subattr]
                 ) = dat
 
+        return mdata
+
     def _write_obs(self, mdata: MuData, dat: Union[pd.Series, pd.DataFrame]):
         """
         Writing to the .obs is a special case.
@@ -253,7 +255,6 @@ class MuDataSlice:
         added which contains the observations which are in the provided
         metadata table.
         """
-
         # If writing a column, simply add to the existing table
         if self.attr is not None:
             assert isinstance(dat, pd.Series)
@@ -266,18 +267,22 @@ class MuDataSlice:
             # If any of the observations are not in the current mdata object
             if len(set(dat.index) - set(mdata.obs.index)) > 0:
 
-                # Add a new modality
-                mdata.mod["_obs"] = AnnData(
-                    X=pd.DataFrame(
-                        np.zeros((dat.shape[0], 1)),
-                        index=dat.index
-                    )
+                # We need to reform the MuData object to include the new observations
+                mdata = MuData(
+                    {
+                        "_obs": AnnData(
+                            X=pd.DataFrame(
+                                np.zeros((dat.shape[0], 1)),
+                                index=dat.index
+                            ),
+                            obs=dat
+                        ),
+                        **{
+                            kw: adata
+                            for kw, adata in mdata.mod.items()
+                        }
+                    },
+                    obs=mdata.obs.merge(dat, how="outer", left_index=True, right_index=True)
                 )
 
-                # Update the complete set of observations
-                mdata.update()
-
-            # Set the metadata
-            mdata.obs = dat.reindex(
-                index=mdata.obs_names
-            )
+        return mdata
