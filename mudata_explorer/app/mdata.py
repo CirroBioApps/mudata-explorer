@@ -629,7 +629,7 @@ def add_modality(
     mdata.mod[mod_name] = ad.AnnData(X=df)
 
     # Update the total set of observation names
-    mdata.update()
+    mdata.update_obs()
     return mdata
 
 
