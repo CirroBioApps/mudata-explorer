@@ -1,6 +1,6 @@
 from mudata_explorer.base.form import MuDataAppForm
 from typing import Optional
-import muon as mu
+import mudata as mu
 
 
 class MuDataAppAction:

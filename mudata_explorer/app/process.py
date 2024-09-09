@@ -2,7 +2,7 @@ import json
 from mudata_explorer.helpers.params import nest_params
 from mudata_explorer.app import mdata as mdata_funcs
 from mudata_explorer.helpers.io import json_safe
-import muon as mu
+import mudata as mu
 import streamlit as st
 
 

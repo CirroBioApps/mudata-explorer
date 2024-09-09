@@ -1,7 +1,7 @@
 import json
 from anndata import AnnData
 from typing import List, Optional, Union
-from muon import MuData
+from mudata import MuData
 import numpy as np
 import pandas as pd
 

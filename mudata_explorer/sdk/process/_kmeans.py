@@ -2,7 +2,7 @@
 
 from mudata_explorer.sdk.helpers import collapse_params
 from mudata_explorer.helpers.assets import make_process
-from muon import MuData
+from mudata import MuData
 
 
 def kmeans(

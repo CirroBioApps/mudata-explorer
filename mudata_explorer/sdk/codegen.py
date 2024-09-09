@@ -59,7 +59,7 @@ def codegen_views():
 
 from mudata_explorer.sdk.helpers import collapse_params
 from mudata_explorer.helpers.add_view import add_view
-from muon import MuData
+from mudata import MuData
 
 
 def {safe_view_type}({signature}):
@@ -144,7 +144,7 @@ def codegen_processes():
 
 from mudata_explorer.sdk.helpers import collapse_params
 from mudata_explorer.helpers.assets import make_process
-from muon import MuData
+from mudata import MuData
 
 
 def {safe_process_type}({signature}):

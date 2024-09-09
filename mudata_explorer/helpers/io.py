@@ -1,6 +1,6 @@
 import json
 import numpy as np
-import muon as mu
+import mudata as mu
 from tempfile import NamedTemporaryFile
 from typing import Union
 

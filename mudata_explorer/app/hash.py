@@ -3,7 +3,7 @@ from typing import Union, Optional
 from mudata_explorer.app.mdata import add_history
 from mudata_explorer.helpers.timestamp import get_timestamp
 from mudata_explorer.app.mdata import get_mdata, get_mdata_exists
-import muon as mu
+import mudata as mu
 from mudata_explorer.helpers.io import mdata_to_binary
 
 

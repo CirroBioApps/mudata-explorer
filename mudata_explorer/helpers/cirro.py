@@ -4,7 +4,7 @@ from cirro import DataPortalDataset
 from cirro.auth.device_code import DeviceCodeAuth
 from cirro.config import AppConfig, list_tenants
 from io import StringIO
-from muon import MuData
+from mudata import MuData
 from mudata_explorer.app.mdata import get_mdata, set_mdata
 from mudata_explorer.app.hash import get_dat_hash, set_mdata_hash
 from mudata_explorer.helpers.io import hydrate_uns

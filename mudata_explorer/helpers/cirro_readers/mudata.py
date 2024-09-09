@@ -1,11 +1,11 @@
 from cirro import DataPortalDataset
-from muon import MuData
+from mudata import MuData
 import streamlit as st
 from tempfile import TemporaryDirectory
 from typing import Optional
 from mudata_explorer.helpers.cirro_readers import util
 from mudata_explorer.app.hash import hash_dat
-from muon import read_h5mu
+from mudata import read_h5mu
 
 
 def read(dataset: DataPortalDataset) -> Optional[MuData]:
