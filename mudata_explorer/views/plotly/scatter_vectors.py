@@ -154,13 +154,21 @@ and using a log scale for the x- and y-axes.
             vector_opacity = 1.0
 
         for i, row in vectors.iterrows():
+            # Add the arrow
             fig.add_annotation(
                 x=row["x"], xref="x", yref="y",
                 y=row["y"], axref="x", ayref="y",
                 ax=0,
                 ay=0,
-                text=row["label"] if "label" in vectors.columns else i,
                 showarrow=True,
+                opacity=vector_opacity
+            )
+            # Add the label
+            fig.add_annotation(
+                x=row["x"], xref="x", yref="y",
+                y=row["y"], axref="x", ayref="y",
+                text=row["label"] if "label" in vectors.columns else i,
+                showarrow=False,
                 opacity=vector_opacity
             )
 
