@@ -192,8 +192,10 @@ def save_to_cirro(id="main"):
     # Get the binary blob, hash, and file size
     blob, hash, size = get_dat_hash(mdata)
 
+    assert blob is not None
+
     # Set the file name
-    basename = name.replace(' ', '-').lower()
+    basename = name.replace(' ', '-').lower().replace('/', '-')
     while "--" in basename:
         basename = basename.replace("--", "-")
     fn = f"{basename}-{hash}.h5mu"
@@ -203,7 +205,8 @@ def save_to_cirro(id="main"):
     with TemporaryDirectory() as tmp:
 
         # Write the MuData object to the file
-        open(f"{tmp}/{fn}", "wb").write(blob)
+        with open(f"{tmp}/{fn}", "wb")as handle:
+            handle.write(blob)
 
         # Upload the file to Cirro
         try:
