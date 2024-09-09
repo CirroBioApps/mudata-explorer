@@ -155,10 +155,10 @@ and using a log scale for the x- and y-axes.
 
         for i, row in vectors.iterrows():
             fig.add_annotation(
-                x=0, xref="x", yref="y",
-                y=0, axref="x", ayref="y",
-                ax=row["x"],
-                ay=row["y"],
+                x=row["x"], xref="x", yref="y",
+                y=row["y"], axref="x", ayref="y",
+                ax=0,
+                ay=0,
                 text=row["label"] if "label" in vectors.columns else i,
                 showarrow=True,
                 opacity=vector_opacity
