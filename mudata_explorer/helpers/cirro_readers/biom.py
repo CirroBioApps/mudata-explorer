@@ -2,7 +2,7 @@ from tempfile import TemporaryDirectory
 from biom import load_table
 from anndata import AnnData
 from cirro import DataPortalDataset
-from muon import MuData
+from mudata import MuData
 import streamlit as st
 from typing import Optional
 from mudata_explorer.helpers.cirro_readers import util

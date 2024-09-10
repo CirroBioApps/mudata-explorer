@@ -5,7 +5,7 @@ from typing import List
 import click
 from pathlib import Path
 import anndata as ad
-from muon import MuData
+from mudata import MuData
 import pandas as pd
 import numpy as np
 import pyBigWig

@@ -1,7 +1,7 @@
 from pandas import DataFrame
 import streamlit as st
 from cirro import DataPortalDataset
-from muon import MuData
+from mudata import MuData
 from typing import Optional
 from mudata_explorer.helpers.cirro_readers import util
 from mudata_explorer.sdk import io, view

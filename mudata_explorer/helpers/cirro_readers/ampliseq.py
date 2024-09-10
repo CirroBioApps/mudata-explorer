@@ -1,7 +1,7 @@
 from anndata import AnnData
 from cirro import DataPortalDataset
 from cirro.sdk.file import DataPortalFile
-from muon import MuData
+from mudata import MuData
 import pandas as pd
 import streamlit as st
 from typing import Tuple, List, Optional

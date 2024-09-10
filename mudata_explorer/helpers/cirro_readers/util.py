@@ -11,7 +11,7 @@ from time import sleep
 from typing import List, Optional
 import re
 import pandas as pd
-from muon import MuData
+from mudata import MuData
 from mudata_explorer.sdk import process, view
 
 

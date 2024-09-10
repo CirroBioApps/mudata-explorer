@@ -2,9 +2,10 @@ from anndata import AnnData
 import logging
 from mudata_explorer.app.mdata import add_mdata_uns
 from mudata_explorer.app.hash import get_dat_hash
-from muon import MuData
+from mudata import MuData, set_options
 from pandas import DataFrame
 from typing import Dict, Optional, Union
+set_options(pull_on_update=False)
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)

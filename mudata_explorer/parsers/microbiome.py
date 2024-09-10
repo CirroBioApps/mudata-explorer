@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from mudata_explorer.sdk import io, view
 from mudata_explorer.helpers.cirro_readers import util
 from mudata_explorer.sdk import view, io
-from muon import MuData
+from mudata import MuData
 import pandas as pd
 from typing import Optional
 import streamlit as st

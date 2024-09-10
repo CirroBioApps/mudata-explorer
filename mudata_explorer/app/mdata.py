@@ -6,11 +6,12 @@ from mudata_explorer.helpers.join_kws import join_kws
 from mudata_explorer.helpers.timestamp import get_timestamp
 from typing import Union, Dict, Any, List, Tuple, Optional
 import anndata as ad
-import muon as mu
+import mudata as mu
 import numpy as np
 import pandas as pd
 import streamlit as st
 
+mu.set_options(pull_on_update=False)
 
 """
 The saving and loading of a MuData object in the streamlit
@@ -566,7 +567,7 @@ def save_annot(
 ):
 
     # Write the data to the specified address
-    loc.write(mdata, column_dat)
+    mdata = loc.write(mdata, column_dat)
 
     # Make a record of the process
     event = dict(
@@ -628,7 +629,7 @@ def add_modality(
     mdata.mod[mod_name] = ad.AnnData(X=df)
 
     # Update the total set of observation names
-    mdata.update()
+    mdata.update_obs()
     return mdata
 
 

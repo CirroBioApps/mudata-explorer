@@ -1,7 +1,7 @@
 from typing import Optional
 from mudata_explorer.app.mdata import get_views, set_views
 from mudata_explorer.helpers.assets import get_view_by_type
-import muon as mu
+import mudata as mu
 
 
 

@@ -2,7 +2,7 @@
 
 from mudata_explorer.sdk.helpers import collapse_params
 from mudata_explorer.helpers.add_view import add_view
-from muon import MuData
+from mudata import MuData
 
 
 def group_freq(

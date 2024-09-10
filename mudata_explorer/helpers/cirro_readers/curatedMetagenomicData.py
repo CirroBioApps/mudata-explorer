@@ -1,6 +1,6 @@
 from cirro import DataPortalDataset
 from cirro.sdk.file import DataPortalFile
-from muon import MuData
+from mudata import MuData
 import streamlit as st
 from typing import Optional
 from mudata_explorer.helpers.cirro_readers import util

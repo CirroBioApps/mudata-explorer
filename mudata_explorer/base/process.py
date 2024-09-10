@@ -8,7 +8,7 @@ from mudata_explorer.base.base import MuDataAppAction
 from mudata_explorer.base.slice import MuDataSlice
 from mudata_explorer.helpers.params import nest_params
 from streamlit.delta_generator import DeltaGenerator
-from muon import MuData
+from mudata import MuData
 
 
 class Process(MuDataAppAction):

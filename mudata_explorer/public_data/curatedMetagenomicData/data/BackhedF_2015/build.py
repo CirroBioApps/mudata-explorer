@@ -1,6 +1,6 @@
 from mudata_explorer.sdk import view, io, process
 import pandas as pd
-import muon as mu
+import mudata as mu
 
 
 def prevalent_orgs_query():

@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 from tempfile import NamedTemporaryFile
-import muon as mu
+import mudata as mu
 from mudata_explorer.app.mdata import set_mdata
 from mudata_explorer.helpers.io import hydrate_uns
 
