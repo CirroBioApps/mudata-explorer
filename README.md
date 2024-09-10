@@ -14,10 +14,6 @@ any human data or private health information.
 Any bug reports or inquiries should be directed to:
 [github.com/CirroBioApps/mudata-explorer/issues](https://www.github.com/CirroBioApps/mudata-explorer/issues)
 
-## Examples
-
-[**Human Microbiome - curatedMetagenomicData**](https://github.com/CirroBioApps/mudata-explorer/tree/main/demo_data/curatedMetagenomicData/inventory#readme)
-
 ## Multimodal Data
 
 Data can be anything or take any form.

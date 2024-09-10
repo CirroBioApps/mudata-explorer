@@ -69,7 +69,7 @@ def metadata(config: dict, df: pd.DataFrame) -> str:
 
 def write(inventory: pd.DataFrame):
     with open("README.md", "w") as f:
-        f.write("# Example Datasets: curatedMetagenomicData\n\n")
+
         f.write("""
 The curatedMetagenomicData package provides standardized, curated human microbiome data for novel analyses.
 For complete information on this project, 
@@ -79,7 +79,7 @@ These datasets have been used to demonstrate the functionality of the MuData Exp
 A standard set of analyses have been performed on each dataset, each comparing the microbiome
 samples based on a metadata category provided by the authors.
 
-![HMP 2012 body site UMAP](https://github.com/CirroBioApps/mudata-explorer/raw/main/mudata_explorer/public_data/curatedMetagenomicData/screenshots/HMP_2012-0-body_subsite-2f99b2563ed9e516.UMAP.png)
+![HMP IBD 2019 UMAP](https://github.com/CirroBioApps/mudata-explorer/raw/main/mudata_explorer/public_data/curatedMetagenomicData/screenshots/HMP_2019_ibdmdb-0-study_condition-faee1afa1755d7ba.UMAP.png)
 
 DISCLAIMER: The datasets are provided as-is, and the analyses are for demonstration purposes only.
 None of the results should be considered scientifically valid or accurate, and are not a representation

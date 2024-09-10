@@ -1,1 +1,1 @@
-from mudata_explorer.public_data.curatedMetagenomicData.lib.model import run
+from mudata_explorer.public_data.curatedMetagenomicData.reanalyze.model import run
