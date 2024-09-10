@@ -42,6 +42,11 @@ class PlotlyLine(Plotly):
                     "label": "Title",
                     "default": "",
                     "sidebar": True
+                },
+                "legend": {
+                    "type": "string",
+                    "label": "Legend",
+                    "multiline": True
                 }
             }
         }
@@ -71,3 +76,4 @@ class PlotlyLine(Plotly):
         )
 
         st.plotly_chart(fig)
+        self.show_legend(key="formatting.legend")

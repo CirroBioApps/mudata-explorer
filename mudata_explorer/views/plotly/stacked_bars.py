@@ -69,6 +69,11 @@ annotated by a single column which contains categories.
                     "default": "",
                     "sidebar": True
                 },
+                "legend": {
+                    "type": "string",
+                    "label": "Legend",
+                    "multiline": True
+                },
                 "yaxis_title": {
                     "type": "string",
                     "label": "Y Axis Title",
@@ -211,6 +216,7 @@ annotated by a single column which contains categories.
         fig.update_layout(**layout_args)
 
         st.plotly_chart(fig)
+        self.show_legend(key="formatting.legend")
 
     def _make_bars(self, data: pd.DataFrame, yaxis_title: str):
         return [

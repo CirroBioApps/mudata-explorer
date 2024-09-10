@@ -508,7 +508,12 @@ def _view_stacked_bars(mdata: MuData, params: MicrobiomeParams):
         # Only show the top features
         features=_top_features(mdata, params.n_top_features),
         category_cname=params.compare_by if params.is_categorical else None,
-        category_label=params.label
+        category_label=params.label,
+        legend="""The taxonomic composition of this group of samples is shown using
+a stacked bar plot. Each bar represents a single sample, and the height of the
+bar is proportional to the relative abundance of each taxon in that sample.
+The relative abundance of all organisms sums to 1 for each sample.
+""" + (f"The samples are colored based on the annotated value of '{params.label}'." if params.is_categorical else "")
     )
 
 
@@ -554,6 +559,15 @@ def _view_shannon_diversity(mdata: MuData, params: MicrobiomeParams):
         "formatting": {
             "title": {
                 "value": "Distribution of Alpha Diversity (Shannon Index)",
+                "sidebar": True
+            },
+            "legend": {
+                "value": """The Shannon Diversity Index is a measure of the diversity
+of organisms in a sample. It takes into account both the number of organisms
+and the evenness of their distribution.
+The height of each bar in this frequency histogram depicts the number of samples
+which have a particular value of the Shannon Diversity Index (shown on the x-axis).
+""",
                 "sidebar": True
             },
             "nbins": {
@@ -609,6 +623,8 @@ def _view_shannon_diversity(mdata: MuData, params: MicrobiomeParams):
         }
         # Update the title
         kwargs["formatting"]["title"]["value"] = f"Distribution of Alpha Diversity by {params.label}"
+        # Update the legend
+        kwargs["formatting"]["legend"]["value"] += f"The samples are colored based on the annotated value of '{params.label}'."
         # Compute stats between the groups
         kwargs["statistics"]["compare_groups"]["value"] = "Kruskal-Wallis"
 
@@ -633,7 +649,10 @@ def _view_most_abundant_boxplot(mdata: MuData, params: MicrobiomeParams):
         display_options_var_label_value="Organisms",
         display_options_var_label_sidebar=True,
         display_options_val_label_value="Relative Abundance",
-        display_options_val_label_sidebar=True
+        display_options_val_label_sidebar=True,
+        display_options_legend_value="""The box plot above shows the relative abundance of the most
+abundant organisms in the dataset. Each box represents the distribution of
+abundances across the samples for a single organism."""
     )
 
     # If the user selected a categorical metadata column to compare between
@@ -656,7 +675,11 @@ def _view_most_abundant_boxplot(mdata: MuData, params: MicrobiomeParams):
             display_options_val_label_value="Relative Abundance",
             display_options_val_label_sidebar=True,
             category_options_axis_value="Color",
-            category_options_sort_by_value="Mean"
+            category_options_sort_by_value="Mean",
+            display_options_legend_value=f"""The box plot above shows the relative abundance of the most
+abundant organisms in the dataset. Each box represents the distribution of
+abundances across the samples for a single organism. The boxes are colored
+based on the annotated value of '{params.label}'."""
         )
 
 
@@ -707,6 +730,10 @@ def _view_pca(mdata: MuData, params: MicrobiomeParams):
         vectors_filter_rows_value_enum_value=top_orgs,
         vectors_filter_rows_value_enum_sidebar=True,
         formatting_title_value="Beta Diversity PCA",
+        formatting_legend_value=f"""Each point represents a single sample.
+The samples are arranged in a two-dimensional space using the PCA algorithm
+such that samples with similar patterns of features are closer together.
+The color of each point represents the annotated value of '{params.label}'."""
     )
 
 
@@ -781,17 +808,17 @@ def _view_orgs_by_cluster(mdata: MuData, params: MicrobiomeParams):
         table_data_transforms_value=["zscores_cols"],
         formatting_sort_by_value="Values",
         formatting_color_value="None",
-        formatting_title_value="Top Organisms by Cluster"
-    )
-
-    view.markdown(mdata, text_value="""The table above shows the top features which
+        formatting_title_value="Top Organisms by Cluster",
+        formatting_legend_value="""The table above shows the top features which
 have the highest standard deviation of abundances across the samples.
 The abundance of each organism is shown for each of the clusters identified by the
 Leiden algorithm.
 The size of each point represents the mean abundance of the feature among the
 samples which were assigned to a particular cluster.
 To account for different scales of abundance, the values have been transformed
-to z-scores.""", text_sidebar=True)
+to z-scores.""",
+        formatting_legend_sidebar=True
+    )
 
 
 def _view_grouping_across_clusters(mdata: MuData, params: MicrobiomeParams):
@@ -856,14 +883,6 @@ def _view_orgs_assoc_with_clusters(mdata: MuData, params: MicrobiomeParams):
     """Summarize the association of individual organisms with the variable"""
 
     stats_table, stats_name = _setup_stats_table_name(params)
-    
-    view.markdown(mdata, text_value=f"""
-**Top Organisms Associated with {params.label}**
-                
-The table below shows the top features which are most strongly associated with
-the variable of interest ({params.label}).
-{stats_name} was used to identify the features which are most strongly
-associated with the variable.""", text_sidebar=True)
 
     view.table(
         mdata,
@@ -883,7 +902,13 @@ associated with the variable.""", text_sidebar=True)
             "neg_log10_pvalue",
             "mean"
         ],
-        data_table_filter_cols_value_enum_sidebar=True
+        data_table_filter_cols_value_enum_sidebar=True,
+        display_options_title_value=f"Top Organisms Associated with {params.label}",
+        display_options_legend_value=f"""
+The table above shows the top features which are most strongly associated with
+the variable of interest ({params.label}).
+{stats_name} was used to identify the features which are most strongly
+associated with the variable."""
     )
 
     view.plotly_scatter(
@@ -904,12 +929,10 @@ associated with the variable.""", text_sidebar=True)
         scale_options_log_x_value=True,
         scale_options_log_x_sidebar=True,
         scale_options_log_y_sidebar=False,
-    )
-
-    view.markdown(mdata, text_value="""
-Each point represents a single microbe.
+        formatting_legend_value=f"""Each point represents a single microbe.
 The vertical position (y-axis) of each point shows the degree of association using the -log10(p-value).
-The x-axis shows the mean abundance of the microbe among the samples.""", text_sidebar=True)
+The x-axis shows the mean abundance of the microbe among the samples."""
+    )
 
 
 def _view_top_assoc_org(mdata: MuData, params: MicrobiomeParams):

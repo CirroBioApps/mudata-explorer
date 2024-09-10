@@ -81,6 +81,8 @@ def plotly_line(
     scale_options_log_y_sidebar=True,
     scale_options_title_value='',
     scale_options_title_sidebar=True,
+    scale_options_legend_value=None,
+    scale_options_legend_sidebar=False,
     **extra_params
 ):
     """
@@ -167,6 +169,8 @@ def plotly_line(
             'scale_options.log_y.value': extra_params.get('scale_options_log_y_value', scale_options_log_y_value),
             'scale_options.log_y.sidebar': extra_params.get('scale_options_log_y_sidebar', scale_options_log_y_sidebar),
             'scale_options.title.value': extra_params.get('scale_options_title_value', scale_options_title_value),
-            'scale_options.title.sidebar': extra_params.get('scale_options_title_sidebar', scale_options_title_sidebar)
+            'scale_options.title.sidebar': extra_params.get('scale_options_title_sidebar', scale_options_title_sidebar),
+            'scale_options.legend.value': extra_params.get('scale_options_legend_value', scale_options_legend_value),
+            'scale_options.legend.sidebar': extra_params.get('scale_options_legend_sidebar', scale_options_legend_sidebar)
         }
     )

@@ -80,6 +80,8 @@ def plotly_category_summarize_values(
     formatting_sort_by_sidebar=True,
     formatting_title_value='',
     formatting_title_sidebar=True,
+    formatting_legend_value=None,
+    formatting_legend_sidebar=False,
     **extra_params
 ):
     """
@@ -182,6 +184,8 @@ def plotly_category_summarize_values(
             'formatting.sort_by.value': extra_params.get('formatting_sort_by_value', formatting_sort_by_value),
             'formatting.sort_by.sidebar': extra_params.get('formatting_sort_by_sidebar', formatting_sort_by_sidebar),
             'formatting.title.value': extra_params.get('formatting_title_value', formatting_title_value),
-            'formatting.title.sidebar': extra_params.get('formatting_title_sidebar', formatting_title_sidebar)
+            'formatting.title.sidebar': extra_params.get('formatting_title_sidebar', formatting_title_sidebar),
+            'formatting.legend.value': extra_params.get('formatting_legend_value', formatting_legend_value),
+            'formatting.legend.sidebar': extra_params.get('formatting_legend_sidebar', formatting_legend_sidebar)
         }
     )

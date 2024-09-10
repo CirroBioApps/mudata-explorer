@@ -49,6 +49,11 @@ which are overlaid on the same plot using different colors.
                     "default": "",
                     "sidebar": True
                 },
+                "legend": {
+                    "type": "string",
+                    "label": "Legend",
+                    "multiline": True
+                },
                 "nbins": {
                     "type": "integer",
                     "label": "Number of Bins",
@@ -131,3 +136,4 @@ which are overlaid on the same plot using different colors.
         )
 
         st.plotly_chart(fig)
+        self.show_legend(key="formatting.legend")

@@ -67,6 +67,8 @@ def plotly_box(
     scale_options_log_y_sidebar=True,
     formatting_title_value='',
     formatting_title_sidebar=True,
+    formatting_legend_value=None,
+    formatting_legend_sidebar=False,
     statistics_compare_groups_value='Disabled',
     statistics_compare_groups_sidebar=True,
     **extra_params
@@ -149,6 +151,8 @@ def plotly_box(
             'scale_options.log_y.sidebar': extra_params.get('scale_options_log_y_sidebar', scale_options_log_y_sidebar),
             'formatting.title.value': extra_params.get('formatting_title_value', formatting_title_value),
             'formatting.title.sidebar': extra_params.get('formatting_title_sidebar', formatting_title_sidebar),
+            'formatting.legend.value': extra_params.get('formatting_legend_value', formatting_legend_value),
+            'formatting.legend.sidebar': extra_params.get('formatting_legend_sidebar', formatting_legend_sidebar),
             'statistics.compare_groups.value': extra_params.get('statistics_compare_groups_value', statistics_compare_groups_value),
             'statistics.compare_groups.sidebar': extra_params.get('statistics_compare_groups_sidebar', statistics_compare_groups_sidebar)
         }

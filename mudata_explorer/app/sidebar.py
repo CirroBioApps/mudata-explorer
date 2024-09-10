@@ -66,6 +66,7 @@ def setup_sidebar(
         ("processes", "Analysis", ":material/function:"),
         ("views", "Figures", ":material/insert_chart:"),
         ("history", "History", ":material/history:"),
+        ("public_data", "Public Data", ":material/local_library:"),
         ("about", "About", ":material/info:")
     ])
     if sidebar_toggle:

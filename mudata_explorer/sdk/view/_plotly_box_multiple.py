@@ -94,6 +94,8 @@ def plotly_box_multiple(
     display_options_val_label_sidebar=False,
     display_options_height_value=500,
     display_options_height_sidebar=False,
+    display_options_legend_value=None,
+    display_options_legend_sidebar=False,
     **extra_params
 ):
     """
@@ -200,6 +202,8 @@ def plotly_box_multiple(
             'display_options.val_label.value': extra_params.get('display_options_val_label_value', display_options_val_label_value),
             'display_options.val_label.sidebar': extra_params.get('display_options_val_label_sidebar', display_options_val_label_sidebar),
             'display_options.height.value': extra_params.get('display_options_height_value', display_options_height_value),
-            'display_options.height.sidebar': extra_params.get('display_options_height_sidebar', display_options_height_sidebar)
+            'display_options.height.sidebar': extra_params.get('display_options_height_sidebar', display_options_height_sidebar),
+            'display_options.legend.value': extra_params.get('display_options_legend_value', display_options_legend_value),
+            'display_options.legend.sidebar': extra_params.get('display_options_legend_sidebar', display_options_legend_sidebar)
         }
     )

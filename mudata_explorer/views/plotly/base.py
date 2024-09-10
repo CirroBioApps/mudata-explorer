@@ -1,6 +1,7 @@
 import pandas as pd
 from mudata_explorer.base.view import View
 import plotly.express as px
+import streamlit as st
 
 
 class Plotly(View):
@@ -47,3 +48,11 @@ class Plotly(View):
                 colorscale = {}
 
         return data, colorscale
+    
+    def show_legend(self, key="formatting.legend"):
+        """
+        Helper method to show the legend.
+        """
+        legend = self.params.get(key)
+        if legend:
+            st.markdown(legend)

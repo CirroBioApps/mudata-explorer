@@ -88,6 +88,17 @@ and using a log scale for the x- and y-axes.
                     "type": "string",
                     "label": "Color Label",
                     "default": "Abundance"
+                },
+                "title": {
+                    "type": "string",
+                    "label": "Title",
+                    "default": "",
+                    "sidebar": True
+                },
+                "legend": {
+                    "type": "string",
+                    "label": "Legend",
+                    "multiline": True
                 }
             }
         }
@@ -161,8 +172,10 @@ and using a log scale for the x- and y-axes.
                 size=self.params["data.columns.size.label.value"],
                 color_val=self.params["formatting.color_label"]
             ),
-            color_continuous_scale=self.params["formatting.colorscale"]
+            color_continuous_scale=self.params["formatting.colorscale"],
+            title=self.params["formatting.title"]
         )
         fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
 
         st.plotly_chart(fig)
+        self.show_legend(key="formatting.legend")

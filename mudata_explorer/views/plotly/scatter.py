@@ -66,6 +66,11 @@ and using a log scale for the x- and y-axes.
                     "label": "Figure Title",
                     "default": "",
                     "sidebar": True
+                },
+                "legend": {
+                    "type": "string",
+                    "label": "Legend",
+                    "multiline": True
                 }
             }
         }
@@ -109,3 +114,4 @@ and using a log scale for the x- and y-axes.
         )
 
         st.plotly_chart(fig)
+        self.show_legend(key="formatting.legend")

@@ -36,6 +36,23 @@ class Table(View):
                     "sidebar": True
                 }
             }
+        },
+        "display_options": {
+            "type": "object",
+            "label": "Display Options",
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "label": "Title",
+                    "default": "",
+                    "sidebar": True
+                },
+                "legend": {
+                    "type": "string",
+                    "label": "Legend",
+                    "multiline": True
+                }
+            }
         }
     }
 
@@ -60,4 +77,12 @@ class Table(View):
         # Sort the data by the column specified in the sort_by column
         data = data.reindex(sort_by.sort_values(by="sort_by").index)
 
+        title = self.params["display_options.title"]
+        if title:
+            st.markdown(f"**{title}**")
+
         st.dataframe(data)
+
+        legend = self.params["display_options.legend"]
+        if legend:
+            st.markdown(legend)
