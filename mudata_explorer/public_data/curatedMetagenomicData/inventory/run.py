@@ -32,7 +32,7 @@ def find_file(basename: str, ix: int) -> str:
     # Use the newest file
     latest_file = max(files, key=getctime)
     rel_path = Path(latest_file).relative_to(Path(".."))
-    path = f"{repo}/public_data/curatedMetagenomicData/{rel_path}"
+    path = f"{repo}/mudata_explorer/public_data/curatedMetagenomicData/{rel_path}"
 
     return f"[**{latest_file.name}**](https://mudata-explorer.streamlit.app/views?file={path})"
 
