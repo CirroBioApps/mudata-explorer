@@ -1,9 +1,0 @@
-[
-    {
-        "dataset_name": "LomanNJ 2013",
-        "cname": "stec_count",
-        "label": "Stec Count",
-        "n_features": 20,
-        "transform": null
-    }
-]
