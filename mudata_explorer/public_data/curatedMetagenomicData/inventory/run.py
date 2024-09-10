@@ -2,11 +2,12 @@ import pandas as pd
 from pathlib import Path
 import json
 from os.path import getctime
+import click
 
-repo = "https://github.com/CirroBioApps/mudata-explorer/raw/main"
+repo = "https://github.com/CirroBioApps/mudata-examples/raw/main"
 
 
-def describe(config: dict, ix: int, basename: str) -> dict:
+def describe(config: dict, ix: int, basename: str, examples_repo: str) -> dict:
 
     df = pd.read_csv(
         basename + ".relative_abundance.tsv",
@@ -18,12 +19,12 @@ def describe(config: dict, ix: int, basename: str) -> dict:
         "Dataset Name": config["dataset_name"],
         "Total Samples": n_samples(config, df),
         "Comparison By": metadata(config, df),
-        "Dataset": find_file(basename, ix),
+        "Dataset": find_file(basename, ix, examples_repo),
         "n": df.shape[0]
     }
 
 
-def find_file(basename: str, ix: int) -> str:
+def find_file(basename: str, ix: int, examples_repo: str) -> str:
     folder, prefix = basename.rsplit("/", 1)
     files = list(Path(folder).rglob(f"{prefix}-{ix}*.h5mu"))
     if len(files) == 0:
@@ -31,8 +32,8 @@ def find_file(basename: str, ix: int) -> str:
     assert len(files) > 0, f"No files found for {basename}-{ix}"
     # Use the newest file
     latest_file = max(files, key=getctime)
-    rel_path = Path(latest_file).relative_to(Path(".."))
-    path = f"{repo}/mudata_explorer/public_data/curatedMetagenomicData/{rel_path}"
+    rel_path = Path(latest_file).relative_to(Path(examples_repo))
+    path = f"{repo}/{rel_path}"
 
     return f"[**{latest_file.name}**](https://mudata-explorer.streamlit.app/views?file={path})"
 
@@ -90,12 +91,13 @@ of the original authors' work, or the conclusions of the curatedMetagenomicData 
         inventory.to_markdown(f, index=False)
 
 
-if __name__ == "__main__":
-
+@click.command()
+@click.argument('examples_repo')
+def run(examples_repo):
     inventory = (
         pd.DataFrame([
-            describe(config, ix, str(config_file).replace(".config.json", ""))
-            for config_file in Path("../data").rglob("*.config.json")
+            describe(config, ix, str(config_file).replace(".config.json", ""), examples_repo)
+            for config_file in (Path(examples_repo) / "curatedMetagenomicData/data").rglob("*.config.json")
             for ix, config in enumerate(json.load(config_file.open()))
         ])
         .sort_values(by="n", ascending=False)
@@ -104,3 +106,7 @@ if __name__ == "__main__":
 
     # Write out as markdown
     write(inventory)
+
+
+if __name__ == "__main__":
+    run()
