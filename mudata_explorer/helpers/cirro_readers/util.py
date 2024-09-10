@@ -357,9 +357,8 @@ def add_scatter(
         data_columns_y_cname_value=y,
         data_columns_y_label_value=ylabel,
         data_columns_y_table_value=[table if ytable is None else ytable],
+        formatting_legend_value=legend
     )
-
-    view.markdown(mdata, text_value=legend)
 
 
 def add_stacked_bars(
@@ -371,7 +370,8 @@ def add_stacked_bars(
     category_label: str,
     category_table="Observation Metadata",
     sort_rows_by="Values",
-    features=None
+    features=None,
+    legend: Optional[str]=None
 ):
     # If a set of features was specified
     if features is not None:
@@ -398,6 +398,7 @@ def add_stacked_bars(
         table_category_columns_category_table_value=[category_table],
         table_category_enabled_value=True,
         table_data_tables_value=[table],
+        formatting_legend_value=legend,
         **filter_kwargs
     )
 
@@ -410,9 +411,6 @@ def add_table(
     sort_by: str,
     axis: int,
 ):
-    if len(title) > 0:
-        view.markdown(mdata, text_value=title)
-
     view.table(
         mdata,
         options_sort_columns_sort_by_cname_value=sort_by,
@@ -420,11 +418,10 @@ def add_table(
         options_sort_columns_sort_by_table_value=[table],
         options_sort_axis_value=axis,
         data_table_axis_value=axis,
-        data_table_tables_value=[table]
+        data_table_tables_value=[table],
+        display_options_title_value=title,
+        display_options_legend_value=legend
     )
-
-    if len(legend) > 0:
-        view.markdown(mdata, text_value=legend)
 
 
 def add_boxplot(
@@ -448,11 +445,9 @@ def add_boxplot(
         data_columns_y_table_value=[y_table],
         data_columns_y_cname_value=y_cname,
         data_columns_y_label_value=y_label,
-        data_columns_color_enabled_value=False
+        data_columns_color_enabled_value=False,
+        formatting_legend_value=legend
     )
-
-    if len(legend) > 0:
-        view.markdown(mdata, text_value=legend)
 
 
 def add_boxplot_multi(
@@ -475,11 +470,9 @@ def add_boxplot_multi(
         variable_options_axis_value="X-Axis",
         display_options_val_label_value=val_label,
         display_options_var_label_value=var_label,
-        display_options_title_value=title
+        display_options_title_value=title,
+        display_options_legend_value=legend
     )
-
-    if len(legend) > 0:
-        view.markdown(mdata, text_value=legend)
 
 
 def add_category_count(
@@ -503,11 +496,9 @@ def add_category_count(
         data_columns_color_label_value=color_label,
         barmode_value="group",
         formatting_title_value=title,
-        annotation_options_chisquare_value=True
+        annotation_options_chisquare_value=True,
+        formatting_legend_value=legend
     )
-
-    if len(legend) > 0:
-        view.markdown(mdata, text_value=legend)
 
 
 def format_float(f: float) -> str:

@@ -128,6 +128,11 @@ class PlotlyBoxMulti(Plotly):
                     "label": "Height",
                     "default": 500,
                     "min_value": 100
+                },
+                "legend": {
+                    "type": "string",
+                    "label": "Legend",
+                    "multiline": True
                 }
             }
         }
@@ -265,3 +270,4 @@ class PlotlyBoxMulti(Plotly):
         fig.update_yaxes(matches=None)
 
         st.plotly_chart(fig)
+        self.show_legend(key="display_options.legend")

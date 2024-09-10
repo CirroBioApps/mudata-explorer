@@ -70,6 +70,10 @@ def table(
     options_sort_filter_rows_value_enum_sidebar=False,
     options_sort_filter_rows_value_str_value=None,
     options_sort_filter_rows_value_str_sidebar=False,
+    display_options_title_value='',
+    display_options_title_sidebar=True,
+    display_options_legend_value=None,
+    display_options_legend_sidebar=False,
     **extra_params
 ):
     """
@@ -145,6 +149,10 @@ def table(
             'options.sort.filter_rows.value_enum.value': extra_params.get('options_sort_filter_rows_value_enum_value', options_sort_filter_rows_value_enum_value),
             'options.sort.filter_rows.value_enum.sidebar': extra_params.get('options_sort_filter_rows_value_enum_sidebar', options_sort_filter_rows_value_enum_sidebar),
             'options.sort.filter_rows.value_str.value': extra_params.get('options_sort_filter_rows_value_str_value', options_sort_filter_rows_value_str_value),
-            'options.sort.filter_rows.value_str.sidebar': extra_params.get('options_sort_filter_rows_value_str_sidebar', options_sort_filter_rows_value_str_sidebar)
+            'options.sort.filter_rows.value_str.sidebar': extra_params.get('options_sort_filter_rows_value_str_sidebar', options_sort_filter_rows_value_str_sidebar),
+            'display_options.title.value': extra_params.get('display_options_title_value', display_options_title_value),
+            'display_options.title.sidebar': extra_params.get('display_options_title_sidebar', display_options_title_sidebar),
+            'display_options.legend.value': extra_params.get('display_options_legend_value', display_options_legend_value),
+            'display_options.legend.sidebar': extra_params.get('display_options_legend_sidebar', display_options_legend_sidebar)
         }
     )

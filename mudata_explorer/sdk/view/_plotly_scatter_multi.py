@@ -110,6 +110,10 @@ def plotly_scatter_multi(
     formatting_ncols_sidebar=False,
     formatting_color_label_value='Abundance',
     formatting_color_label_sidebar=False,
+    formatting_title_value='',
+    formatting_title_sidebar=True,
+    formatting_legend_value=None,
+    formatting_legend_sidebar=False,
     **extra_params
 ):
     """
@@ -235,6 +239,10 @@ and using a log scale for the x- and y-axes.
             'formatting.ncols.value': extra_params.get('formatting_ncols_value', formatting_ncols_value),
             'formatting.ncols.sidebar': extra_params.get('formatting_ncols_sidebar', formatting_ncols_sidebar),
             'formatting.color_label.value': extra_params.get('formatting_color_label_value', formatting_color_label_value),
-            'formatting.color_label.sidebar': extra_params.get('formatting_color_label_sidebar', formatting_color_label_sidebar)
+            'formatting.color_label.sidebar': extra_params.get('formatting_color_label_sidebar', formatting_color_label_sidebar),
+            'formatting.title.value': extra_params.get('formatting_title_value', formatting_title_value),
+            'formatting.title.sidebar': extra_params.get('formatting_title_sidebar', formatting_title_sidebar),
+            'formatting.legend.value': extra_params.get('formatting_legend_value', formatting_legend_value),
+            'formatting.legend.sidebar': extra_params.get('formatting_legend_sidebar', formatting_legend_sidebar)
         }
     )

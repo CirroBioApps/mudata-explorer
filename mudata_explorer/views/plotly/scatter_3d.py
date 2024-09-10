@@ -25,6 +25,23 @@ class PlotlyScatter3D(Plotly):
             "sidebar": True,
             "query": True,
         },
+        "formatting": {
+            "type": "object",
+            "label": "Formatting",
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "label": "Title",
+                    "default": "",
+                    "sidebar": True
+                },
+                "legend": {
+                    "type": "string",
+                    "label": "Legend",
+                    "multiline": True
+                }
+            }
+        },
         "scale_options": {
             "type": "object",
             "label": "Scale Options",
@@ -76,7 +93,9 @@ class PlotlyScatter3D(Plotly):
                 color=self.params["data.columns.color.label.value"],
                 size=self.params["data.columns.size.label.value"]
             ),
+            title=self.params["formatting.title"],
             **colorscale
         )
 
         st.plotly_chart(fig)
+        self.show_legend(key="formatting.legend")

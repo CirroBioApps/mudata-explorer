@@ -57,6 +57,11 @@ The display can be used to show either:
                     "default": "Number of Items",
                     "enum": ["Number of Items", "Odds Ratio (log2)"],
                     "sidebar": True
+                },
+                "legend": {
+                    "type": "string",
+                    "label": "Legend",
+                    "multiline": True
                 }
             }
         }
@@ -172,3 +177,4 @@ The display can be used to show either:
         )
 
         st.plotly_chart(fig)
+        self.show_legend(key="formatting.legend")

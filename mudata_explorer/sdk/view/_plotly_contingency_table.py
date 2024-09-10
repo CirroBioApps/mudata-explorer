@@ -53,6 +53,8 @@ def plotly_contingency_table(
     formatting_colorscale_sidebar=False,
     formatting_values_value='Number of Items',
     formatting_values_sidebar=True,
+    formatting_legend_value=None,
+    formatting_legend_sidebar=False,
     **extra_params
 ):
     """
@@ -126,6 +128,8 @@ The display can be used to show either:
             'formatting.colorscale.value': extra_params.get('formatting_colorscale_value', formatting_colorscale_value),
             'formatting.colorscale.sidebar': extra_params.get('formatting_colorscale_sidebar', formatting_colorscale_sidebar),
             'formatting.values.value': extra_params.get('formatting_values_value', formatting_values_value),
-            'formatting.values.sidebar': extra_params.get('formatting_values_sidebar', formatting_values_sidebar)
+            'formatting.values.sidebar': extra_params.get('formatting_values_sidebar', formatting_values_sidebar),
+            'formatting.legend.value': extra_params.get('formatting_legend_value', formatting_legend_value),
+            'formatting.legend.sidebar': extra_params.get('formatting_legend_sidebar', formatting_legend_sidebar)
         }
     )
