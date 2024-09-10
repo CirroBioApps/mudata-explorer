@@ -625,11 +625,24 @@ def add_modality(
     # to ensure uniqueness
     df = df.rename(columns=lambda cname: f"{mod_name}:{cname}")
 
-    # Add the new modality
-    mdata.mod[mod_name] = ad.AnnData(X=df)
+    # Add the new modality by building a new MuData object
+    mdata = mu.MuData(
+        {
+            **{
+                kw: adata
+                for kw, adata in (
+                    mdata.mod
+                    if isinstance(mdata, mu.MuData)
+                    else {}
+                ).items()
+                if not kw.startswith("_")
+            },
+            mod_name: ad.AnnData(X=df)
+        },
+        uns=mdata.uns if mdata is not None else {},
+        obs=mdata.obs if mdata is not None else None
+    )
 
-    # Update the total set of observation names
-    mdata.update_obs()
     return mdata
 
 
