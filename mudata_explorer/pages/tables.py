@@ -3,6 +3,8 @@ from mudata_explorer.app.sidebar import setup_sidebar
 from mudata_explorer.helpers.join_kws import join_kws
 from mudata_explorer.app.mdata import get_mdata_exists, setup_mdata, get_mdata, set_mdata, add_modality, list_modalities
 from mudata_explorer.helpers.plotting import plot_mdata
+from anndata import AnnData
+from mudata import MuData
 import pandas as pd
 from streamlit.delta_generator import DeltaGenerator
 import streamlit as st
@@ -318,6 +320,77 @@ def add_modality_modal(id="main"):
             st.rerun()
 
 
+def build_mdata(id="main"):
+
+    # Let the user upload a metadata table
+    obs_df = _get_table(
+        st.container(),
+        "Upload Observation Metadata (CSV, TSV, or XLSX)",
+        keep_str=True,
+        key="obs"
+    )
+    if obs_df is not None:
+        st.write(f"Read in {obs_df.shape[0]:,} rows x {obs_df.shape[1]:,} columns.")
+
+    # Let the user specify the number of modalities to add
+    n_mods = st.number_input(
+        "Number of Measurement Modalities",
+        min_value=1,
+        value=1
+    )
+
+    mod_data = []
+
+    for n in range(n_mods):
+        mod_name = st.text_input(
+            f"Measurement Name {n + 1}",
+            help="Enter the name of the measurement.",
+            value=f"Measurement {n + 1}"
+        )
+        if "." in mod_name:
+            st.error("The measurement name cannot contain a period.")
+            return
+        mod_df = _get_table(
+            st.container(),
+            f"Upload New Table {n + 1}",
+            key=f"mod_{n}"
+        )
+        if mod_df is not None:
+            mod_data.append((mod_name, mod_df))
+            st.write(
+                f"Read in {mod_df.shape[0]:,} rows x {mod_df.shape[1]:,} columns."
+            )
+
+    if obs_df is None:
+        st.write("Note: No observation metadata was uploaded.")
+        samples = set()
+    else:
+        samples = set(obs_df.index)
+
+    # Get the total unique set of samples across all modalities
+    for mod_name, mod_df in mod_data:
+        samples.update(mod_df.index)
+    for mod_name, mod_df in mod_data:
+        st.write(f"{mod_name}: {mod_df.shape[0]:,} / {len(samples):,} total samples present")
+
+    if obs_df is not None:
+        obs_df = obs_df.reindex(index=samples)
+
+    if len(mod_data) == 0:
+        st.write("No measurement data was uploaded.")
+        return
+
+    if st.button(f"Create Dataset from {len(mod_data):,} Abundance Tables"):
+        mdata = MuData({
+            mod_name: AnnData(mod_df.reindex(index=samples), obs=obs_df)
+            for mod_name, mod_df in mod_data
+        })
+        mdata.pull_obs()
+
+        # Add it to the session state
+        set_mdata(mdata, id=id, full=False)
+        st.rerun()
+
 def run():
     """Display the page used to upload and modify data tables."""
 
@@ -327,17 +400,23 @@ def run():
 
     plot_mdata()
 
-    # Show the metadata
-    show_table(
-        label="Observation Metadata",
-        slot="obs"
-    )
+    # If no data exists
+    if not get_mdata_exists():
+        
+        # Let the user set up a new dataset
+        st.write("Add tables to buid a dataset.")
+        build_mdata()
 
-    # Show each of the measurement modalities
-    for mod_name in list_modalities():
-        show_modality(mod_name)
-        st.write("---")
+    # If data does exist
+    else:
 
-    # Let the user add a new modality
-    if st.button("Add New Measurement Data"):
-        add_modality_modal()
+        # Show the metadata
+        show_table(
+            label="Observation Metadata",
+            slot="obs"
+        )
+
+        # Show each of the measurement modalities
+        for mod_name in list_modalities():
+            show_modality(mod_name)
+            st.write("---")

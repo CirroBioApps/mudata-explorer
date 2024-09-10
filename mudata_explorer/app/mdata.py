@@ -637,7 +637,11 @@ def add_modality(
                 ).items()
                 if not kw.startswith("_")
             },
-            mod_name: ad.AnnData(X=df)
+            mod_name: ad.AnnData(
+                X=df,
+                obs=pd.DataFrame(index=df.index),
+                var=pd.DataFrame(index=df.columns)
+            )
         },
         uns=mdata.uns if mdata is not None else {},
         obs=mdata.obs if mdata is not None else None

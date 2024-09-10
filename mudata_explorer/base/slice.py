@@ -268,6 +268,7 @@ class MuDataSlice:
             if len(set(dat.index) - set(mdata.obs.index)) > 0:
 
                 # We need to reform the MuData object to include the new observations
+                obs = mdata.obs.merge(dat, how="outer", left_index=True, right_index=True)
                 mdata = MuData(
                     {
                         "_obs": AnnData(
@@ -275,14 +276,14 @@ class MuDataSlice:
                                 np.zeros((dat.shape[0], 1)),
                                 index=dat.index
                             ),
-                            obs=dat
+                            obs=obs
                         ),
                         **{
                             kw: adata
                             for kw, adata in mdata.mod.items()
                         }
-                    },
-                    obs=mdata.obs.merge(dat, how="outer", left_index=True, right_index=True)
+                    }
                 )
+                mdata.pull_obs()
 
         return mdata
