@@ -35,7 +35,7 @@ def find_file(basename: str, ix: int, examples_repo: str) -> str:
     rel_path = Path(latest_file).relative_to(Path(examples_repo))
     path = f"{repo}/{rel_path}"
 
-    return f"[**{latest_file.name}**](https://mudata-explorer.streamlit.app/views?file={path})"
+    return f"[**{latest_file.name}**](?file={path})"
 
 
 def n_samples(config: dict, df: pd.DataFrame) -> str:
