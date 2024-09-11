@@ -272,13 +272,23 @@ def run_kmeans(
     transforms=[],
     dest_key="kmeans"
 ):
+    # Automatically check if max_k is greater than the number of samples
+    n_samples = mdata.shape[0]
+    if n_samples < 10:
+        max_k = n_samples
+    else:
+        max_k = max(k, 10)
+    if n_samples < k:
+        k = n_samples
+
     process.kmeans(
         mdata,
         clustering_k_value=k,
         outputs_dest_key_value=dest_key,
         table_data_axis_value=0,
         table_data_tables_value=[f"{mod}.data"],
-        table_data_transforms_value=transforms
+        table_data_transforms_value=transforms,
+        clustering_max_k_value=max_k
     )
 
 
