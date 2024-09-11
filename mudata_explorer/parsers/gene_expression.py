@@ -337,16 +337,53 @@ the -log10(p-value) for the DESeq2 results.""",
         display_options_title_value=f"DESeq2 Results ({params.ref_group} vs {params.comp_group})"
     )
 
-    # Plot the top result
-    _view_specific_gene(
+    # Plot the top results
+    _view_top_deseq2_genes(
         mdata,
-        params,
-        (
-            mdata.mod["expression"]
-            .varm[stats_table]
-            .sort_values(by="pvalue")
-            .index[0]
-        )
+        params
+    )
+
+
+def _view_top_deseq2_genes(mdata: MuData, params: GeneExpressionParams):
+    stats_table = _deseq2_table_name(params)
+    top_genes = list(
+        mdata.mod["expression"]
+        .varm[stats_table]
+        .sort_values("pvalue", ascending=True)
+        .head(params.n_top_features)
+        .index
+    )
+
+    view.plotly_box_multiple(
+        mdata,
+        table_data_axis_value=0,
+        table_data_tables_value=["expression.data"],
+        table_data_filter_cols_tables_value=["expression.data"],
+        table_data_filter_cols_type_value="index",
+        table_data_filter_cols_expr_value="in",
+        table_data_filter_cols_value_enum_value=top_genes,
+        table_category_enabled_value=True,
+        table_category_axis_value=0,
+        table_category_columns_category_table_value="Observation Metadata",
+        table_category_columns_category_cname_value=params.compare_by,
+        table_category_columns_category_label_value=params.label,
+        variable_options_axis_value="Y-Axis",
+        variable_options_axis_sidebar=True,
+        variable_options_log_values_value=True,
+        variable_options_log_values_sidebar=True,
+        variable_options_sort_by_value="Median",
+        variable_options_sort_by_sidebar=True,
+        category_options_axis_value="Color",
+        category_options_axis_sidebar=True,
+        category_options_sort_by_value="Median",
+        category_options_sort_by_sidebar=False,
+        display_options_title_sidebar=True,
+        display_options_title_value=f"Top DESeq2 Results ({params.ref_group} vs {params.comp_group})",
+        display_options_var_label_value="Gene",
+        display_options_val_label_value="Expression",
+        display_options_legend_value=f"""The boxplot above shows the expression of the top genes
+which were found to be differentially expressed between the groups of '{params.label}'.""",
+        display_options_legend_sidebar=True
     )
 
 
