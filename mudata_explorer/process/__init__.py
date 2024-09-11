@@ -2,6 +2,7 @@ from .umap import UMAP # noqa
 from .pca import RunPCA # noqa
 from .kmeans import RunKmeans # noqa
 from .dbscan import RunDBSCAN # noqa
+from .deseq2 import RunDESeq2 # noqa
 from .hdbscan import RunHDBSCAN # noqa
 from .leiden import RunLeiden # noqa
 from .decision_tree_classifier import DecisionTreeClassifier # noqa

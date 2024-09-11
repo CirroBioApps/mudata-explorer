@@ -13,3 +13,4 @@ scanpy
 leidenalg
 cirro>=1.2.1
 biom-format
+pydeseq2
