@@ -157,6 +157,12 @@ def add_history(event: dict, id="main"):
     set_history(history, id=id)
 
 
+def add_history_inplace(mdata: mu.MuData, event: dict, id="main"):
+    history = mdata.uns.get("mudata-explorer-history", [])
+    history.insert(0, event)
+    mdata.uns["mudata-explorer-history"] = history
+
+
 def get_provenance(id="main") -> Dict[str, dict]:
     return json_safe(
         _get_mdata_elem("provenance", default={}, id=id)
@@ -182,6 +188,16 @@ def add_provenance(
     provenance = get_provenance(id=id)
     provenance[loc.dehydrate()] = event
     set_provenance(provenance, id=id)
+
+
+def add_provenance_inplace(
+    mdata: mu.MuData,
+    loc: MuDataSlice,
+    event: dict
+):
+    provenance = mdata.uns.get("mudata-explorer-provenance", {})
+    provenance[loc.dehydrate()] = event
+    mdata.uns["mudata-explorer-provenance"] = provenance
 
 
 def get_mdata(full=False, id="main") -> Union[None, mu.MuData]:
@@ -588,6 +604,12 @@ def save_annot(
 
     # Mark the source of the table which was added
     add_provenance(loc, event, id=id)
+
+    # For the case in which a process is being run
+    # outside of the session state, add the history
+    # and provenance to the mdata object itself
+    add_history_inplace(mdata, event)
+    add_provenance_inplace(mdata, loc, event)
 
 
 def _overlapping_obs(mdata: mu.MuData, df: pd.DataFrame):
