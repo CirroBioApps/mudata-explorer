@@ -226,9 +226,6 @@ def _read_tss(bed_file: Path) -> pd.DataFrame:
         bed = bed.groupby("name").first().reset_index()
         logger.info(f"Filtered to unique gene names: {bed.shape[0]:,} genes")
 
-    # logger.info("Subsetting to 1000 genes for TESTING") # FIXME
-    # return bed.head(1000)
-
     return bed
 
 

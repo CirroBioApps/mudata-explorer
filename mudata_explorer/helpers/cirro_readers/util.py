@@ -301,6 +301,35 @@ def run_kruskal(
         table_grouping_columns_grouping_table_value=[grouping_table]
     )
 
+
+def run_deseq2(
+    mdata: MuData,
+    table: str,
+    dest_key: str,
+    grouping_cname: str,
+    grouping_table: str,
+    ref_level: str,
+    comp_level: str,
+    alpha=0.05,
+    independent_filter=True
+):
+    process.deseq2(
+        mdata,
+        table_data_axis_value=0,
+        table_data_tables_value=[table],
+        table_data_transforms_value=[],
+        outputs_dest_key_value=dest_key,
+        table_grouping_axis_value=0,
+        table_grouping_columns_grouping_cname_value=grouping_cname,
+        table_grouping_columns_grouping_label_value=grouping_cname,
+        table_grouping_columns_grouping_table_value=[grouping_table],
+        comparison_ref_level_value=ref_level,
+        comparison_comp_level_value=comp_level,
+        comparison_alpha_value=alpha,
+        comparison_independent_filter_value=independent_filter
+    )
+
+
 def run_spearman(
     mdata: MuData,
     table: str,
@@ -337,7 +366,9 @@ def add_scatter(
     is_categorical: bool,
     scale: str,
     xtable=None,
-    ytable=None
+    ytable=None,
+    log_x=False,
+    log_y=False
 ):
 
     view.plotly_scatter(
@@ -357,7 +388,9 @@ def add_scatter(
         data_columns_y_cname_value=y,
         data_columns_y_label_value=ylabel,
         data_columns_y_table_value=[table if ytable is None else ytable],
-        formatting_legend_value=legend
+        formatting_legend_value=legend,
+        scale_options_log_x_value=log_x,
+        scale_options_log_y_value=log_y
     )
 
 
