@@ -2,7 +2,7 @@ import streamlit as st
 from streamlit.errors import StreamlitAPIException
 from typing import Union, List
 from mudata_explorer.app import mdata
-from mudata_explorer.app.query_params import get_show_sidebar_flag, toggle_show_sidebar
+from mudata_explorer.app.query_params import get_show_sidebar_flag, set_show_sidebar_flag
 from mudata_explorer.app.query_params import get_show_menu_flag
 from mudata_explorer.app.query_params import check_file_url
 from mudata_explorer.helpers.save_load import load_history
@@ -21,11 +21,15 @@ def sidebar_page_links(page_links):
 
 def sidebar_toggle_button():
 
-    st.sidebar.button(
-        f"{'Close' if get_show_sidebar_flag() else 'Open'} Sidebar",
-        on_click=toggle_show_sidebar,
+    is_open = get_show_sidebar_flag()
+
+    if st.sidebar.button(
+        f"{'Close' if is_open else 'Open'} Sidebar",
         key="sidebar_toggle_button"
-    )
+    ):
+        st.query_params['show_sidebar'] = str(not is_open)
+        st.session_state['show_sidebar'] = str(not is_open)
+        st.rerun()
 
 
 def sidebar_load_history(id="main"):
@@ -59,6 +63,11 @@ def setup_sidebar(
 
     # If a file link is in the query params
     check_file_url()
+
+    # Check if there are elements in the session state
+    # that need to be propagated to the query params
+    if 'show_sidebar' in st.session_state:
+        set_show_sidebar_flag(st.session_state['show_sidebar'])
 
     sidebar_page_links([
         ("save_load", "Save / Load", ":material/save:"),

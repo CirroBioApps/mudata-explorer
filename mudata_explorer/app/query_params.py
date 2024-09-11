@@ -1,3 +1,4 @@
+from copy import copy
 from mudata_explorer.app.url import load_url
 import streamlit as st
 from typing import Optional
@@ -33,20 +34,14 @@ def set_show_menu_flag(val: bool):
 
 def toggle_show_menu():
     set_show_menu_flag(not get_show_menu_flag())
-    st.rerun()
 
 
 def get_show_sidebar_flag() -> bool:
-    return st.query_params.get("show_sidebar", False)
+    return st.query_params.get("show_sidebar", "False") == 'True'
 
 
 def set_show_sidebar_flag(val: bool):
-    assert isinstance(val, bool)
-    if val:
-        st.query_params["show_sidebar"] = val
-    else:
-        if "show_sidebar" in st.query_params:
-            del st.query_params["show_sidebar"]
+    st.query_params["show_sidebar"] = str(val)
 
 
 def toggle_show_sidebar():
