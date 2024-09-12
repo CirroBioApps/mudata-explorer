@@ -91,6 +91,12 @@ class PlotlyCategorySummarizeValues(Plotly):
                     "type": "string",
                     "label": "Legend",
                     "multiline": True
+                },
+                "transpose": {
+                    "type": "boolean",
+                    "label": "Transpose",
+                    "default": False,
+                    "help": "Swap the x and y axes."
                 }
             }
         }
@@ -215,10 +221,17 @@ class PlotlyCategorySummarizeValues(Plotly):
                 column=self.sort_rows(wide_df.T).index
             )
 
+        if self.params["formatting.transpose"]:
+            x = "category"
+            y = "column"
+        else:
+            x = "column"
+            y = "category"
+
         fig = px.scatter(
             summary,
-            x="column",
-            y="category",
+            x=x,
+            y=y,
             size=size,
             color=color,
             color_continuous_scale=self.params['formatting.colorscale'],
