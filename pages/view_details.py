@@ -94,11 +94,11 @@ def run_edit_view():
         help="Show an example for configuration via SDK."
     )
 
-    st.button(
+    if st.button(
         ":page_facing_up: Save Changes",
-        key=f"save-changes-{view.ix}",
-        on_click=view.save_changes_button
-    )
+        key=f"save-changes-{view.ix}"
+    ):
+        st.switch_page("pages/view_all.py")
 
 
 def run():

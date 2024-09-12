@@ -1,4 +1,3 @@
-from copy import copy
 from mudata_explorer.app.url import load_url
 import streamlit as st
 from typing import Optional
@@ -27,7 +26,14 @@ def clear_edit_view_flag():
 
 
 def check_file_url():
-    if st.query_params.get("file"):
-        load_url(st.query_params["file"])
+    if st.session_state.get("file"):
+        url = st.session_state["file"]
+        del st.session_state["file"]
+    elif st.query_params.get("file"):
+        url = st.query_params["file"]
         del st.query_params["file"]
-        st.switch_page("pages/views.py")
+    else:
+        return
+
+    load_url(url)
+    st.switch_page("pages/views.py")
