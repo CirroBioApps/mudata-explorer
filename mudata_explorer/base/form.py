@@ -1,5 +1,6 @@
 from mudata_explorer.helpers.join_kws import join_kws
-from mudata_explorer.app.query_params import get_edit_view_flag, get_show_sidebar_flag
+from mudata_explorer.app.query_params import get_edit_view_flag
+from mudata_explorer.app.session_state import get_show_sidebar_flag
 from mudata_explorer.app.mdata import get_supp_figs, tree_tables, join_dataframe_tables
 from mudata_explorer.app.mdata import get_view, set_view
 from mudata_explorer.base import all_transforms, get_transform

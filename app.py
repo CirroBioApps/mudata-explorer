@@ -2,7 +2,7 @@
 
 from mudata_explorer.app.mdata import list_modalities, get_mdata_exists
 from mudata_explorer.helpers.views import get_views
-from mudata_explorer import pages
+import streamlit as st
 
 if __name__ == "__main__":
 
@@ -10,7 +10,7 @@ if __name__ == "__main__":
     if (not get_mdata_exists()) or len(list_modalities()) == 0:
 
         # Let the user upload some data to get started
-        pages.load()
+        st.switch_page("pages/load.py")
 
     # If there is data uploaded already
     else:
@@ -19,10 +19,10 @@ if __name__ == "__main__":
         if len(get_views()) > 0:
 
             # Show the views
-            pages.views()
+            st.switch_page("pages/view_all.py")
 
         # If there are no figures to show
         else:
 
             # Show the tables
-            pages.tables()
+            st.switch_page("pages/tables.py")
