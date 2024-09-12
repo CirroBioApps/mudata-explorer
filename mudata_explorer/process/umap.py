@@ -115,6 +115,7 @@ class UMAP(Process):
 
         df: pd.DataFrame = self.params["table.data.dataframe"]
         assert df is not None, self.params
+        df = df.dropna()
 
         # Run UMAP
         res = run_umap(
