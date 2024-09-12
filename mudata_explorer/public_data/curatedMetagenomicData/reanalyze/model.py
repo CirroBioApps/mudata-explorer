@@ -5,10 +5,12 @@ from mudata_explorer.apps.helpers import load_mdata
 from pathlib import Path
 import pandas as pd
 import streamlit as st
+import ssl
 
+ssl._create_default_https_context = ssl._create_unverified_context
 
 def parse(file: Path):
-    
+
     # Parse the curatedMetagenomicData format as AnnData
     adata = curatedMetagenomicData.parse_df(pd.read_csv(file, sep="\t"))
 

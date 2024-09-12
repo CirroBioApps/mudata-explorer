@@ -19,8 +19,8 @@ def describe(config: dict, ix: int, basename: str, examples_repo: str) -> dict:
         "Dataset Name": config["dataset_name"],
         "Total Samples": n_samples(config, df),
         "Comparison By": metadata(config, df),
-        "Dataset": find_file(basename, ix, examples_repo),
-        "n": df.shape[0]
+        "n": df.shape[0],
+        **find_file(basename, ix, examples_repo)
     }
 
 
@@ -35,7 +35,10 @@ def find_file(basename: str, ix: int, examples_repo: str) -> str:
     rel_path = Path(latest_file).relative_to(Path(examples_repo))
     path = f"{repo}/{rel_path}"
 
-    return f"[**{latest_file.name}**](?file={path})"
+    return dict(
+        Dataset=f"[**{latest_file.name}**](?file={path})",
+        path=path
+    )
 
 
 def n_samples(config: dict, df: pd.DataFrame) -> str:
@@ -88,7 +91,9 @@ of the original authors' work, or the conclusions of the curatedMetagenomicData 
 
 """)
         f.write("## Datasets\n\n")
-        inventory.to_markdown(f, index=False)
+        inventory.drop(columns=["path"]).to_markdown(f, index=False)
+
+    inventory.drop(columns=["Dataset"]).to_csv("inventory.csv", index=False)
 
 
 @click.command()
