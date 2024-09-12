@@ -133,9 +133,8 @@ def _view_pca(mdata: MuData, params: GeneExpressionParams):
         .index.values
     )
 
-    # Show the PCA, coloring the points if a metadata column was selected
-    view.plotly_scatter_vectors(
-        mdata,
+    # Between the two scatterplots, many things will be the same
+    shared_kwargs = dict(
         data_axis_value=0,
         data_columns_x_table_value="expression.obsm.pca",
         data_columns_y_table_value="expression.obsm.pca",
@@ -144,12 +143,6 @@ def _view_pca(mdata: MuData, params: GeneExpressionParams):
         data_columns_y_cname_value=pc2_cname,
         data_columns_y_label_value=pc1_cname,
         data_columns_size_enabled_value=False,
-        data_columns_color_enabled_value=params.compare_by is not None,
-        data_columns_color_table_value="Observation Metadata",
-        data_columns_color_cname_value=params.compare_by,
-        data_columns_color_label_value=params.label,
-        data_columns_color_colorscale=("D3" if params.is_categorical else "bluered"),
-        data_columns_color_is_categorical_value=params.is_categorical,
         vectors_axis_value=1,
         vectors_columns_x_table_value="expression.varm.pca",
         vectors_columns_y_table_value="expression.varm.pca",
@@ -163,12 +156,47 @@ def _view_pca(mdata: MuData, params: GeneExpressionParams):
         vectors_filter_rows_expr_value="in",
         vectors_filter_rows_value_enum_value=top_orgs,
         vectors_filter_rows_value_enum_sidebar=True,
-        formatting_title_value="Beta Diversity PCA",
+        formatting_title_value="Gene Expression PCA",
+        formatting_legend_sidebar=True
+    )
+
+    # Show the PCA, coloring the points if a metadata column was selected
+    color_kwargs = dict(
+        data_columns_color_enabled_value=params.compare_by is not None,
+        data_columns_color_table_value="Observation Metadata",
+        data_columns_color_cname_value=params.compare_by,
+        data_columns_color_label_value=params.label,
+        data_columns_color_colorscale=("D3" if params.is_categorical else "bluered"),
+        data_columns_color_is_categorical_value=params.is_categorical,
         formatting_legend_value=f"""Each point represents a single sample.
 The samples are arranged in a two-dimensional space using the PCA algorithm
 such that samples with similar patterns of features are closer together.
 The color of each point represents the annotated value of '{params.label}'.""",
-        formatting_legend_sidebar=True
+    )
+    view.plotly_scatter_vectors(
+        mdata,
+        **shared_kwargs,
+        **color_kwargs
+    )
+
+    # Show the PCA, coloring the points by the k-means clusters
+    color_kwargs = dict(
+        data_columns_color_enabled_value=True,
+        data_columns_color_table_value="Observation Metadata",
+        data_columns_color_cname_value="kmeans",
+        data_columns_color_label_value="K-Means Cluster",
+        data_columns_color_colorscale="D3",
+        data_columns_color_is_categorical_value=True,
+        formatting_legend_value=f"""Each point represents a single sample.
+The samples are arranged in a two-dimensional space using the PCA algorithm
+such that samples with similar patterns of features are closer together.
+The color of each point represents the cluster assigned to each point by
+the K-Means algorithm.""",
+    )
+    view.plotly_scatter_vectors(
+        mdata,
+        **shared_kwargs,
+        **color_kwargs
     )
 
 
@@ -362,6 +390,7 @@ def _view_top_deseq2_genes(mdata: MuData, params: GeneExpressionParams):
         table_data_filter_cols_type_value="index",
         table_data_filter_cols_expr_value="in",
         table_data_filter_cols_value_enum_value=top_genes,
+        table_data_filter_cols_value_enum_sidebar=True,
         table_category_enabled_value=True,
         table_category_axis_value=0,
         table_category_columns_category_table_value="Observation Metadata",
