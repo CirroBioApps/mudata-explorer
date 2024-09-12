@@ -9,11 +9,16 @@ def run():
 
     setup_sidebar("save")
 
-    st.page_link(
-        'pages/save_cirro.py',
-        label='Save to Cirro',
-        icon=":material/public:"
-    )
+    st.write("### Save MuData")
+
+    with st.container(border=1):
+        st.write("### Cirro Data Platform")
+
+        st.page_link(
+            'pages/save_cirro.py',
+            label='Save to Cirro',
+            icon=":material/public:"
+        )
 
     save_load.download_mdata(
         st.container(border=True)

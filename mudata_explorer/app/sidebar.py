@@ -55,14 +55,16 @@ def setup_sidebar(active_page: str):
             "tables",
             "processes",
             "view_all",
-            "history"
+            "history",
+            "save"
         ]
     else:
         disabled_pages = []
 
     sidebar_page_links(
         [
-            ("load", "Load", ":material/save:"),
+            ("load", "Load", ":material/backup:"),
+            ("save", "Save", ":material/save:"),
             ("tables", "Tables", ":material/table:"),
             ("processes", "Analysis", ":material/function:"),
             ("view_all", "Figures", ":material/insert_chart:"),
