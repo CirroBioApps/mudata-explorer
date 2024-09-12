@@ -158,7 +158,7 @@ def run_deseq2(
 
     # Initialize the dataset
     dds = DeseqDataSet(
-        counts=df.applymap(int),
+        counts=df.clip(lower=0).applymap(int),
         metadata=pd.DataFrame(dict(group=group)),
         design_factors="group",
         ref_level=["group", comp_level]
