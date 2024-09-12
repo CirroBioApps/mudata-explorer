@@ -5,12 +5,12 @@ import streamlit as st
 
 def run():
 
-    setup_sidebar()
+    setup_sidebar("load_public_data")
+
+    st.subheader("Load MuData: From Public Data")
 
     st.markdown(
         """
-        # Public Data
-
         This page contains a collection of public data repositories that can be used for analysis.
 
         """
@@ -24,3 +24,13 @@ def run():
 
     # Run that method
     repositories[repo_name].run()
+
+    st.page_link(
+        "pages/load.py",
+        label="Back",
+        icon=":material/arrow_back:"
+    )
+
+
+if __name__ == "__main__":
+    run()

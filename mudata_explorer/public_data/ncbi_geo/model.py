@@ -50,7 +50,11 @@ The full list of available datasets can be found in the [GEO Dataset Browser](ht
             return
 
         # Read the GEO dataset
-        adata, metadata = read_geo(geo_accession)
+        try:
+            adata, metadata = read_geo(geo_accession)
+        except Exception as e:
+            st.error(f"Error loading GEO dataset: {e}")
+            return
 
         # Drop any genes which are all NaN
         adata = adata[:, adata.to_df().notnull().any(axis=0)]

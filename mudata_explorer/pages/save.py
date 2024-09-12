@@ -5,7 +5,7 @@ from mudata_explorer.app.mdata import get_mdata_exists
 
 
 def run():
-    setup_sidebar()
+    setup_sidebar("save")
 
     with st.container(border=1):
         st.write("### Cirro: Save/Load")

@@ -92,7 +92,7 @@ def display_table(container: DeltaGenerator, id="main"):
 
 
 def run():
-    setup_sidebar()
+    setup_sidebar("summarize")
 
     st.write("#### Summarize")
 

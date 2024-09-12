@@ -2,34 +2,21 @@ import streamlit as st
 from streamlit.errors import StreamlitAPIException
 from typing import Union, List
 from mudata_explorer.app import mdata
-from mudata_explorer.app.query_params import get_show_sidebar_flag, set_show_sidebar_flag
-from mudata_explorer.app.query_params import get_show_menu_flag
 from mudata_explorer.app.query_params import check_file_url
 from mudata_explorer.helpers.save_load import load_history
+from mudata_explorer.app.mdata import get_mdata_exists
 from streamlit.delta_generator import DeltaGenerator
 
 
 
-def sidebar_page_links(page_links):
+def sidebar_page_links(page_links, disabled_pages=[]):
     for path, label, icon in page_links:
         st.sidebar.page_link(
             f"pages/{path}.py",
             label=label,
-            icon=icon
+            icon=icon,
+            disabled=path in disabled_pages
         )
-
-
-def sidebar_toggle_button():
-
-    is_open = get_show_sidebar_flag()
-
-    if st.sidebar.button(
-        f"{'Close' if is_open else 'Open'} Sidebar",
-        key="sidebar_toggle_button"
-    ):
-        st.query_params['show_sidebar'] = str(not is_open)
-        st.session_state['show_sidebar'] = str(not is_open)
-        st.rerun()
 
 
 def sidebar_load_history(id="main"):
@@ -43,20 +30,17 @@ def sidebar_load_history(id="main"):
         load_history()
 
 
-def setup_sidebar(
-    sidebar_toggle=False,
-    load_history=False,
-    page_layout="centered"
-):
+def setup_sidebar(active_page: str):
     """
     Setup the sidebar with links to all of the pages.
     If sidebar_toggle is True, add a checkbox to allow the user to edit the views.
     """
+    wide_pages = ["view_sidebar", "view_details", "processes"]
     try:
         st.set_page_config(
             "MuData Explorer",
-            layout=page_layout,
-            initial_sidebar_state="expanded" if get_show_menu_flag() else "collapsed"
+            layout="wide" if active_page in wide_pages else "centered",
+            initial_sidebar_state="expanded"
         )
     except StreamlitAPIException:
         st.rerun()
@@ -64,23 +48,40 @@ def setup_sidebar(
     # If a file link is in the query params
     check_file_url()
 
-    # Check if there are elements in the session state
-    # that need to be propagated to the query params
-    if 'show_sidebar' in st.session_state:
-        set_show_sidebar_flag(st.session_state['show_sidebar'])
+    # If there is no data available
+    if not get_mdata_exists():
+        # Disable the pages that show data
+        disabled_pages = [
+            "tables",
+            "processes",
+            "view_all",
+            "history"
+        ]
+    else:
+        disabled_pages = []
 
-    sidebar_page_links([
-        ("save_load", "Save / Load", ":material/save:"),
-        ("tables", "Tables", ":material/table:"),
-        ("processes", "Analysis", ":material/function:"),
-        ("views", "Figures", ":material/insert_chart:"),
-        ("history", "History", ":material/history:"),
-        ("public_data", "Public Data", ":material/local_library:"),
-        ("about", "About", ":material/info:")
-    ])
-    if sidebar_toggle:
-        sidebar_toggle_button()
-    if load_history:
+    sidebar_page_links(
+        [
+            ("load", "Load", ":material/save:"),
+            ("tables", "Tables", ":material/table:"),
+            ("processes", "Analysis", ":material/function:"),
+            ("view_all", "Figures", ":material/insert_chart:"),
+            ("history", "History", ":material/history:"),
+            ("about", "About", ":material/info:")
+        ],
+        disabled_pages=disabled_pages
+    )
+    if active_page in ["view_sidebar", "view_details", "view_all"]:
+        st.sidebar.write('---')
+        sidebar_page_links(
+            [
+                ("view_all", "Close Sidebar", ":material/insert_chart:"),
+                ("view_sidebar", "Open Sidebar", ":material/edit:")
+            ],
+            disabled_pages=[active_page]
+        )
+
+    elif active_page == "processes":
         sidebar_load_history()
 
 
