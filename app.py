@@ -7,16 +7,10 @@ from mudata_explorer import pages
 if __name__ == "__main__":
 
     # If no data has been uploaded
-    if not get_mdata_exists():
+    if (not get_mdata_exists()) or len(list_modalities()) == 0:
 
         # Let the user upload some data to get started
-        pages.save_load()
-
-    # If no observations have been uploaded
-    elif len(list_modalities()) == 0:
-
-        # Let the user upload some data to get started
-        pages.tables()
+        pages.load()
 
     # If there is data uploaded already
     else:
@@ -30,5 +24,5 @@ if __name__ == "__main__":
         # If there are no figures to show
         else:
 
-            # Show the processes
-            pages.processes()
+            # Show the tables
+            pages.tables()

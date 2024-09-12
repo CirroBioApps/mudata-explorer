@@ -52,3 +52,4 @@ def check_file_url():
     if st.query_params.get("file"):
         load_url(st.query_params["file"])
         del st.query_params["file"]
+        st.switch_page("pages/views.py")

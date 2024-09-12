@@ -1,3 +1,2 @@
-from mudata_explorer.apps.microbiome import run
-
-run.run()
+import streamlit as st
+st.switch_page("pages/load_microbiome.py")

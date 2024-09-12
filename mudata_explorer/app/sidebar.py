@@ -6,6 +6,7 @@ from mudata_explorer.app.query_params import get_show_sidebar_flag, set_show_sid
 from mudata_explorer.app.query_params import get_show_menu_flag
 from mudata_explorer.app.query_params import check_file_url
 from mudata_explorer.helpers.save_load import load_history
+from mudata_explorer.app.mdata import get_mdata_exists
 from streamlit.delta_generator import DeltaGenerator
 
 
@@ -69,19 +70,22 @@ def setup_sidebar(
     if 'show_sidebar' in st.session_state:
         set_show_sidebar_flag(st.session_state['show_sidebar'])
 
-    sidebar_page_links([
-        ("save_load", "Save / Load", ":material/save:"),
-        ("tables", "Tables", ":material/table:"),
-        ("processes", "Analysis", ":material/function:"),
-        ("views", "Figures", ":material/insert_chart:"),
-        ("history", "History", ":material/history:"),
-        ("public_data", "Public Data", ":material/local_library:"),
-        ("about", "About", ":material/info:")
-    ])
-    if sidebar_toggle:
-        sidebar_toggle_button()
-    if load_history:
-        sidebar_load_history()
+    # If there is data uploaded, show the sidebar
+    if get_mdata_exists():
+
+        sidebar_page_links([
+            ("load", "Load", ":material/save:"),
+            ("tables", "Tables", ":material/table:"),
+            ("processes", "Analysis", ":material/function:"),
+            ("views", "Figures", ":material/insert_chart:"),
+            ("history", "History", ":material/history:"),
+            ("public_data", "Public Data", ":material/local_library:"),
+            ("about", "About", ":material/info:")
+        ])
+        if sidebar_toggle:
+            sidebar_toggle_button()
+        if load_history:
+            sidebar_load_history()
 
 
 def landing_shortcuts():

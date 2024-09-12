@@ -9,7 +9,7 @@ def run():
 
     st.markdown(
         """
-        # Public Data
+        #### Public Data
 
         This page contains a collection of public data repositories that can be used for analysis.
 
@@ -24,3 +24,9 @@ def run():
 
     # Run that method
     repositories[repo_name].run()
+
+    st.page_link(
+        "pages/load.py",
+        label="Back",
+        icon=":material/arrow_back:"
+    )
