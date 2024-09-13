@@ -85,7 +85,7 @@ class TTestIndependent(Process):
         group1 = df[group == group.unique()[0]]
         group2 = df[group == group.unique()[1]]
         res = pd.DataFrame([
-            ttest_ind(group1[col], group2[col])
+            ttest_ind(group1[col].dropna(), group2[col].dropna())
             for col in df.columns
         ], index=df.columns)
 
