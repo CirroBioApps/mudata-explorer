@@ -90,13 +90,24 @@ def _save_value(ix: int, prefix: str, value: Any):
     kw = prefix if prefix.endswith(".sidebar") else f"{prefix}.value"
 
     # If the value does not match
-    if view["params"].get(kw) != value:
+    saved_value = view["params"].get(kw)
 
-        # Update it
-        view["params"][kw] = value
+    # Checking for identical values is different for lists
+    if isinstance(value, list):
+        if isinstance(saved_value, list):
+            if set(value) == set(saved_value):
+                return
+    elif not isinstance(value, list) and not isinstance(saved_value, list):
+        if value == saved_value:
+            return
+        
+    # At this point, the value has changed
 
-        # Save the state
-        set_view(ix=ix, view=view)
+    # Update it
+    view["params"][kw] = value
+
+    # Save the state
+    set_view(ix=ix, view=view)
 
 
 class _SharedFunctions:
@@ -1674,9 +1685,17 @@ class MuDataAppDataFrameFilterAxis(MuDataAppFormElement):
                 # If the value-based querying is selected
                 if self._type.value == "value":
                     if self._expr.value == "in":
-                        self.value = df.index.values[df[self._cname.value].apply(lambda v: v in self._value_enum.value)]
+                        self.value = [
+                            ix
+                            for ix, val in zip(df.index.values, df[self._cname.value].values)
+                            if val in self._value_enum.value
+                        ]
                     else:
-                        self.value = df.index.values[df[self._cname.value].apply(lambda v: v not in self._value_enum.value)]
+                        self.value = [
+                            ix
+                            for ix, val in zip(df.index.values, df[self._cname.value].values)
+                            if val not in self._value_enum.value
+                        ]
 
                 # If direct selection of indices was performed
                 else:
