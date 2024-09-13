@@ -10,6 +10,8 @@ def jsonify(dat):
         return [jsonify(val) for val in dat]
     elif isinstance(dat, dict):
         return {kw: jsonify(val) for kw, val in dat.items()}
+    elif isinstance(dat, np.int64):
+        return int(dat)
     else:
         return dat
 

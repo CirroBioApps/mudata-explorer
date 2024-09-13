@@ -4,6 +4,7 @@ from typing import List, Optional, Union
 from mudata import MuData
 import numpy as np
 import pandas as pd
+from mudata_explorer.helpers.io import jsonify
 
 
 class MuDataSlice:
@@ -104,7 +105,7 @@ class MuDataSlice:
         )
 
     def dehydrate(self):
-        return json.dumps(self.params, sort_keys=True)
+        return json.dumps(jsonify(self.params), sort_keys=True)
 
     @classmethod
     def hydrate(cls, params: str):
