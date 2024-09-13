@@ -190,7 +190,7 @@ class PlotlyBoxMulti(Plotly):
         # If all of the columns start with the same prefix
         if data_long[var_name].apply(lambda x: x.split(":")[0]).nunique() == 1:
             data_long[var_name] = data_long[var_name].apply(
-                lambda x: x.split(":", 1)[1]
+                lambda x: x.split(":", 1)[1] if ":" in x else x
             )
 
         # If the category was provided

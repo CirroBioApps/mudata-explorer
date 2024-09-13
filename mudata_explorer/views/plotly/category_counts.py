@@ -96,8 +96,10 @@ class PlotlyCategoryCount(Plotly):
             st.write("Please select a data table")
             return
 
+        # If a continuous color scale was selected
         if "color_continuous_scale" in colorscale:
-            st.error("Color scale must be categorical for this display")
+            # Default to a categorical color scale
+            colorscale = dict(color_discrete_sequence=px.colors.qualitative.D3)
 
         # Count up the number of rows for each unique value
         df = (

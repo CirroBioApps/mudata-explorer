@@ -130,39 +130,28 @@ def edit_view(container: DeltaGenerator, ix: int, n_views: int):
         )
 
     # Let the user add text or a figure above
-    expander.button(
+    if expander.button(
         f":pencil2: Add Text Above",
-        on_click=button_add_view_callback,
-        key=f"add-text-above-{ix}",
-        args=("markdown",),
-        kwargs=dict(ix=ix)
-    )
+        key=f"add-text-above-{ix}"
+    ):
+        button_add_view_callback("markdown", ix=ix)
 
-    expander.button(
+    if expander.button(
         f":chart_with_upwards_trend: Add Figure Above",
-        on_click=button_add_view_callback,
-        key=f"add-figure-above-{ix}",
-        args=("plotly-scatter",),
-        kwargs=dict(ix=ix)
-    )
+        key=f"add-figure-above-{ix}"
+    ):
+        button_add_view_callback("plotly-scatter", ix=ix)
 
 
 def button_add_view():
 
     # Let the user add a text block
-    st.button(
-        f"Add Text",
-        on_click=button_add_view_callback,
-        args=("markdown",),
-        kwargs=dict(ix=-1)
-    )
+    if st.button(f"Add Text"):
+        button_add_view_callback("markdown", ix=-1)
+
     # Let the user add a scatter plot
-    st.button(
-        f"Add Figure",
-        on_click=button_add_view_callback,
-        args=("plotly-scatter",),
-        kwargs=dict(ix=-1)
-    )
+    if st.button(f"Add Figure"):
+        button_add_view_callback("plotly-scatter", ix=-1)
 
 
 def button_add_view_callback(selected_type: str, ix=-1):
