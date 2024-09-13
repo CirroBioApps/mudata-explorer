@@ -1,6 +1,8 @@
 from ._decision_tree_classifier import decision_tree_classifier # noqa
 from ._random_forest_classifier import random_forest_classifier # noqa
 from ._ridge_classifier import ridge_classifier # noqa
+from ._add_column_boolean import add_column_boolean # noqa
+from ._add_column_expr import add_column_expr # noqa
 from ._anova import anova # noqa
 from ._dbscan import dbscan # noqa
 from ._deseq2 import deseq2 # noqa
@@ -15,6 +17,8 @@ from ._shannon_diversity import shannon_diversity # noqa
 from ._summary_stats import summary_stats # noqa
 from ._t_test_ind import t_test_ind # noqa
 from ._umap import umap # noqa
+from ._add_column_boolean import add_column_boolean # noqa
+from ._add_column_expr import add_column_expr # noqa
 from ._anova import anova # noqa
 from ._dbscan import dbscan # noqa
 from ._decision_tree_classifier import decision_tree_classifier # noqa

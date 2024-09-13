@@ -15,3 +15,5 @@ from .anova import RunAnova # noqa
 from .kruskal import RunKruskal # noqa
 from .spearman import RunSpearman # noqa
 from .shannon_diversity import ShannonDiversity # noqa
+from .add_column.boolean import RunAddColumnBoolean # noqa
+from .add_column.expr import RunAddColumnExpression # noqa
