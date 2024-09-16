@@ -1,4 +1,5 @@
 import plotly.express as px
+from plotly.graph_objects import Figure
 import streamlit as st
 from mudata_explorer.views.plotly.base import Plotly
 
@@ -76,7 +77,7 @@ and using a log scale for the x- and y-axes.
         }
     }
 
-    def display(self):
+    def build_figure(self) -> Figure:
 
         data, colorscale = self.fetch_dataframe("data")
         if data is None:
@@ -113,5 +114,4 @@ and using a log scale for the x- and y-axes.
             **colorscale
         )
 
-        st.plotly_chart(fig)
-        self.show_legend(key="formatting.legend")
+        return fig

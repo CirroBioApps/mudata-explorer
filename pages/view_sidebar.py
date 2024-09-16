@@ -1,8 +1,8 @@
-from mudata_explorer.app.mdata import get_views, set_views, get_mdata_exists
+from mudata_explorer.app.mdata import get_view, get_views, set_views, get_mdata_exists
 from mudata_explorer.app.query_params import set_edit_view_flag
 from mudata_explorer.app.session_state import set_show_sidebar_flag
+from mudata_explorer.app.write_image import dialog_write_image
 from mudata_explorer.app.sidebar import setup_sidebar
-from mudata_explorer.base.view import View
 from mudata_explorer.helpers.add_view import add_view
 from mudata_explorer.helpers.assets import make_view
 from mudata_explorer.helpers.views import delete_view, duplicate_view
@@ -142,6 +142,10 @@ def edit_view(container: DeltaGenerator, ix: int, n_views: int):
     ):
         button_add_view_callback("plotly-scatter", ix=ix)
 
+    # Optionally show a button used to write the image to a file
+    with expander:
+        button_write_image(ix)
+
 
 def button_add_view():
 
@@ -160,6 +164,31 @@ def button_add_view_callback(selected_type: str, ix=-1):
         set_edit_view_flag(len(get_views()) - 1)
     else:
         set_edit_view_flag(ix)
+
+
+def button_write_image(ix: int, id="main"):
+
+    # Get the information on the view
+    view = get_view(ix=ix, id=id)
+
+    # Instantiate the View object
+    view = make_view(
+        ix=ix,
+        type=view['type'],
+        params=view['params']
+    )
+    view.params = view.form.dump()
+
+    # If the view has a write_image method
+    if not hasattr(view, "write_image"):
+        return
+
+    st.button(
+        ":camera: Save Image",
+        key=f"save-image-{ix}",
+        on_click=dialog_write_image,
+        args=(view,)
+    )
 
 
 def move_up(ix: int):

@@ -2,6 +2,7 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 import plotly.express as px
+from plotly.graph_objects import Figure
 from plotly import graph_objects as go
 import streamlit as st
 from mudata_explorer.views.plotly.base import Plotly
@@ -80,7 +81,7 @@ The display can be used to show either:
             ]
         )
 
-    def display(self):
+    def build_figure(self) -> Figure:
 
         data: Optional[pd.DataFrame] = self.params.get("data.dataframe")
         if data is None:
@@ -176,5 +177,4 @@ The display can be used to show either:
             yaxis_title=self.params["data.columns.y.label.value"]
         )
 
-        st.plotly_chart(fig)
-        self.show_legend(key="formatting.legend")
+        return fig

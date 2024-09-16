@@ -2,6 +2,7 @@ from mudata_explorer.app.mdata import get_mdata_exists, get_view
 from mudata_explorer.app.query_params import get_edit_view_flag
 from mudata_explorer.app.session_state import set_show_sidebar_flag
 from mudata_explorer.app.sidebar import setup_sidebar
+from mudata_explorer.app.write_image import dialog_write_image
 from mudata_explorer.base.sdk_snippet import show_view_sdk_snippet
 from mudata_explorer.helpers.assets import all_views, make_view
 from mudata_explorer.helpers.assets import asset_categories, asset_dataframe
@@ -98,7 +99,14 @@ def run_edit_view():
         ":page_facing_up: Save Changes",
         key=f"save-changes-{view.ix}"
     ):
-        st.switch_page("pages/view_all.py")
+        st.switch_page("pages/view_sidebar.py")
+
+    st.button(
+        ":camera: Save Image",
+        key=f"save-image-{view.ix}",
+        on_click=dialog_write_image,
+        args=(view,)
+    )
 
 
 def run():

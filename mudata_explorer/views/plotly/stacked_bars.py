@@ -1,6 +1,7 @@
 import pandas as pd
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
+from plotly.graph_objects import Figure
 import streamlit as st
 from mudata_explorer.views.plotly.base import Plotly
 from scipy.cluster import hierarchy
@@ -110,7 +111,7 @@ annotated by a single column which contains categories.
             ]
         )
 
-    def display(self):
+    def build_figure(self) -> Figure:
 
         data: Optional[pd.DataFrame] = self.params.get("table.data.dataframe")
         if data is None:
@@ -215,8 +216,7 @@ annotated by a single column which contains categories.
         # Change the bar mode and add titles
         fig.update_layout(**layout_args)
 
-        st.plotly_chart(fig)
-        self.show_legend(key="formatting.legend")
+        return fig
 
     def _make_bars(self, data: pd.DataFrame, yaxis_title: str):
         return [

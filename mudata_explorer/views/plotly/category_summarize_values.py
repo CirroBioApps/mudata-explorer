@@ -1,5 +1,6 @@
 import pandas as pd
 import plotly.express as px
+from plotly.graph_objects import Figure
 import streamlit as st
 from mudata_explorer.views.plotly.base import Plotly
 from scipy.cluster import hierarchy
@@ -117,7 +118,7 @@ class PlotlyCategorySummarizeValues(Plotly):
             ]
         )
 
-    def display(self):
+    def build_figure(self) -> Figure:
 
         data: Optional[pd.DataFrame] = self.params.get("table.data.dataframe")
         if data is None:
@@ -249,5 +250,4 @@ class PlotlyCategorySummarizeValues(Plotly):
             title=self.params["formatting.title"]
         )
 
-        st.plotly_chart(fig)
-        self.show_legend(key="formatting.legend")
+        return fig

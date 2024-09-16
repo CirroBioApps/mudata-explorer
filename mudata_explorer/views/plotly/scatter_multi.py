@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import plotly.express as px
+from plotly.graph_objects import Figure
 import streamlit as st
 from mudata_explorer.views.plotly.base import Plotly
 
@@ -104,7 +105,7 @@ and using a log scale for the x- and y-axes.
         }
     }
 
-    def display(self):
+    def build_figure(self) -> Figure:
 
         # Get the tables provided by the user
         data = self.params.get("data.dataframe")
@@ -177,5 +178,4 @@ and using a log scale for the x- and y-axes.
         )
         fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
 
-        st.plotly_chart(fig)
-        self.show_legend(key="formatting.legend")
+        return fig
