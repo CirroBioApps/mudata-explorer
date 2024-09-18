@@ -4,7 +4,7 @@ from mudata_explorer.base.slice import MuDataSlice
 from mudata_explorer.helpers.io import json_safe, validate_json
 from mudata_explorer.helpers.join_kws import join_kws
 from mudata_explorer.helpers.timestamp import get_timestamp
-from typing import Union, Dict, Any, List, Tuple, Optional
+from typing import Union, Dict, Any, List, Optional
 import anndata as ad
 import mudata as mu
 import numpy as np

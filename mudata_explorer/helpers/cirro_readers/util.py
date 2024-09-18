@@ -384,6 +384,7 @@ def add_scatter(
     view.plotly_scatter(
         mdata,
         formatting_title_value=title,
+        formatting_title_sidebar=True,
         data_axis_value=axis,
         data_columns_color_cname_value=cname,
         data_columns_color_is_categorical_value=is_categorical,
@@ -393,14 +394,20 @@ def add_scatter(
         data_columns_color_table_value=[color_table],
         data_columns_size_enabled_value=False,
         data_columns_x_cname_value=x,
+        data_columns_x_cname_sidebar=True,
         data_columns_x_label_value=xlabel,
         data_columns_x_table_value=[table if xtable is None else xtable],
         data_columns_y_cname_value=y,
+        data_columns_y_cname_sidebar=True,
         data_columns_y_label_value=ylabel,
         data_columns_y_table_value=[table if ytable is None else ytable],
         formatting_legend_value=legend,
+        formatting_legend_sidebar=True,
         scale_options_log_x_value=log_x,
-        scale_options_log_y_value=log_y
+        scale_options_log_y_value=log_y,
+        scale_options_log_x_sidebar=False,
+        scale_options_log_y_sidebar=False,
+        formatting_opacity_sidebar=False
     )
 
 
@@ -484,12 +491,16 @@ def add_boxplot(
         statistics_compare_groups_value="Kruskal-Wallis",
         data_columns_x_table_value=[x_table],
         data_columns_x_cname_value=x_cname,
+        data_columns_x_cname_sidebar=True,
         data_columns_x_label_value=x_label,
         data_columns_y_table_value=[y_table],
         data_columns_y_cname_value=y_cname,
+        data_columns_y_cname_sidebar=True,
         data_columns_y_label_value=y_label,
         data_columns_color_enabled_value=False,
-        formatting_legend_value=legend
+        formatting_legend_value=legend,
+        formatting_legend_sidebar=True,
+        scale_options_log_y_sidebar=False,
     )
 
 

@@ -30,7 +30,7 @@ def sidebar_load_history(id="main"):
         load_history()
 
 
-def setup_sidebar(active_page: str):
+def setup_sidebar(active_page: str, title="MuData Explorer"):
     """
     Setup the sidebar with links to all of the pages.
     If sidebar_toggle is True, add a checkbox to allow the user to edit the views.
@@ -38,9 +38,9 @@ def setup_sidebar(active_page: str):
     wide_pages = ["view_sidebar", "view_details", "processes"]
     try:
         st.set_page_config(
-            "MuData Explorer",
+            title,
             layout="wide" if active_page in wide_pages else "centered",
-            initial_sidebar_state="expanded"
+            initial_sidebar_state="expanded" if st.query_params.get("show_menu") else "collapsed"
         )
     except StreamlitAPIException:
         st.rerun()
@@ -73,7 +73,7 @@ def setup_sidebar(active_page: str):
         ],
         disabled_pages=disabled_pages
     )
-    if active_page in ["view_sidebar", "view_details", "view_all"]:
+    if active_page in ["view_sidebar", "view_details", "view_all", "microbiome"]:
         st.sidebar.write('---')
         sidebar_page_links(
             [

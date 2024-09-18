@@ -214,49 +214,75 @@ which have a particular value of the Shannon Diversity Index (shown on the x-axi
     )
 
     # If the user selected a categorical metadata column to compare between
-    if params.compare_by and params.is_categorical:
+    if params.compare_by:
 
-        # Enable the grouping
-        kwargs["data"]["columns"]["grouping"] = {
-            "enabled": {
-                "value": True,
-                "sidebar": False
-            },
-            "sidebar": False,
-            "table": {
-                "value": "Observation Metadata",
-                "sidebar": False
-            },
-            "cname": {
-                "value": params.compare_by,
-                "sidebar": False
-            },
-            "label": {
-                "value": params.label,
-                "sidebar": False
-            },
-            "scale": {
-                "value": "D3",
-                "sidebar": False
-            },
-            "colorscale": True,
-            "is_categorical": {
-                "value": True,
-                "sidebar": False
+        # Show a boxplot of the alpha diversity by group
+        if params.is_categorical:
+
+            # Enable the grouping
+            kwargs["data"]["columns"]["grouping"] = {
+                "enabled": {
+                    "value": True,
+                    "sidebar": False
+                },
+                "sidebar": False,
+                "table": {
+                    "value": "Observation Metadata",
+                    "sidebar": False
+                },
+                "cname": {
+                    "value": params.compare_by,
+                    "sidebar": False
+                },
+                "label": {
+                    "value": params.label,
+                    "sidebar": False
+                },
+                "scale": {
+                    "value": "D3",
+                    "sidebar": False
+                },
+                "colorscale": True,
+                "is_categorical": {
+                    "value": True,
+                    "sidebar": False
+                }
             }
-        }
-        # Update the title
-        kwargs["formatting"]["title"]["value"] = f"Distribution of Alpha Diversity by {params.label}"
-        # Update the legend
-        kwargs["formatting"]["legend"]["value"] += f"The samples are colored based on the annotated value of '{params.label}'."
-        # Compute stats between the groups
-        kwargs["statistics"]["compare_groups"]["value"] = "Kruskal-Wallis"
+            # Update the title
+            kwargs["formatting"]["title"]["value"] = f"Distribution of Alpha Diversity by {params.label}"
+            # Update the legend
+            kwargs["formatting"]["legend"]["value"] += f"The samples are colored based on the annotated value of '{params.label}'."
+            # Compute stats between the groups
+            kwargs["statistics"]["compare_groups"]["value"] = "Kruskal-Wallis"
 
-        # Add that histogram as well
-        view.plotly_histogram(
-            mdata,
-            **copy(kwargs)
-        )
+            # Add that histogram as well
+            view.plotly_histogram(
+                mdata,
+                **copy(kwargs)
+            )
+
+        # Show a scatter plot of the alpha diversity by the variable
+        else:
+                
+                # Show a scatter plot of the alpha diversity by the variable
+                util.add_scatter(
+                    mdata,
+                    title="",
+                    legend=f"""The alpha diversity of each sample is shown on the y-axis.
+The x-axis shows the value of '{params.label}' for each sample.
+""",
+                    x=params.compare_by,
+                    xlabel=params.label,
+                    y="shannon",
+                    ylabel="Shannon Diversity Index",
+                    table="Observation Metadata",
+                    axis=0,
+                    color_table=None,
+                    cname=None,
+                    label=None,
+                    is_categorical=False,
+                    scale=None
+                )
 
 
 def _view_most_abundant_boxplot(mdata: MuData, params: MicrobiomeParams):
@@ -269,6 +295,7 @@ def _view_most_abundant_boxplot(mdata: MuData, params: MicrobiomeParams):
         table_data_filter_cols=common.top_features_filter_cols(mdata, params.n_top_features),
         variable_options_axis_value="X-Axis",
         variable_options_log_values_value=False,
+        variable_options_log_values_sidebar=False,
         display_options_title_value="High Abundance Organisms",
         display_options_var_label_value="Organisms",
         display_options_var_label_sidebar=True,
@@ -276,7 +303,7 @@ def _view_most_abundant_boxplot(mdata: MuData, params: MicrobiomeParams):
         display_options_val_label_sidebar=True,
         display_options_legend_value="""The box plot above shows the relative abundance of the most
 abundant organisms in the dataset. Each box represents the distribution of
-abundances across the samples for a single organism."""
+abundances across the samples for a single organism.""",
     )
 
     # If the user selected a categorical metadata column to compare between
