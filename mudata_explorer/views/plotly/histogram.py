@@ -103,24 +103,7 @@ which are overlaid on the same plot using different colors.
                 d["value"].dropna().values for group, d in data.groupby("grouping")
                 if d["value"].notnull().sum() > 1 and group is not None
             ]
-            if method == "ANOVA":
-                res = f_oneway(*vals)
-            else:
-                assert method == "Kruskal-Wallis"
-                res = kruskal(*vals)
-            # Format the p-value as a string
-            pvalue = (
-                f"{res.pvalue:.4f}"
-                if res.pvalue > 0.0001
-                else f"{res.pvalue:.2e}"
-            )
-
-            # Add it to the title
-            formatted_result = f"{method} p-value: {pvalue}"
-            if len(title) > 0:
-                title = f"{title} ({formatted_result})"
-            else:
-                title = formatted_result
+            title = self._add_stats_title(title, method, vals)
 
         fig = px.histogram(
             data,

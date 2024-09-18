@@ -3,6 +3,7 @@ import pandas as pd
 from mudata_explorer.base.view import View
 import plotly.express as px
 from plotly.graph_objects import Figure
+from scipy.stats import f_oneway, kruskal
 import streamlit as st
 
 
@@ -85,3 +86,36 @@ class Plotly(View):
         if fig is not None:
             fig.write_image(filename, **kwargs)
         assert os.path.exists(filename), f"File not found: {filename}"
+
+    def _add_stats_title(self, title: str, method: str, vals: list) -> str:
+        """
+        Add the results of a statistical test to the title of a figure.
+        """
+        if method == "ANOVA":
+            try:
+                res = f_oneway(*vals)
+            except ValueError:
+                return title
+        elif method == "Kruskal-Wallis":
+            try:
+                res = kruskal(*vals)
+            except ValueError:
+                return title
+        else:
+            raise ValueError(f"Unknown method: {method}")
+
+        # Format the p-value as a string
+        pvalue = (
+            f"{res.pvalue:.4f}"
+            if res.pvalue > 0.0001
+            else f"{res.pvalue:.2e}"
+        )
+
+        # Add it to the title
+        formatted_result = f"{method} p-value: {pvalue}"
+        if len(title) > 0:
+            title = f"{title} ({formatted_result})"
+        else:
+            title = formatted_result
+
+        return title

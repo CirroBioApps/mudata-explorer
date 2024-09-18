@@ -1,6 +1,5 @@
 import plotly.express as px
 from plotly.graph_objects import Figure
-from scipy.stats import f_oneway, kruskal
 import streamlit as st
 from mudata_explorer.views.plotly.base import Plotly
 
@@ -93,24 +92,7 @@ class PlotlyBox(Plotly):
                 d["y"].dropna().values for _, d in data.groupby("x")
                 if d["y"].notnull().sum() > 1
             ]
-            if method == "ANOVA":
-                res = f_oneway(*vals)
-            else:
-                assert method == "Kruskal-Wallis"
-                res = kruskal(*vals)
-            # Format the p-value as a string
-            pvalue = (
-                f"{res.pvalue:.4f}"
-                if res.pvalue > 0.0001
-                else f"{res.pvalue:.2e}"
-            )
-
-            # Add it to the title
-            formatted_result = f"{method} p-value: {pvalue}"
-            if len(title) > 0:
-                title = f"{title} ({formatted_result})"
-            else:
-                title = formatted_result
+            title = self._add_stats_title(title, method, vals)
 
         fig = px.box(
             data,
