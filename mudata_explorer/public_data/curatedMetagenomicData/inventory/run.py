@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import pandas as pd
 from pathlib import Path
 import json
@@ -24,21 +26,23 @@ def describe(config: dict, ix: int, basename: str, examples_repo: str) -> dict:
     }
 
 
-def find_file(basename: str, ix: int, examples_repo: str) -> str:
-    folder, prefix = basename.rsplit("/", 1)
-    files = list(Path(folder).rglob(f"{prefix}-{ix}*.h5mu"))
+def _find_file(folder: str, prefix: str, ix: int, suffix: str, examples_repo: str) -> str:
+    files = list(Path(folder).rglob(f"{prefix}-{ix}*{suffix}"))
     if len(files) == 0:
         return
-    assert len(files) > 0, f"No files found for {basename}-{ix}"
+    assert len(files) > 0, f"No files found for {prefix}-{ix}"
     # Use the newest file
     latest_file = max(files, key=getctime)
     rel_path = Path(latest_file).relative_to(Path(examples_repo))
-    path = f"{repo}/{rel_path}"
+    return f"{repo}/{rel_path}"
 
-    return dict(
-        Dataset=f"[**{latest_file.name}**](?file={path})",
-        path=path
-    )
+def find_file(basename: str, ix: int, examples_repo: str) -> str:
+    folder, prefix = basename.rsplit("/", 1)
+    path = _find_file(folder, prefix, ix, "h5mu", examples_repo)
+    # Also get the thumbnail
+    png = _find_file(folder, prefix, ix, "png", examples_repo)
+
+    return dict(path=path, png=png)
 
 
 def n_samples(config: dict, df: pd.DataFrame) -> str:
@@ -93,7 +97,7 @@ of the original authors' work, or the conclusions of the curatedMetagenomicData 
         f.write("## Datasets\n\n")
         inventory.drop(columns=["path"]).to_markdown(f, index=False)
 
-    inventory.drop(columns=["Dataset"]).to_csv("inventory.csv", index=False)
+    inventory.to_csv("inventory.csv", index=False)
 
 
 @click.command()
