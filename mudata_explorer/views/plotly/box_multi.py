@@ -266,6 +266,7 @@ class PlotlyBoxMulti(Plotly):
                 else False
             ),
             category_orders=category_orders,
+            color_discrete_sequence=px.colors.qualitative.D3,
             **kwargs
         )
         fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
