@@ -96,7 +96,6 @@ class Plotly(View):
             )
             # The input element can limit the selection modes available
             selection_mode = self.form.get_selection_mode(fig_ix)
-            print(fig_ix, on_select, selection_mode)
             # Call the figure
             selection: dict = (
                 cols[fig_ix]

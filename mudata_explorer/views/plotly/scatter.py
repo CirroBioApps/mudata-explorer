@@ -1,5 +1,5 @@
 import plotly.express as px
-from plotly.graph_objects import Figure
+import plotly.graph_objects as go
 import streamlit as st
 from mudata_explorer.views.plotly.base import Plotly
 
@@ -74,10 +74,16 @@ and using a log scale for the x- and y-axes.
                     "multiline": True
                 }
             }
+        },
+        "selection": {
+            "type": "selection",
+            "selection_type": "point_indices",
+            "selection_mode": ["points"],
+            "operation": "toggle"
         }
     }
 
-    def build_figure(self) -> Figure:
+    def build_figure(self) -> go.Figure:
 
         data, colorscale = self.fetch_dataframe("data")
         if data is None:
@@ -91,6 +97,7 @@ and using a log scale for the x- and y-axes.
         except ValueError:
             opacity = 1.0
 
+        # Make the figure
         fig = px.scatter(
             data.reset_index(),
             x="x",
@@ -113,5 +120,22 @@ and using a log scale for the x- and y-axes.
             title=self.params["formatting.title"],
             **colorscale
         )
+
+        # Get any point selected by the user
+        selected = self.params.get("selection", [])
+
+        # If any points are selected, label them
+        if selected is not None and len(selected) > 0:
+            # Add a label to the selected points
+            fig.add_trace(
+                go.Scatter(
+                    x=data.iloc[selected]["x"],
+                    y=data.iloc[selected]["y"],
+                    mode="text",
+                    textposition="top center",
+                    text=data.index[selected],
+                    showlegend=False
+                )
+            )
 
         return fig
