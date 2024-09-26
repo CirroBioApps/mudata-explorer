@@ -107,10 +107,8 @@ class Plotly(View):
             )
             if self.form.uses_plotly_selection(fig_ix):
                 if self.form.save_selection(selection.get("selection"), fig_ix):
-                    print('here1')
                     self.save_changes()
                     st.rerun()
-                    print('here2')
 
         self.show_legend()
 
