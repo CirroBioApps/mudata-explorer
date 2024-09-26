@@ -1863,11 +1863,14 @@ class MuDataAppPlotlySelection(MuDataAppFormElement):
         elif self.operation == "toggle":
             for val in new_vals:
                 # Remove it if it is already in self.value
-                if val in self.value:
+                if self.value is not None and val in self.value:
                     self.value.remove(val)
                 # Add it if it is not
                 else:
-                    self.value.append(val)
+                    if self.value is None:
+                        self.value = []
+                    else:
+                        self.value.append(val)
         elif self.operation == "remove":
             # Remove the selected elements
             self.value = [
