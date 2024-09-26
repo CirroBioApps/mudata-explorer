@@ -36,14 +36,19 @@ def setup_sidebar(active_page: str, title="MuData Explorer"):
     If sidebar_toggle is True, add a checkbox to allow the user to edit the views.
     """
     wide_pages = ["view_sidebar", "view_details", "processes"]
+    hide_menu_pages = ["view_all", "view_sidebar", "microbiome"]
     try:
         st.set_page_config(
             title,
             layout="wide" if active_page in wide_pages else "centered",
-            initial_sidebar_state="expanded" if st.query_params.get("show_menu") else "collapsed"
+            initial_sidebar_state="collapsed" if active_page in hide_menu_pages else "expanded"
         )
     except StreamlitAPIException:
         st.rerun()
+
+    if active_page.startswith("view_"):
+        # If we navigate back to the Figures page, use this one
+        st.session_state["last-view-page"] = active_page
 
     # If a file link is in the query params
     check_file_url()
@@ -67,7 +72,7 @@ def setup_sidebar(active_page: str, title="MuData Explorer"):
             ("save", "Save", ":material/save:"),
             ("tables", "Tables", ":material/table:"),
             ("processes", "Analysis", ":material/function:"),
-            ("view_all", "Figures", ":material/insert_chart:"),
+            (st.session_state.get("last-view-page", "view_all"), "Figures", ":material/insert_chart:"),
             ("history", "History", ":material/history:"),
             ("about", "About", ":material/info:")
         ],
@@ -75,10 +80,11 @@ def setup_sidebar(active_page: str, title="MuData Explorer"):
     )
     if active_page in ["view_sidebar", "view_details", "view_all", "microbiome"]:
         st.sidebar.write('---')
+        st.sidebar.markdown("**View Mode**")
         sidebar_page_links(
             [
-                ("view_all", "Close Sidebar", ":material/insert_chart:"),
-                ("view_sidebar", "Open Sidebar", ":material/edit:")
+                ("view_all", "Figures Only", ":material/insert_chart:"),
+                ("view_sidebar", "Figures + Sidebar", ":material/edit:")
             ],
             disabled_pages=[active_page]
         )
