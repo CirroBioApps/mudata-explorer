@@ -252,6 +252,22 @@ class MuDataAppFormElement(_SharedFunctions):
     # Flag used to indicate whether sufficient input has been provided
     complete: bool
 
+    # Whether the element will use a plotly selection input
+    def uses_plotly_selection(self, fig_ix: int) -> bool:
+        return False
+    
+    def get_selection_mode(self, fig_ix: int) -> Optional[str]:
+        return None
+
+    def save_selection(self, selection, fig_ix: int) -> bool:
+        """
+        Save the selection (PlotlyState) to the state.
+        Implemented by the MuDataAppPlotlySelection class.
+        The fig_ix argument is used to differentiate when
+        multiple figures are rendered by a view.
+        """
+        return False
+
     def __init__(self, schema: dict, prefix=None, ix=-1, sidebar=True):
         """
         Set up the form element.
@@ -496,6 +512,9 @@ class MuDataAppFormElement(_SharedFunctions):
         elif elem["type"] == "dataframe":
             return MuDataAppDataFrame(elem, prefix=elem_key, ix=self.ix)
         
+        elif elem["type"] == "selection":
+            return MuDataAppPlotlySelection(elem, prefix=elem_key, ix=self.ix)
+        
         else:
             raise ValueError(f"Unrecognized type: {elem['type']}")
 
@@ -525,6 +544,25 @@ class MuDataAppForm(MuDataAppFormElement):
             elem_key: self.parse_elem(elem, self._kw(elem_key))
             for elem_key, elem in schema.get("properties", {}).items()
         }
+
+    def uses_plotly_selection(self, fig_ix: int):
+        return any([
+            elem.uses_plotly_selection(fig_ix)
+            for elem in self.properties.values()
+        ])
+    
+    def get_selection_mode(self, fig_ix: int):
+        for elem in self.properties.values():
+            mode = elem.get_selection_mode(fig_ix)
+            if mode is not None:
+                return mode
+        return
+
+    def save_selection(self, selection, fig_ix: int) -> bool:
+        return any([
+            elem.save_selection(selection, fig_ix)
+            for elem in self.properties.values()
+        ])
 
     @property
     def complete(self):
@@ -1757,3 +1795,85 @@ class MuDataAppDataFrameFilterAxis(MuDataAppFormElement):
         self._expr.load(params.get("expr"))
         self._value_enum.load(params.get("value_enum"))
         self._value_str.load(params.get("value_str"))
+
+
+class MuDataAppPlotlySelection(MuDataAppFormElement):
+    """
+    Element used to store a selection made by the user
+    within a plotly figure.
+    """
+    # Selected elements
+    value: Optional[List[Union[dict, int]]]
+    # Which figure selection is saved from
+    fig_ix: int = 0
+    # What type of selection event to save
+    selection_type: str
+    _valid_selection_types = ["points", "point_indices", "box", "lasso"]
+    # What type of selection modes to allow
+    selection_mode: List[str]
+    _default_selection_mode = ['points', 'box', 'lasso']
+    # What operation should be performed on the selection
+    # replace: replace the current selection with the new one
+    # append: add the new selection to the current one
+    # toggle: add/remove the selections from the current one
+    # remove: only remove selected elements
+    operation: str = "replace"
+
+    def __init__(self, schema: dict, prefix: str, ix: int):
+        super().__init__(schema, prefix, ix)
+        self.fig_ix = schema.get("fig_ix", 0)
+        self.selection_type = schema.get("selection_type")
+        assert self.selection_type is not None, "Must specify selection_type in schema"
+        assert self.selection_type in self._valid_selection_types, self.selection_type
+        self.selection_mode = schema.get("selection_mode", self._default_selection_mode)
+        assert isinstance(self.selection_mode, list), self.selection_mode
+        assert all([mode in self._default_selection_mode for mode in self.selection_mode]), self.selection_mode
+        self.operation = schema.get("operation", "replace")
+
+    def uses_plotly_selection(self, fig_ix: int) -> bool:
+        return fig_ix == self.fig_ix
+    
+    def get_selection_mode(self, fig_ix: int) -> str:
+        if self.uses_plotly_selection(fig_ix):
+            return self.selection_mode
+
+    def save_selection(self, selection, fig_ix: int) -> bool:
+        if selection is None:
+            return False
+        # Only save the selection from the appropriate figure
+        if fig_ix != self.fig_ix:
+            return False
+        new_vals = selection[self.selection_type]
+        if len(new_vals) == 0:
+            return False
+        # If all of the values are the same, take no action
+        if self.value is not None and \
+            len(self.value) == len(new_vals) and \
+                all([
+                    a == b
+                    for a, b in zip(self.value, new_vals)
+                ]):
+            return False
+        if self.operation == "append":
+            if self.value is None:
+                self.value = []
+            self.value = list(set(self.value) | set(new_vals))
+        elif self.operation == "replace":
+            self.value = new_vals
+        elif self.operation == "toggle":
+            for val in new_vals:
+                # Remove it if it is already in self.value
+                if val in self.value:
+                    self.value.remove(val)
+                # Add it if it is not
+                else:
+                    self.value.append(val)
+        elif self.operation == "remove":
+            # Remove the selected elements
+            self.value = [
+                val
+                for val in self.value
+                if val not in new_vals
+            ]
+        _save_value(self.ix, self.prefix, self.value)
+        return True

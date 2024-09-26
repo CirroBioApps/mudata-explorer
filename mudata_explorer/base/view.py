@@ -1,9 +1,7 @@
-from typing import Optional
 from mudata_explorer.app.mdata import get_view, set_view
 from mudata_explorer.helpers.params import nest_params
 from mudata_explorer.base.base import MuDataAppAction
 import streamlit as st
-from streamlit.delta_generator import DeltaGenerator
 
 
 class View(MuDataAppAction):

@@ -1,6 +1,8 @@
+from copy import copy
 import os
 import pandas as pd
 from mudata_explorer.base.view import View
+from mudata_explorer.base.form import _save_value
 import plotly.express as px
 from plotly.graph_objects import Figure
 from scipy.stats import f_oneway, kruskal
@@ -74,10 +76,44 @@ class Plotly(View):
         display a legend.
         """
 
-        fig = self.build_figure()
-        if fig is not None:
-            st.plotly_chart(fig)
-            self.show_legend()
+        fig_list = self.build_figure()
+        if fig_list is None:
+            return
+        
+        if not isinstance(fig_list, list):
+            fig_list = [fig_list]
+
+        # Display in a set of columns
+        cols = st.columns(len(fig_list))
+
+        for fig_ix, fig in enumerate(fig_list):
+            # The selection will trigger a rerun only
+            # if the form contains a MuDataAppPlotlySelection element
+            on_select = (
+                "rerun"
+                if self.form.uses_plotly_selection(fig_ix)
+                else "ignore"
+            )
+            # The input element can limit the selection modes available
+            selection_mode = self.form.get_selection_mode(fig_ix)
+            print(fig_ix, on_select, selection_mode)
+            # Call the figure
+            selection: dict = (
+                cols[fig_ix]
+                .plotly_chart(
+                    copy(fig),
+                    on_select=on_select,
+                    selection_mode=selection_mode
+                )
+            )
+            if self.form.uses_plotly_selection(fig_ix):
+                if self.form.save_selection(selection.get("selection"), fig_ix):
+                    print('here1')
+                    self.save_changes()
+                    st.rerun()
+                    print('here2')
+
+        self.show_legend()
 
     def write_image(self, filename: str, **kwargs):
         """Write the image to a file."""
