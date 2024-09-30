@@ -10,13 +10,17 @@ from streamlit.delta_generator import DeltaGenerator
 
 
 def sidebar_page_links(page_links, disabled_pages=[]):
-    for path, label, icon in page_links:
-        st.sidebar.page_link(
-            f"pages/{path}.py",
-            label=label,
-            icon=icon,
-            disabled=path in disabled_pages
-        )
+    for i in page_links:
+        if i is None:
+            st.sidebar.write("---")
+        else:
+            path, label, icon = i
+            st.sidebar.page_link(
+                f"pages/{path}.py",
+                label=label,
+                icon=icon,
+                disabled=path in disabled_pages
+            )
 
 
 def sidebar_load_history(id="main"):
@@ -66,14 +70,18 @@ def setup_sidebar(active_page: str, title="MuData Explorer"):
     else:
         disabled_pages = []
 
+    # Use the view page saved in the session state, if available
+    view_page = st.session_state.get("last-view-page", "view_all")
+
     sidebar_page_links(
         [
+            (view_page, "View Figures", ":material/insert_chart:"),
+            ("tables", "Source Data", ":material/table:"),
+            ("processes", "Run Analysis", ":material/function:"),
+            ("history", "History", ":material/history:"),
+            None,
             ("load", "Load", ":material/backup:"),
             ("save", "Save", ":material/save:"),
-            ("tables", "Tables", ":material/table:"),
-            ("processes", "Analysis", ":material/function:"),
-            (st.session_state.get("last-view-page", "view_all"), "Figures", ":material/insert_chart:"),
-            ("history", "History", ":material/history:"),
             ("about", "About", ":material/info:")
         ],
         disabled_pages=disabled_pages
