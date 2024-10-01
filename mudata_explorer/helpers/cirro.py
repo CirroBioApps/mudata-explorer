@@ -111,17 +111,16 @@ def load_from_cirro(
     dataset = _select_dataset(project, filter_process_ids=filter_process_ids)
     if dataset is None:
         return
-    
+        
     # If the selection was hardcoded, just load the dataset
     # But if not, ask the user if they want to load it
-    if dataset.id != st.query_params.get("dataset_id"):
+    if show_link and dataset.id != st.query_params.get("dataset_id"):
 
         cols = st.columns([1, 5])
 
         # Show a link to the dataset
-        if show_link:
-            url = _load_dataset_url(project.id, dataset.id)
-            cols[1].code(url, language=None)
+        url = _load_dataset_url(project.id, dataset.id)
+        cols[1].code(url, language=None)
 
         # Ask the user if they want to load the dataset
         if not cols[0].button("Load", use_container_width=True):
@@ -365,6 +364,7 @@ def _read_dataset(
                 return False
             else:
                 return None
+            
 
     # MuData datasets
     if dataset.process_id == "mudata-h5mu":

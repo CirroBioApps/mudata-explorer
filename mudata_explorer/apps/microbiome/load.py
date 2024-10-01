@@ -46,21 +46,9 @@ project.''')
 
 
 def run():
-    source = st.selectbox(
-        'Load Data From',
-        options=[
-            'BIOM File',
-            'Curated Metagenomic Data',
-            'Cirro'
-        ],
-        index=None
-    )
-    st.session_state['microbiome-empty-input'] = False
-    if source == 'BIOM File':
-        _load_data_biom()
-    elif source == 'Curated Metagenomic Data':
-        _load_data_cmd()
-    elif source == 'Cirro':
+    # Let people load data from Cirro
+    with st.container(border=1):
+        st.write("#### Load From Cirro")
         cirro.load_from_cirro(
             filter_process_ids=[
                 "ingest_biom",
@@ -69,5 +57,19 @@ def run():
             ],
             show_link=False
         )
-    else:
-        st.session_state['microbiome-empty-input'] = True
+
+    with st.container(border=1):
+        st.write("#### Upload Local Files")
+
+        source = st.selectbox(
+            'File Format',
+            options=[
+                'BIOM File',
+                'Curated Metagenomic Data'
+            ],
+            index=None
+        )
+        if source == 'BIOM File':
+            _load_data_biom()
+        elif source == 'Curated Metagenomic Data':
+            _load_data_cmd()
