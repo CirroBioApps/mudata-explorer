@@ -8,7 +8,7 @@ from mudata_explorer.app.hash import get_dat_hash, set_mdata_hash, hash_dat
 
 
 def upload_mdata(container: DeltaGenerator, id="main"):
-    container.write("#### Upload MuData File")
+    container.write("#### Load from File")
     h5mu_file = container.file_uploader(
         "**Upload MuData (.h5mu)**"
     )

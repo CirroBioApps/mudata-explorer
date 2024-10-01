@@ -111,11 +111,21 @@ def load_from_cirro(
     dataset = _select_dataset(project, filter_process_ids=filter_process_ids)
     if dataset is None:
         return
+    
+    # If the selection was hardcoded, just load the dataset
+    # But if not, ask the user if they want to load it
+    if dataset.id != st.query_params.get("dataset_id"):
 
-    # Show a link to the dataset
-    if show_link:
-        url = _load_dataset_url(project.id, dataset.id)
-        st.markdown(f"[Permalink]({url})")
+        cols = st.columns([1, 5])
+
+        # Show a link to the dataset
+        if show_link:
+            url = _load_dataset_url(project.id, dataset.id)
+            cols[1].code(url, language=None)
+
+        # Ask the user if they want to load the dataset
+        if not cols[0].button("Load", use_container_width=True):
+            return
 
     # Read the MuData object from the contents of the dataset
     mdata = _read_dataset(dataset)
@@ -308,25 +318,33 @@ def _select_dataset(
 
     # Give the user the option to select a dataset
     if datasets:
-        dataset = st.selectbox(
-            "Dataset",
-            [ds.name for ds in datasets],
-            index=None,
-            placeholder="< select a dataset >",
-            key="select-dataset"
+        st.write(":arrow_down_small: Select a dataset")
+        selection = st.dataframe(
+            [
+                dict(
+                    Name=ds.name,
+                    Description=ds.description,
+                    Created=ds.created_at,
+                    User=ds.created_by,
+                    id=ds.id
+                )
+                for ds in datasets
+            ],
+            column_config=dict(id=None),
+            hide_index=True,
+            key="select-dataset",
+            selection_mode="single-row",
+            on_select="rerun"
         )
     else:
         st.write("No datasets available")
         return
 
-    if dataset is None:
+    if len(selection.get("selection", {}).get("rows", [])) == 0:
         return
 
     # Return the dataset object
-    for ds in datasets:
-        if ds.name == dataset:
-            return ds
-    raise ValueError(f"Dataset '{dataset}' not found")
+    return datasets[selection["selection"]["rows"][0]]
 
 
 def _read_dataset(
