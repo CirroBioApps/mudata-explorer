@@ -6,7 +6,6 @@ import pandas as pd
 import streamlit as st
 from typing import Tuple, List, Optional
 from mudata_explorer.helpers.cirro_readers import util
-from mudata_explorer.sdk import io, view
 from mudata_explorer.parsers.microbiome import parse_adata
 
 levels = ["Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species", "Species_exact"]

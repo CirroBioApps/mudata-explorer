@@ -19,7 +19,11 @@ def read(
     file = select_file(dataset)
 
     # Parse the curatedMetagenomicData format as AnnData
-    adata = curatedMetagenomicData.parse_df(file.read_csv(sep="\t"))
+    adata = curatedMetagenomicData.parse_df(
+        file
+        .read_csv(sep="\t")
+        .rename(columns=dict(sample="sample_id"))
+    )
 
     # Run the microbiome analysis
     return microbiome.parse_adata(adata)

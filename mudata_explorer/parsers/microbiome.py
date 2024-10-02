@@ -591,7 +591,7 @@ def _view_top_assoc_org(mdata: MuData, params: MicrobiomeParams):
     stats_table, _ = _setup_stats_table_name(params)
 
     # Plot the most strongly associated organism
-    org = mdata.mod["abund"].varm[stats_table.split(".")[-1]]["neg_log10_pvalue"].idxmax()
+    org = mdata.mod["abund"].varm[stats_table.split("varm.")[-1]]["neg_log10_pvalue"].idxmax()
     if params.is_categorical:
         util.add_boxplot(
             mdata,
