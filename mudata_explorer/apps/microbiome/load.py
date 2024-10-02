@@ -98,7 +98,10 @@ project.''')
         return
 
     # Parse the curatedMetagenomicData format as AnnData
-    adata = curatedMetagenomicData.parse_df(pd.read_csv(file, sep="\t"))
+    adata = curatedMetagenomicData.parse_df(
+        pd.read_csv(sep="\t")
+        .rename(columns=dict(sample="sample_id"))
+    )
 
     # Run the microbiome analysis
     mdata = microbiome.parse_adata(adata, groupby_var=True)
