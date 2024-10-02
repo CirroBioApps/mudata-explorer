@@ -17,7 +17,7 @@ def read(
     adata = _read_biom_as_anndata(dataset)
     if adata is None:
         return
-    
+
     return parse_adata(adata)
 
 

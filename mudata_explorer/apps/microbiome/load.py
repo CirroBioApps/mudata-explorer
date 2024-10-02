@@ -4,7 +4,7 @@ from biom import load_table
 import pandas as pd
 from mudata_explorer.helpers import cirro
 from mudata_explorer.parsers import curatedMetagenomicData
-from mudata_explorer.parsers import microbiome
+from mudata_explorer.parsers import microbiome, metaphlan
 from mudata_explorer.apps.helpers import load_mdata
 import streamlit as st
 from tempfile import NamedTemporaryFile
@@ -111,50 +111,33 @@ def _load_data_metaphlan():
     abund = _read_table("Upload the abundance table", comment="#")
     if abund is None:
         return
-    
-    # The samples are in the columns, so transpose the table
-    abund = abund.T
-    
+        
     # The user must select which taxonomic level to use
     tax_level = st.selectbox(
         "Taxonomic Level",
         ["Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species", "Strain"],
         index=6
     )
-    # Get the single letter code used to filter
-    slc = tax_level[0].lower() if tax_level != "Strain" else "t"
 
-    # Filter the table
-    abund = abund[
-        [
-            col for col in abund.columns
-            if col.split("|")[-1].startswith(f"{slc}__")
-        ]
-    ]
+    # Parse the table using the syntax of MetaPhlAn
+    abund, tax = metaphlan.parse_df(abund, tax_level)
 
-    # Rename the columns
-    abund.rename(
-        columns={
-            col: [
-                part.split("__")[1].replace("_", " ")
-                for part in col.split("|")
-                if part.startswith(f"{slc}__")
-            ][0]
-            for col in abund.columns
-        },
-        inplace=True
+    # Show the top organisms
+    st.write("Top Organisms:")
+    st.dataframe(
+        abund
+            .mean()
+            .sort_values(ascending=False).head(10)
+            .rename_axis("Organism")
+            .rename("Mean Abundance"),
+        use_container_width=True
     )
-    
-    # The values need to be converted to proportions
-    abund = abund.apply(lambda x: x / x.sum(), axis=1)
 
     # Optional: Upload sample metadata
     obs = _read_table("Upload sample metadata (optional)")
-    # Optional: Upload organism metadata
-    var = _read_table("Upload organism metadata (optional)")
 
     # Parse the data into an AnnData object
-    adata = AnnData(abund, obs=obs, var=var)
+    adata = AnnData(abund, obs=obs, var=tax)
 
     mdata = microbiome.parse_adata(adata, groupby_var=False)
     load_mdata(mdata)
@@ -168,7 +151,8 @@ def run():
             filter_process_ids=[
                 "ingest_biom",
                 "process-nf-core-ampliseq-2-4-0",
-                "curated_metagenomic_data"
+                "curated_metagenomic_data",
+                "process-hutch-metaphlan-paired-1-0"
             ],
             show_link=False
         )
