@@ -6,6 +6,7 @@ from mudata_explorer.app.query_params import check_file_url
 from mudata_explorer.helpers.save_load import load_history
 from mudata_explorer.app.mdata import get_mdata_exists
 from streamlit.delta_generator import DeltaGenerator
+from streamlit_extras.stylable_container import stylable_container
 
 
 
@@ -30,8 +31,17 @@ def sidebar_load_history(id="main"):
     if not mdata.has_history(exclude=['add_data', 'add_view'], id=id):
         return
 
-    if st.sidebar.button("Rerun Analysis"):
-        load_history()
+    with st.sidebar:
+        with stylable_container(
+            key="Upload_Data",
+            css_styles="""
+            button{
+                border: none;
+            }
+            """
+        ):
+            if st.button("Rerun Analysis"):
+                load_history()
 
 
 def setup_sidebar(active_page: str, title="MuData Explorer"):
