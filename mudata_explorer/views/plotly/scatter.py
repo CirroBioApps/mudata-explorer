@@ -2,6 +2,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 from mudata_explorer.views.plotly.base import Plotly
+from scipy.stats import linregress
 
 
 class PlotlyScatter(Plotly):
@@ -49,6 +50,18 @@ and using a log scale for the x- and y-axes.
                 }
             }
         },
+        "stats_options": {
+            "type": "object",
+            "label": "Statistics Options",
+            "properties": {
+                "linregress": {
+                    "type": "boolean",
+                    "label": "Show Linear Regression (scipy.stats.linregress)",
+                    "default": False,
+                    "sidebar": True
+                }
+            }
+        },
         "formatting": {
             "type": "object",
             "label": "Formatting",
@@ -74,12 +87,6 @@ and using a log scale for the x- and y-axes.
                     "multiline": True
                 }
             }
-        },
-        "selection": {
-            "type": "selection",
-            "selection_type": "point_indices",
-            "selection_mode": ["points"],
-            "operation": "toggle"
         }
     }
 
@@ -96,6 +103,24 @@ and using a log scale for the x- and y-axes.
             opacity = float(self.params["formatting.opacity"])
         except ValueError:
             opacity = 1.0
+
+        # Set the default title
+        title = self.params.get("formatting.title", "")
+
+        # If the user has enabled linear regression
+        if self.params["stats_options.linregress"]:
+
+            # Run the linear regression
+            slope, intercept, r_value, p_value, std_err = linregress(
+                data["x"],
+                data["y"]
+            )
+
+            # Add the r_value and p_value to the title
+            if title:
+                title += f" (Linear Regression: r={r_value:.2f}, p={p_value:.2e})"
+            else:
+                title = f"Linear Regression: r={r_value:.2f}, p={p_value:.2e}"
 
         # Make the figure
         fig = px.scatter(
@@ -117,25 +142,24 @@ and using a log scale for the x- and y-axes.
                 color=self.params["data.columns.color.label.value"],
                 size=self.params["data.columns.size.label.value"]
             ),
-            title=self.params["formatting.title"],
+            title=title,
             **colorscale
         )
 
-        # Get any point selected by the user
-        selected = self.params.get("selection", [])
+        # If the user has enabled linear regression
+        if self.params["stats_options.linregress"]:
 
-        # If any points are selected, label them
-        if selected is not None and len(selected) > 0:
-            # Add a label to the selected points
+            # Add the linear regression line to the figure behind other elements
             fig.add_trace(
                 go.Scatter(
-                    x=data.iloc[selected]["x"],
-                    y=data.iloc[selected]["y"],
-                    mode="text",
-                    textposition="top center",
-                    text=data.index[selected],
-                    showlegend=False
+                    x=[data["x"].min(), data["x"].max()],
+                    y=[slope * data["x"].min() + intercept, slope * data["x"].max() + intercept],
+                    mode="lines",
+                    line=dict(color="grey", dash="dash"),
+                    name="Linear Regression"
                 )
             )
+            # Move the linear regression line trace to the first position
+            fig.data = fig.data[-1:] + fig.data[:-1]
 
         return fig
