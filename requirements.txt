@@ -16,3 +16,4 @@ biom-format
 GEOparse
 pydeseq2
 streamlit-extras
+kaleido
