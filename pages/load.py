@@ -37,6 +37,21 @@ def run():
             icon=":material/microbiology:"
         )
 
+    # Let the user load from a URL
+    with st.container(border=1):
+        st.write("#### Load from URL")
+        url = st.text_input(
+            "MuData URL (*.h5mu)",
+            key="url",
+            placeholder="https://example.com/data.h5mu"
+        )
+        if url:
+            escaped_url = urllib.parse.quote(url, safe='')
+            st.markdown(f"[Permalink](?file={url})")
+            if st.button("Load"):
+                st.session_state["file"] = url
+                st.rerun()
+
 
 if __name__ == "__main__":
     run()
