@@ -112,13 +112,13 @@ def edit_view(container: DeltaGenerator, ix: int, n_views: int):
         delete_view(ix)
         st.rerun()
 
-    expander.button(
+    if expander.button(
         ":heavy_plus_sign: Duplicate",
-        on_click=duplicate_view,
         key=f"duplicate-view-{ix}",
-        args=(ix,),
         help="Make a copy of this view."
-    )
+    ):
+        duplicate_view(ix)
+        st.rerun()
 
     if ix < (n_views - 1):
         expander.button(
