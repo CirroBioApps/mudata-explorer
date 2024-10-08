@@ -46,7 +46,6 @@ def run():
             placeholder="https://example.com/data.h5mu"
         )
         if url:
-            escaped_url = urllib.parse.quote(url, safe='')
             st.markdown(f"[Permalink](?file={url})")
             if st.button("Load"):
                 st.session_state["file"] = url
