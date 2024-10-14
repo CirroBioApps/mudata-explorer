@@ -157,7 +157,7 @@ def _load_dataset_url(
             dataset_id=dataset_id
         ).items()
     ])
-    return f"{app_url}/cirro_load?{query_args}"
+    return f"{app_url}/load?{query_args}"
 
 
 def save_to_cirro(id="main"):
