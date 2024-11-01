@@ -21,7 +21,8 @@ def sdk_snippet(view: dict):
         .replace('null', 'None')
         .replace("\n", "\n    ")
     )
-    return f"""view.{view['type'].replace('-', '_')}(
+    return f"""from mudata_explorer.sdk import view
+view.{view['type'].replace('-', '_')}(
     mdata,
     **{params_str}
 )
