@@ -1,3 +1,4 @@
+from typing import Optional
 import pandas as pd
 import plotly.express as px
 from plotly.graph_objects import Figure
@@ -46,7 +47,7 @@ class PlotlyBoxMulti(Plotly):
                 "axis": {
                     "type": "string",
                     "label": "Show Value On",
-                    "enum": ["X-Axis", "Y-Axis"],
+                    "enum": ["X-Axis", "Y-Axis", "Color", "Facet"],
                     "default": "Y-Axis",
                     "sidebar": True,
                 },
@@ -176,13 +177,6 @@ class PlotlyBoxMulti(Plotly):
             .melt(id_vars="index")
         )
 
-        # Set up the elements which are always the same
-        kwargs = dict(
-            y="value",
-            facet_col_wrap=int(self.params["display_options.ncols"]),
-            height=self.params["display_options.height"],
-            title=self.params["display_options.title"]
-        )
         var_name = (
             "variable"
             if "variable" in data_long.columns
@@ -203,33 +197,13 @@ class PlotlyBoxMulti(Plotly):
                 category=lambda df: df["index"].apply(category.get)
             )
 
-            # Format the display with the category as a facet
-            if self.params["category_options.axis"] == "Facet":
-                kwargs['x'] = var_name
-                kwargs['facet_col'] = "category"
-                kwargs['boxmode'] = "overlay"
-
-            # Show the category on the x-axis
-            elif self.params["category_options.axis"] == "Axis":
-                kwargs['x'] = "category"
-                kwargs['color'] = var_name
-            else:
-                # Display as a color
-                assert self.params["category_options.axis"] == "Color"
-                kwargs['x'] = var_name
-                kwargs['color'] = "category"
-
-        # If no category was provided
-        else:
-            # Format the display with no category
-            kwargs["x"] = var_name
-
-        # If the user wants to show the variable on the x-axis
-        if self.params["variable_options.axis"] == "X-Axis":
-            kwargs["x"], kwargs["y"] = kwargs["y"], kwargs["x"]
-            kwargs["log_x"] = self.params["variable_options.log_values"]
-        else:
-            kwargs["log_y"] = self.params["variable_options.log_values"]
+        # Set up the kwargs
+        kwargs = self._setup_kwargs(
+            use_category=category is not None,
+            var_name=var_name
+        )
+        if kwargs is None:
+            return
 
         # Set up the ordering
         category_orders = {
@@ -273,3 +247,148 @@ class PlotlyBoxMulti(Plotly):
         fig.update_yaxes(matches=None)
 
         return fig
+
+    def _setup_kwargs(self, use_category: bool, var_name: str) -> Optional[dict]:
+
+        # Set up the elements which are always the same
+        kwargs = dict(
+            facet_col_wrap=int(self.params["display_options.ncols"]),
+            height=self.params["display_options.height"],
+            title=self.params["display_options.title"]
+        )
+
+        # Make some more readable names for what we're working with
+        category_axis = self.params["category_options.axis"] if use_category else None
+        variable_axis = self.params["variable_options.axis"]
+        log_values = self.params["variable_options.log_values"]
+
+        # The x-axis will be the variable
+
+        # If a category was provided
+        if use_category:
+            # If the category is on a facet
+            if category_axis == "Facet":
+
+                # Use the category as a facet
+                kwargs['facet_col'] = "category"
+                kwargs['boxmode'] = "overlay"
+
+                # The variable cannot also be a facet
+                if variable_axis == "Facet":
+                    st.error("Cannot have both variable and category as facets.")
+                    return
+                
+                # The variable cannot be a color, because then no axis is defined
+                elif variable_axis == "Color":
+                    st.error("Cannot have variable as color with category as facet - no axis is defined.")
+                    return
+
+                # If the  is on the x-axis, then the value is on the y-axis
+                elif variable_axis == "X-Axis":
+                    
+                    kwargs["x"] = var_name
+                    kwargs["y"] = "value"
+                    kwargs["log_y"] = log_values
+
+                # If the variable is on the y-axis, then the value is on the x-axis
+                else:
+                    if variable_axis != "Y-Axis":
+                        st.error(f"Unexpected condition encountered (variable_axis == '{variable_axis}')")
+                        return
+
+                    kwargs["y"] = var_name
+                    kwargs["x"] = "value"
+                    kwargs["log_x"] = log_values
+
+            # If the category is being shown on an axis
+            elif category_axis == "Axis":
+
+                # The variable cannot be on the x or y axis
+                if variable_axis in ["X-Axis", "Y-Axis"]:
+                    st.error("Cannot have variable as axis with category as axis.")
+                    return
+                
+                # If the variable is a color
+                elif variable_axis == "Color":
+                    kwargs['x'] = "category"
+                    kwargs['color'] = var_name
+                    kwargs['y'] = 'value'
+                    kwargs['log_y'] = log_values
+
+                # If the variable is a facet and the category is on an axis
+                else:
+                    if variable_axis != "Facet":
+                        st.error(f"Unexpected condition encountered (variable_axis == '{variable_axis}')")
+                        return
+
+                    kwargs['x'] = "category"
+                    kwargs['y'] = 'value'
+                    kwargs['log_y'] = log_values
+                    kwargs['facet_col'] = var_name
+                    kwargs['boxmode'] = "overlay"
+
+            else:
+                # Display the category as a color
+                if category_axis != "Color":
+                    st.error(f"Unexpected condition encountered (category_axis == '{category_axis}')")
+                    return
+
+                # The color is the category 
+                kwargs['color'] = "category"
+
+                # The variable cannot be a color
+                if variable_axis == "Color":
+                    st.error("Cannot have variable as color with category as color.")
+                    return
+
+                # The variable cannot be a facet
+                elif variable_axis == "Facet":
+                    st.error("Cannot have variable as facet with category as color.")
+                    return
+
+                # If the variable is on the x-axis, then the value is on the y-axis
+                elif variable_axis == "X-Axis":
+                    kwargs['x'] = var_name
+                    kwargs['y'] = 'value'
+                    kwargs['log_y'] = log_values
+
+                # If the variable is on the y-axis, then the value is on the x-axis
+                elif variable_axis == "Y-Axis":
+                    kwargs['y'] = var_name
+                    kwargs['x'] = 'value'
+                    kwargs['log_x'] = log_values
+
+                else:
+                    st.error(f"Unexpected condition encountered (variable_axis == '{variable_axis}')")
+                    return
+                
+        # If there is no category
+        else:
+
+            # If the variable is on the x-axis
+            if variable_axis == "X-Axis":
+                kwargs["x"] = var_name
+                kwargs["y"] = "value"
+                kwargs["log_y"] = log_values
+
+            # If the variable is on the y-axis
+            elif variable_axis == "Y-Axis":
+                kwargs["y"] = var_name
+                kwargs["x"] = "value"
+                kwargs["log_x"] = log_values
+
+            # The variable cannot be a color
+            elif variable_axis == "Color":
+                st.error("Cannot have variable as color with no category.")
+                return
+            
+            # The variable cannot be a facet
+            elif variable_axis == "Facet":
+                st.error("Cannot have variable as facet with no category.")
+                return
+
+            else:
+                st.error(f"Unexpected condition encountered (variable_axis == '{variable_axis}')")
+                return
+            
+        return kwargs
