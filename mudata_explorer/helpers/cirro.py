@@ -179,15 +179,14 @@ def save_to_cirro(id="main"):
     name = st.text_input("Name")
     description = st.text_area("Description")
 
-    if not st.button("Save"):
-        return
-
     if not name:
         st.error("Name is required")
         return
 
     if not description:
-        st.error("Description is required")
+        description = ""
+
+    if not st.button("Save"):
         return
 
     # Get the active dataset
