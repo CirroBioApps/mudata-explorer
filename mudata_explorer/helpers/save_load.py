@@ -61,7 +61,7 @@ def download_mdata(container: DeltaGenerator):
     # Name the downloaded file for the hash of the data
     filename = name + f"-{hash}.h5mu"
     if container.download_button(
-        f"Download MuData ({filename}.h5mu)",
+        f"Download MuData ({filename})",
         dat,
         filename,
         help="Click here to download the MuData object as a file."
