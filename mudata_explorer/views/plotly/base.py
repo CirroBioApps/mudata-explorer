@@ -1,7 +1,9 @@
 from copy import copy
+import json
 import os
+from typing import List
 import pandas as pd
-from mudata_explorer.base.view import View
+from mudata_explorer.base.view import View, ViewJSON
 from mudata_explorer.base.form import _save_value
 import plotly.express as px
 from plotly.graph_objects import Figure
@@ -70,10 +72,9 @@ class Plotly(View):
 
         raise NotImplementedError("Must implement build_figure method")
 
-    def display(self):
+    def _make_fig_list(self) -> List[Figure]:
         """
-        By default, every plotly display will build a plotly chart and optionally
-        display a legend.
+        Build figures and return as a list.
         """
 
         fig_list = self.build_figure()
@@ -82,6 +83,17 @@ class Plotly(View):
         
         if not isinstance(fig_list, list):
             fig_list = [fig_list]
+
+        return fig_list
+
+    def display(self):
+        """
+        By default, every plotly display will build a plotly chart and optionally
+        display a legend.
+        """
+
+        # Get the list of figures
+        fig_list = self._make_fig_list()
 
         # Display in a set of columns
         cols = st.columns(len(fig_list))
@@ -111,6 +123,24 @@ class Plotly(View):
                     st.rerun()
 
         self.show_legend()
+
+    def to_json(self) -> ViewJSON:
+        """Return a serialization of the displayed figure."""
+
+        self.params = self.form.dump()
+
+        fig_list = self._make_fig_list()
+
+        if fig_list is None:
+            return dict()
+
+        return dict(
+            type="plotly",
+            figures=[
+                json.loads(fig.to_json())
+                for fig in fig_list
+            ]
+        )
 
     def write_image(self, filename: str, **kwargs):
         """Write the image to a file."""

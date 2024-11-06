@@ -1,3 +1,4 @@
+import json
 from typing import Optional, Union, List
 from cirro import CirroApi, DataPortal, DataPortalProject
 from cirro import DataPortalDataset
@@ -206,15 +207,20 @@ def save_to_cirro(id="main"):
     basename = name.replace(' ', '-').lower().replace('/', '-')
     while "--" in basename:
         basename = basename.replace("--", "-")
-    fn = f"{basename}-{hash}.h5mu"
+    fn = f"{basename}-{hash}"
 
     # Write out the dataset to a temporary file
     # and upload it to Cirro
     with TemporaryDirectory() as tmp:
 
         # Write the MuData object to the file
-        with open(f"{tmp}/{fn}", "wb")as handle:
+        with open(f"{tmp}/{fn}.h5mu", "wb") as handle:
             handle.write(blob)
+
+        # Write the MuData object to the file
+        with open(f"{tmp}/{fn}.json", "wt") as handle:
+
+            json.dump(util.build_json(), handle, indent=2)
 
         # Upload the file to Cirro
         try:

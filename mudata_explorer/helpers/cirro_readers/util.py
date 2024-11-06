@@ -10,9 +10,12 @@ from tempfile import TemporaryDirectory
 from time import sleep
 from typing import List, Optional
 import re
+from pathlib import Path
 import pandas as pd
 from mudata import MuData
 from mudata_explorer.sdk import process, view
+from mudata_explorer.app.mdata import get_views
+from mudata_explorer.helpers.assets import make_view
 
 
 def clear_cirro_client():
@@ -564,3 +567,28 @@ def format_float(f: float) -> str:
         return f"{f:.4f}"
     else:
         return f"{f:.2e}"
+
+
+def make_views():
+
+    views = get_views()
+
+    return [
+        make_view(
+            ix=ix,
+            type=view["type"],
+            params=view["params"]
+        )
+        for ix, view in enumerate(views)
+    ]
+
+
+def build_json() -> List[dict]:
+    """
+    Make a single JSON serializable object with all of the figures.
+    """
+
+    return [
+        view.to_json()
+        for view in make_views()
+    ]

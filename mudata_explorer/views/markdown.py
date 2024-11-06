@@ -1,4 +1,4 @@
-from mudata_explorer.base.view import View
+from mudata_explorer.base.view import View, ViewJSON
 import streamlit as st
 
 
@@ -25,3 +25,9 @@ class Markdown(View):
         text = self.params.get('text.value')
         if text is not None and len(text) > 0:
             st.write(text)
+
+    def to_json(self) -> ViewJSON:
+        return dict(
+            type=self.type,
+            figures=[self.params.get('text.value', '')]            
+        )

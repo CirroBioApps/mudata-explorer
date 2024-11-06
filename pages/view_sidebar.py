@@ -5,23 +5,10 @@ from mudata_explorer.app.write_image import dialog_write_image
 from mudata_explorer.app.sidebar import setup_sidebar
 from mudata_explorer.helpers.add_view import add_view
 from mudata_explorer.helpers.assets import make_view
+from mudata_explorer.helpers.cirro_readers.util import make_views
 from mudata_explorer.helpers.views import delete_view, duplicate_view
 from streamlit.delta_generator import DeltaGenerator
 import streamlit as st
-
-
-def make_views():
-
-    views = get_views()
-
-    return [
-        make_view(
-            ix=ix,
-            type=view["type"],
-            params=view["params"]
-        )
-        for ix, view in enumerate(views)
-    ]
 
 
 def view_editable():

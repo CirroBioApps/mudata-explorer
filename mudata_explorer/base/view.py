@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+from typing import List
 from mudata_explorer.app.mdata import get_view, set_view
 from mudata_explorer.helpers.params import nest_params
 from mudata_explorer.base.base import MuDataAppAction
@@ -122,3 +124,23 @@ class View(MuDataAppAction):
         view["params"] = self.form.dehydrate()
 
         set_view(self.ix, view)
+
+    def to_json(self) -> 'ViewJSON':
+        """
+        Convert the view to a JSON object.
+        Must be implemented by the subclass.
+        """
+        return dict(
+            type="unimplemented",
+            figures=[]
+        )
+
+
+@dataclass
+class ViewJSON:
+    """
+    Syntax used to save the view as JSON.
+    The type is used to identify what method is used to render the view.
+    """
+    type: str
+    figures: List[str]
