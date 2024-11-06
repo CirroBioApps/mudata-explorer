@@ -36,6 +36,11 @@ def run():
             label="Microbiome Report",
             icon=":material/microbiology:"
         )
+        st.page_link(
+            "pages/load_virscan.py",
+            label="VirScan Report",
+            icon=":material/coronavirus:"
+        )
 
     # Let the user load from a URL
     with st.container(border=1):
