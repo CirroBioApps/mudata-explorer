@@ -29,10 +29,49 @@ def _read_mdata():
         for label, adata in _parse_df(df)
     }
 
-    mdata = MuData(adata_dict)
+    # Ask the user which measurements to include
+    to_keep = st.multiselect(
+        "Select the measurements to include:",
+        list(adata_dict.keys()),
+        default=[]
+    )
+
+    if not to_keep:
+        return
+
+    mdata = MuData({
+        label: adata_dict[label]
+        for label in to_keep
+    })
+
     mdata.obs = list(adata_dict.values())[0].obs
 
+    # Filter the data based on visit days
+    mdata = _filter_mdata(mdata, "visit days", "visitno")
+    if mdata is None:
+        return
+
+    # Filter the data based on treatment arms
+    mdata = _filter_mdata(mdata, "treatment arm", "TRT01P")
+    if mdata is None:
+        return
+    
     return mdata
+
+
+def _filter_mdata(mdata: MuData, label: str, column: str):
+    selections = st.multiselect(
+        f"Select the {label} to include:",
+        mdata.obs[column].unique(),
+        default=[]
+    )
+
+    if not selections:
+        return
+
+    ix = mdata.obs[column].isin(selections)
+
+    return mdata[ix]
 
 
 def _add_figures(mdata: MuData):
@@ -42,7 +81,7 @@ def _add_figures(mdata: MuData):
         text_value="## Viral Titer Analysis (HVTN Format)",
     )
 
-    for variable_name in mdata.mod_names:
+    for variable_name in mdata.mod.keys():
 
         # Get the values to show
         df = mdata.mod[variable_name].to_df()
@@ -52,210 +91,158 @@ def _add_figures(mdata: MuData):
             if cvals.std() > 0
         ]
 
-        view.plotly_box_multiple(
-            mdata,
-            **{
-                "table": {
-                    "data": {
+        for cname in values_to_show:
+
+            _make_boxplot(mdata, variable_name, cname, x="visitchar", color="TRT01P")
+            _make_boxplot(mdata, variable_name, cname, color="visitchar", x="TRT01P")
+
+def _make_boxplot(mdata: MuData, variable_name: str, cname: str, x="visitchar", color="TRT01P"):
+
+    view.plotly_box(
+        mdata,
+        **{
+            "data": {
+                "sidebar": False,
+                "axis": {
+                    "value": 0,
+                    "sidebar": False
+                },
+                "transforms": {
+                    "value": [],
+                    "sidebar": False
+                },
+                "columns": {
+                    "x": {
                         "sidebar": False,
-                        "axis": {
-                            "value": 0,
+                        "table": {
+                            "value": "Observation Metadata",
                             "sidebar": False
                         },
-                        "transforms": {
-                            "value": [],
+                        "cname": {
+                            "value": x,
                             "sidebar": False
                         },
-                        "tables": {
-                            "value": [
-                                f"{variable_name}.data"
-                            ],
+                        "label": {
+                            "value": x,
                             "sidebar": False
                         },
-                        "filter_cols": {
-                            "sidebar": False,
-                            "type": {
-                                "value": "index",
-                                "sidebar": False
-                            },
-                            "tables": {
-                                "value": [
-                                    f"{variable_name}.data"
-                                ],
-                                "sidebar": False
-                            },
-                            "cname": {
-                                "value": None,
-                                "sidebar": False
-                            },
-                            "expr": {
-                                "value": "in",
-                                "sidebar": False
-                            },
-                            "value_enum": {
-                                "value": values_to_show,
-                                "sidebar": True
-                            },
-                            "value_str": {
-                                "value": None,
-                                "sidebar": False
-                            }
+                        "scale": {
+                            "value": None,
+                            "sidebar": False
                         },
-                        "filter_rows": {
-                            "sidebar": False,
-                            "type": {
-                                "value": None,
-                                "sidebar": False
-                            },
-                            "tables": {
-                                "value": [],
-                                "sidebar": False
-                            },
-                            "cname": {
-                                "value": None,
-                                "sidebar": False
-                            },
-                            "expr": {
-                                "value": None,
-                                "sidebar": False
-                            },
-                            "value_enum": {
-                                "value": None,
-                                "sidebar": False
-                            },
-                            "value_str": {
-                                "value": None,
-                                "sidebar": False
-                            }
+                        "colorscale": False,
+                        "is_categorical": {
+                            "value": False,
+                            "sidebar": False
                         }
                     },
-                    "category": {
+                    "y": {
+                        "sidebar": False,
+                        "table": {
+                            "value": f"{variable_name}.data",
+                            "sidebar": False
+                        },
+                        "cname": {
+                            "value": cname,
+                            "sidebar": False
+                        },
+                        "label": {
+                            "value": cname,
+                            "sidebar": False
+                        },
+                        "scale": {
+                            "value": None,
+                            "sidebar": False
+                        },
+                        "colorscale": False,
+                        "is_categorical": {
+                            "value": False,
+                            "sidebar": False
+                        }
+                    },
+                    "color": {
                         "enabled": {
                             "value": True,
                             "sidebar": False
                         },
                         "sidebar": False,
-                        "axis": {
-                            "value": 0,
+                        "table": {
+                            "value": "Observation Metadata",
                             "sidebar": False
                         },
-                        "transforms": {
-                            "value": [],
+                        "cname": {
+                            "value": color,
                             "sidebar": False
                         },
-                        "columns": {
-                            "category": {
-                                "sidebar": False,
-                                "table": {
-                                    "value": "Observation Metadata",
-                                    "sidebar": False
-                                },
-                                "cname": {
-                                    "value": "visitno",
-                                    "sidebar": True
-                                },
-                                "label": {
-                                    "value": "visitno",
-                                    "sidebar": False
-                                },
-                                "scale": {
-                                    "value": None,
-                                    "sidebar": False
-                                },
-                                "colorscale": False,
-                                "is_categorical": {
-                                    "value": False,
-                                    "sidebar": False
-                                }
-                            }
+                        "label": {
+                            "value": color,
+                            "sidebar": False
                         },
-                        "filter_rows": {
-                            "sidebar": False,
-                            "type": {
-                                "value": None,
-                                "sidebar": False
-                            },
-                            "tables": {
-                                "value": [],
-                                "sidebar": False
-                            },
-                            "cname": {
-                                "value": None,
-                                "sidebar": False
-                            },
-                            "expr": {
-                                "value": None,
-                                "sidebar": False
-                            },
-                            "value_enum": {
-                                "value": None,
-                                "sidebar": False
-                            },
-                            "value_str": {
-                                "value": None,
-                                "sidebar": False
-                            }
+                        "scale": {
+                            "value": "D3",
+                            "sidebar": False
+                        },
+                        "colorscale": True,
+                        "is_categorical": {
+                            "value": True,
+                            "sidebar": False
                         }
                     }
                 },
-                "variable_options": {
-                    "axis": {
-                        "value": "Facet",
-                        "sidebar": True
-                    },
-                    "log_values": {
+                "filter_rows": {
+                    "sidebar": False,
+                    "type": {
                         "value": None,
-                        "sidebar": True
-                    },
-                    "sort_by": {
-                        "value": "Mean",
-                        "sidebar": True
-                    }
-                },
-                "category_options": {
-                    "axis": {
-                        "value": "Axis",
                         "sidebar": False
                     },
-                    "sort_by": {
-                        "value": "Mean",
-                        "sidebar": False
-                    }
-                },
-                "display_options": {
-                    "ncols": {
-                        "value": 4,
-                        "sidebar": True
-                    },
-                    "outliers": {
-                        "enabled": {
-                            "value": True,
-                            "sidebar": True
-                        }
-                    },
-                    "title": {
-                        "value": variable_name,
-                        "sidebar": True
-                    },
-                    "var_label": {
-                        "value": "Variable",
+                    "tables": {
+                        "value": [],
                         "sidebar": False
                     },
-                    "val_label": {
-                        "value": "Value",
+                    "cname": {
+                        "value": None,
                         "sidebar": False
                     },
-                    "height": {
-                        "value": 500,
+                    "expr": {
+                        "value": None,
                         "sidebar": False
                     },
-                    "legend": {
+                    "value_enum": {
+                        "value": None,
+                        "sidebar": False
+                    },
+                    "value_str": {
                         "value": None,
                         "sidebar": False
                     }
                 }
+            },
+            "scale_options": {
+                "log_y": {
+                    "value": None,
+                    "sidebar": True
+                }
+            },
+            "formatting": {
+                "title": {
+                    "value": f"{variable_name} -- {cname}",
+                    "sidebar": True
+                },
+                "legend": {
+                    "value": None,
+                    "sidebar": False
+                }
+            },
+            "statistics": {
+                "compare_groups": {
+                    "value": "Disabled",
+                    "sidebar": True
+                }
             }
-        )
+        }
+    )
+
+
 
 
 def _parse_df(df):
@@ -353,6 +340,9 @@ def main():
     # Read in the data
     mdata = _read_mdata()
     if mdata is None:
+        return
+    
+    if not st.button("Build Figures"):
         return
 
     # Add the figures
