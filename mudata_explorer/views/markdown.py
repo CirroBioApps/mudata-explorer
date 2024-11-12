@@ -37,5 +37,8 @@ class Markdown(View):
         """
         Convert the view to a DataStory object.
         """
-        ds.add_section(style={"justify-content": "center", "align-items": "center"})
-        ds.add_markdown(self.params.get('text.value', ''), section_ix=-1)
+        ds.add_markdown(
+            self.params.get('text.value', ''), 
+            style={"flex-basis": "80%"},
+            section_style={"justify-content": "center", "align-items": "center"}
+        )

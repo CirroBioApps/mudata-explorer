@@ -195,12 +195,17 @@ class Plotly(View):
 
         print(f"Number of figures for {self.name} #{self.ix +1}: {len(fig_list):,}")
 
-        ds.add_section(style={"justify-content": "center", "align-items": "center"})
-
         for fig in fig_list:
-            ds.add_plotly(fig, section_ix=-1, style={"flex-basis": "80%"})
+            ds.add_plotly(
+                fig,
+                style={"flex-basis": "80%"},
+                section_style={"justify-content": "center", "align-items": "center"}
+            )
 
         legend = self.params.get(self.legend_key)
         if legend:
-            ds.add_section(style={"justify-content": "center", "align-items": "center"})
-            ds.add_markdown(legend, section_ix=-1, style={"flex-basis": "80%"})
+            ds.add_markdown(
+                legend,
+                style={"flex-basis": "80%"},
+                section_style={"justify-content": "center", "align-items": "center"}
+            )
