@@ -1,6 +1,8 @@
+from typing import Optional
 import pandas as pd
 from mudata_explorer.base.view import View
 import streamlit as st
+from datastory.datastory import DataStory
 
 
 class Table(View):
@@ -56,7 +58,7 @@ class Table(View):
         }
     }
 
-    def display(self):
+    def _format_table(self) -> Optional[pd.DataFrame]:
 
         data: pd.DataFrame = self.params.get("data.table.dataframe")
 
@@ -77,6 +79,14 @@ class Table(View):
         # Sort the data by the column specified in the sort_by column
         data = data.reindex(sort_by.sort_values(by="sort_by").index)
 
+        return data
+
+    def display(self):
+
+        data = self._format_table()
+        if data is None:
+            return
+
         title = self.params["display_options.title"]
         if title:
             st.markdown(f"**{title}**")
@@ -86,3 +96,28 @@ class Table(View):
         legend = self.params["display_options.legend"]
         if legend:
             st.markdown(legend)
+
+    def to_datastory(self, ds: DataStory):
+        """
+        Convert the view to a DataStory object.
+        """
+        
+        self.params = self.form.dump()
+
+        data = self._format_table()
+        if data is None:
+            return
+
+        title = self.params["display_options.title"]
+        if title:
+            ds.add_markdown(
+                f"**{title}**",
+                style={"flex-basis": "80%"},
+                section_style={"justify-content": "center", "align-items": "center"}
+            )
+
+        ds.add_dataframe(
+            data,
+            style={"flex-basis": "80%"},
+            section_style={"justify-content": "center", "align-items": "center"}
+        )
