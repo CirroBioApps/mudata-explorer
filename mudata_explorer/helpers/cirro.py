@@ -188,6 +188,11 @@ def save_to_cirro(id="main"):
     if not description:
         description = ""
 
+    st.write(f"Name: {name}")
+    st.write(f"Description: {description}")
+
+    save_json = st.checkbox("Save data story (JSON-format) (will take slightly longer)")
+
     if not st.button("Save"):
         return
 
@@ -218,8 +223,9 @@ def save_to_cirro(id="main"):
         with open(f"{tmp}/{fn}.h5mu", "wb") as handle:
             handle.write(blob)
 
-        # Write the figures in JSON format to the `tmp` folder
-        util.write_views_json(tmp)
+        if save_json:
+            # Write the figures in JSON format to the `tmp` folder
+            util.write_views_json(f"{tmp}/datastory")
 
         # Upload the file to Cirro
         try:
