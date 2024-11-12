@@ -1,5 +1,6 @@
 import pandas as pd
 from plotly.subplots import make_subplots
+from plotly.express import colors
 import plotly.graph_objects as go
 from plotly.graph_objects import Figure
 import streamlit as st
@@ -219,23 +220,28 @@ annotated by a single column which contains categories.
         return fig
 
     def _make_bars(self, data: pd.DataFrame, yaxis_title: str):
+
         return [
             go.Bar(
                 name=str(col),
                 x=data.index,
                 y=data[col],
                 legendgroup=yaxis_title,
-                legendgrouptitle_text=yaxis_title
+                legendgrouptitle_text=yaxis_title,
+                marker_color=color
             )
-            for col in (
+            for col, color in zip(
+                (
                 [self._below_threshold_label]
-                if self._below_threshold_label in data.columns
-                else []
-            ) + [
-                cname
-                for cname in data.columns[::-1]
-                if cname != self._below_threshold_label
-            ]
+                    if self._below_threshold_label in data.columns
+                    else []
+                ) + [
+                    cname
+                    for cname in data.columns[::-1]
+                    if cname != self._below_threshold_label
+                ],
+                colors.qualitative.D3
+            )
         ]
 
     def _make_annot(self, category: pd.Series, category_name: str):
@@ -246,7 +252,8 @@ annotated by a single column which contains categories.
                 y=[1 for _ in range((category == name).sum())],
                 hovertext=str(name),
                 legendgroup=category_name,
-                legendgrouptitle_text=category_name
+                legendgrouptitle_text=category_name,
+                marker_color=color
             )
-            for name in category.unique()
+            for name, color in zip(category.unique(), colors.qualitative.D3)
         ]
