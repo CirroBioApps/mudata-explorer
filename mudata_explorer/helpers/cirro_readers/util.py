@@ -599,6 +599,7 @@ def write_views_json(folder: Path):
     views = make_views()
     for view in views:
         with st.spinner(f"Converting view #{view.ix + 1:,} {view.type} to DataStory"):
+            view.display_form()
             view.to_datastory(ds)
 
     # Write the files to the folder
