@@ -191,7 +191,7 @@ def save_to_cirro(id="main"):
     st.write(f"Name: {name}")
     st.write(f"Description: {description}")
 
-    save_json = st.checkbox("Save data story (JSON-format) (will take slightly longer)")
+    save_json = st.checkbox("Save data story (JSON-format)")
 
     if not st.button("Save"):
         return
