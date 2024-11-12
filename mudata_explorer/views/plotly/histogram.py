@@ -116,6 +116,7 @@ which are overlaid on the same plot using different colors.
                 grouping=self.params["data.columns.grouping.label.value"]
             ),
             title=title,
+            color_discrete_sequence=["blue"] if "grouping" not in data.columns else None,
             **colorscale
         )
 
