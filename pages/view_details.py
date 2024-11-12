@@ -15,6 +15,10 @@ def run_edit_view():
     # The view to edit
     edit_ix = get_edit_view_flag()
 
+    # If no view is selected, show all figures
+    if edit_ix is None:
+        st.switch_page("pages/view_all.py")
+
     # Get the view to edit
     view = get_view(edit_ix)
 
