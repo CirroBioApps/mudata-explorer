@@ -1,5 +1,6 @@
 from mudata_explorer.base.view import View, ViewJSON
 import streamlit as st
+from datastory.datastory import DataStory
 
 
 class Markdown(View):
@@ -31,3 +32,9 @@ class Markdown(View):
             type=self.type,
             figures=[self.params.get('text.value', '')]            
         )
+
+    def to_datastory(self, ds: DataStory):
+        """
+        Convert the view to a DataStory object.
+        """
+        ds.add_markdown(self.params.get('text.value', ''))

@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from typing import Optional, Union, List
 from cirro import CirroApi, DataPortal, DataPortalProject
 from cirro import DataPortalDataset
@@ -217,10 +218,8 @@ def save_to_cirro(id="main"):
         with open(f"{tmp}/{fn}.h5mu", "wb") as handle:
             handle.write(blob)
 
-        # Write the MuData object to the file
-        with open(f"{tmp}/{fn}.json", "wt") as handle:
-
-            json.dump(util.build_json(), handle, indent=2)
+        # Write the figures in JSON format to the `tmp` folder
+        util.write_views_json(tmp)
 
         # Upload the file to Cirro
         try:

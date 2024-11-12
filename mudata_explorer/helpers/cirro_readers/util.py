@@ -16,6 +16,7 @@ from mudata import MuData
 from mudata_explorer.sdk import process, view
 from mudata_explorer.app.mdata import get_views
 from mudata_explorer.helpers.assets import make_view
+from datastory.datastory import DataStory
 
 
 def clear_cirro_client():
@@ -583,12 +584,23 @@ def make_views():
     ]
 
 
-def build_json() -> List[dict]:
+def write_views_json(folder: Path):
     """
-    Make a single JSON serializable object with all of the figures.
+    Write out the views in JSON format to a folder.
+    Files:
+        {folder}/layout.json
+        {folder}/data/{ix}.json
+
+    See notes/serialization.md for more details.
     """
 
-    return [
-        view.to_json()
-        for view in make_views()
-    ]
+    ds = DataStory()
+
+    views = make_views()
+    for view in views:
+        with st.spinner(f"Converting view #{view.ix + 1:,} {view.type} to DataStory"):
+            view.to_datastory(ds)
+
+    # Write the files to the folder
+    with st.spinner("Writing views to JSON"):
+        ds.write(folder)

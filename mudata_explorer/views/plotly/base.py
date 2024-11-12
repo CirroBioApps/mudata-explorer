@@ -9,6 +9,7 @@ import plotly.express as px
 from plotly.graph_objects import Figure
 from scipy.stats import f_oneway, kruskal
 import streamlit as st
+from datastory.datastory import DataStory
 
 
 class Plotly(View):
@@ -182,3 +183,25 @@ class Plotly(View):
             title = formatted_result
 
         return title
+
+    def to_datastory(self, ds: DataStory):
+        """
+        Convert the view to a DataStory object.
+        """
+        
+        self.params = self.form.dump()
+
+        fig_list = self._make_fig_list()
+
+        print(f"Number of figures for {self.name} #{self.ix +1}: {len(fig_list):,}")
+
+        if len(fig_list) > 0:
+            ds.add_section()
+            ix = len(ds.sections) - 1
+
+            for fig in fig_list:
+                ds.add_plotly(fig, section_ix=ix)
+
+        legend = self.params.get(self.legend_key)
+        if legend:
+            ds.add_markdown(legend, section_ix=ix)

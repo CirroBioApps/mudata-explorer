@@ -4,6 +4,7 @@ from mudata_explorer.app.mdata import get_view, set_view
 from mudata_explorer.helpers.params import nest_params
 from mudata_explorer.base.base import MuDataAppAction
 import streamlit as st
+from datastory.datastory import DataStory
 
 
 class View(MuDataAppAction):
@@ -134,6 +135,13 @@ class View(MuDataAppAction):
             type="unimplemented",
             figures=[]
         )
+    
+    def to_datastory(self, ds: DataStory):
+        """
+        Convert the view to a DataStory object.
+        Must be implemented by the subclass.
+        """
+        pass
 
 
 @dataclass
