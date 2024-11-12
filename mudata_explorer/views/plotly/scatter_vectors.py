@@ -128,6 +128,9 @@ and using a log scale for the x- and y-axes.
             st.write("Please select columns for the x and y axes of the vectors")
             return
         
+        if "color_discrete_sequence" not in colorscale:
+            colorscale["color_discrete_sequence"] = px.colors.qualitative.Plotly
+
         fig = px.scatter(
             data.reset_index(),
             x="x",

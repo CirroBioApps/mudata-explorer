@@ -122,6 +122,9 @@ and using a log scale for the x- and y-axes.
             else:
                 title = f"Linear Regression: r={r_value:.2f}, p={p_value:.2e}"
 
+        if "color_discrete_sequence" not in colorscale:
+            colorscale["color_discrete_sequence"] = px.colors.qualitative.Plotly
+
         # Make the figure
         fig = px.scatter(
             data.reset_index(),

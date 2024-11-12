@@ -236,6 +236,7 @@ class PlotlyCategorySummarizeValues(Plotly):
             size=size,
             color=color,
             color_continuous_scale=self.params['formatting.colorscale'],
+            color_discrete_sequence=px.colors.qualitative.Plotly,
             hover_data=["Mean", "Median", "Positive", "Non-Null"],
             category_orders=category_orders,
             labels=dict(

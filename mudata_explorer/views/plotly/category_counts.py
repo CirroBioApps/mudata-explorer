@@ -131,6 +131,9 @@ class PlotlyCategoryCount(Plotly):
                 else:
                     title = chi2_res
 
+        if "color_discrete_sequence" not in colorscale:
+            colorscale["color_discrete_sequence"] = px.colors.qualitative.Plotly
+
         fig = px.bar(
             df,
             x="x",

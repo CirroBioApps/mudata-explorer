@@ -106,7 +106,7 @@ which are overlaid on the same plot using different colors.
             title = self._add_stats_title(title, method, vals)
 
         if "color_discrete_sequence" not in colorscale:
-            colorscale["color_discrete_sequence"] = ["blue"]
+            colorscale["color_discrete_sequence"] = px.colors.qualitative.Plotly
 
         fig = px.histogram(
             data,

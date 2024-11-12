@@ -94,6 +94,9 @@ class PlotlyBox(Plotly):
             ]
             title = self._add_stats_title(title, method, vals)
 
+        if "color_discrete_sequence" not in colorscale:
+            colorscale["color_discrete_sequence"] = px.colors.qualitative.Plotly
+
         fig = px.box(
             data,
             x="x",

@@ -73,6 +73,9 @@ class PlotlyScatter3D(Plotly):
             st.write("Please select a data table")
             return
 
+        if "color_discrete_sequence" not in colorscale:
+            colorscale["color_discrete_sequence"] = px.colors.qualitative.Plotly
+
         fig = px.scatter_3d(
             data.reset_index(),
             x="x",
