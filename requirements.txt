@@ -16,4 +16,4 @@ biom-format
 GEOparse
 pydeseq2
 streamlit-extras
-kaleido
+kaleido==0.2.1.post1
