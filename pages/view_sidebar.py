@@ -118,7 +118,7 @@ def edit_view(container: DeltaGenerator, ix: int, n_views: int):
         help="Make a copy of this view."
     ):
         duplicate_view(ix)
-        st.rerun()
+        set_edit_view_flag(ix+1)
 
     if ix < (n_views - 1):
         expander.button(
