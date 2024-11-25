@@ -8,7 +8,7 @@ from mudata import MuData
 from mudata_explorer.app.mdata import get_mdata, set_mdata
 from mudata_explorer.app.hash import get_dat_hash, set_mdata_hash
 from mudata_explorer.helpers.io import hydrate_uns
-from mudata_explorer.helpers.cirro_readers import util, mudata, ampliseq, biom, metaphlan
+from mudata_explorer.helpers.cirro_readers import util, mudata, ampliseq, biom, metaphlan, gig_map
 from mudata_explorer.helpers.cirro_readers import differential_abundance
 from mudata_explorer.helpers.cirro_readers import curatedMetagenomicData
 import streamlit as st
@@ -416,25 +416,13 @@ def _read_dataset(
             return True
         else:
             return metaphlan.read(dataset)
+        
+    # gig-map alignment datasets
+    elif dataset.process_id == "hutch-gig-map-align-pangenome-1-0":
+        if check_only:
+            return True
+        else:
+            return gig_map.read(dataset)
 
     elif check_only:
         return False
-
-
-# def autoretry(func, retries=15, exception=Exception):
-#     def inner(*args, **kwargs):
-
-#         result = None
-#         for i in range(retries):
-#             try:
-#                 result = func(*args, **kwargs)
-#             except exception as e:
-#                 if i == (retries - 1):
-#                     raise e
-#                 else:
-#                     sleep(0.1)
-#             if result is not None:
-#                 break
-#         return result
-
-#     return inner

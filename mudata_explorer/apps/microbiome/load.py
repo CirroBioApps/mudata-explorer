@@ -155,7 +155,8 @@ def run():
                 "ingest_biom",
                 "process-nf-core-ampliseq-2-4-0",
                 "curated_metagenomic_data",
-                "process-hutch-metaphlan-paired-1-0"
+                "process-hutch-metaphlan-paired-1-0",
+                "hutch-gig-map-align-pangenome-1-0"
             ],
             show_link=False
         )

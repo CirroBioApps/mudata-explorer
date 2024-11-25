@@ -9,12 +9,12 @@ from typing import Optional
 import streamlit as st
 
 
-def parse_adata(adata: AnnData, groupby_var=False) -> Optional[MuData]:
+def parse_adata(adata: AnnData, groupby_var=False, sum_to_one=True) -> Optional[MuData]:
 
     mdata = common.parse_adata(
         adata,
         groupby_var=groupby_var,
-        sum_to_one=True
+        sum_to_one=sum_to_one
     )
 
     params = _get_params(mdata)
