@@ -51,13 +51,22 @@ def _read_gig_map_as_anndata(dataset: DataPortalDataset) -> Optional[AnnData]:
         abund = abund_file.read_h5ad()
 
         # Remove the NaN feature (genes which are not in any bin)
-        abund = abund[:, [x for x in abund.var.index if not x == "nan"]]
+        abund: AnnData = abund[:, [x for x in abund.var.index if not x == "nan"]]
 
         # If the gene bins were selected
         if feature_type == "bins":
             # Optionally weight all abundance values by the number of genes in each bin
             if st.checkbox("Weight abundances by the number of genes in each bin", value=True):
-                abund.X = (abund.X / abund.var["n_genes"].values) * abund.var["n_genes"].sum()
+                # Calculate the total number of reads per sample (row)
+                _reads_per_sample = abund.X.sum(axis=1)
+                # Calculate the proportion of reads per sample (row)
+                _reads_prop = abund.to_df().apply(lambda x: x / x.sum(), axis=1)
+                # Divide the proportion of reads by the number of genes in each bin
+                abund.X = (_reads_prop / abund.var["n_genes"].values)
+                # Divide by the sum per sample
+                abund.X = (abund.X.T / abund.X.sum(axis=1)).T
+                # Multiply by the number of reads per sample
+                abund.X = (abund.X.T * _reads_per_sample).T
 
         # Ask the user how they want the sequencing depth to be normalized
         # Options:
