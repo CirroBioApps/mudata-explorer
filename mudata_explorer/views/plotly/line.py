@@ -58,7 +58,8 @@ class PlotlyLine(Plotly):
         if data is None:
             st.write("Please select a data table")
             return
-        data.sort_values("sort_by", inplace=True)
+        if "sort_by" in data.columns:
+            data.sort_values("sort_by", inplace=True)
 
         fig = px.line(
             data,
