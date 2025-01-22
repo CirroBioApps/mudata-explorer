@@ -8,7 +8,7 @@ seaborn
 plotly
 streamlit
 openpyxl
-zarr
+zarr<=2.18.4
 scanpy
 leidenalg
 cirro>=1.2.1
