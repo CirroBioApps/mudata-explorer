@@ -17,3 +17,4 @@ GEOparse
 pydeseq2
 streamlit-extras
 kaleido==0.2.1
+numcodecs<0.16.0
