@@ -19,14 +19,50 @@ def _read_table(
     file = st.file_uploader(label, type=exts)
     if file is None:
         return
-    
+
     # Read the table
     if file.name.endswith(".csv"):
-        return pd.read_csv(file, index_col=index_col, **kwargs)
+        return pd.read_csv(
+            file,
+            index_col=index_col,
+            skiprows=_find_skiprows(file, sep=","),
+            **kwargs
+        )
     elif file.name.endswith(".tsv"):
-        return pd.read_csv(file, sep='\t', index_col=index_col, **kwargs)
+        return pd.read_csv(
+            file,
+            sep='\t',
+            index_col=index_col,
+            skiprows=_find_skiprows(file, sep="\t"),
+            **kwargs
+        )
     else:
         return pd.read_excel(file, index_col=index_col, **kwargs)
+
+
+def _find_skiprows(file, sep=","):
+    """
+    Find the number of rows to skip in a CSV file.
+    This is useful for reading files with headers that are not in the first row.
+
+    1. Find the number of fields in every row
+    2. Find the modal number of fields
+    3. Find the first row with the modal number of fields
+    """
+    lines = file.readlines()
+    file.seek(0)
+
+    # Find the number of fields in each row
+    num_fields = [len(line.decode().split(sep)) for line in lines]
+
+    # Find the modal number of fields
+    modal_num_fields = max(set(num_fields), key=num_fields.count)
+
+    # Find the first row with the modal number of fields
+    for i, num in enumerate(num_fields):
+        if num == modal_num_fields:
+            return i
+    return 0
 
 
 def _load_data_csv():
