@@ -106,6 +106,10 @@ def _load_data_csv():
     else:
         groupby_var = False
 
+    # Align the axes of the abundance table and the metadata
+    if obs is not None:
+        obs = obs.reindex(abund.index)
+
     # Parse the data into an AnnData object
     adata = AnnData(abund, obs=obs, var=var)
 
