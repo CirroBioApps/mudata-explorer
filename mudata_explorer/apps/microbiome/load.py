@@ -87,6 +87,15 @@ def _load_data_csv():
 
     # Optional: Upload sample metadata
     obs = _read_table("Upload sample metadata (optional)")
+
+    # Let the user add a prefix to the sample names
+    prefix = st.text_input("Prefix for sample names (optional)")
+    if prefix and len(prefix) > 0:
+        # Add the prefix to the sample names
+        abund = abund.rename(index=lambda x: f"{prefix}{x}")
+        if obs is not None:
+            obs = obs.rename(index=lambda x: f"{prefix}{x}")
+
     # Optional: Upload organism metadata
     var = _read_table("Upload organism metadata (optional)")
 
@@ -96,14 +105,6 @@ def _load_data_csv():
         )
     else:
         groupby_var = False
-
-    # Let the user add a prefix to the sample names
-    prefix = st.text_input("Prefix for sample names (optional)")
-    if prefix and len(prefix) > 0:
-        # Add the prefix to the sample names
-        abund = abund.rename(index=lambda x: f"{prefix}{x}")
-        if obs is not None:
-            obs = obs.rename(index=lambda x: f"{prefix}{x}")
 
     # Parse the data into an AnnData object
     adata = AnnData(abund, obs=obs, var=var)
