@@ -11,7 +11,7 @@ openpyxl
 zarr<=2.18.4
 scanpy
 leidenalg
-cirro>=1.2.1
+cirro==1.5.4
 biom-format
 GEOparse
 pydeseq2
